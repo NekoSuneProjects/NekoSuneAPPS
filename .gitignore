@@ -28,3 +28,8 @@ settings.local.json
 config.json
 user-settings.json
 nekosuneosc-config.json
+nekosuneapps-config.json
+
+# Local-only helper files — do NOT publish
+prompt.txt
+rpc-test.js

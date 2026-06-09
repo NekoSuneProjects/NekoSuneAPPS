@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="midnight">
+<html lang="en" data-theme="green">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NekoSuneOSC</title>
+  <title>NekoSuneAPPS</title>
   <style>
     /* ---- Theme engine: every theme is just a set of CSS variables ---- */
     :root {
@@ -28,25 +28,104 @@
     [data-theme="green"]    { --bg:#031a0b; --bg2:#052612; --panel:#073318; --panel2:#0a4220; --border:#0e5a2d; --text:#e4ffe9; --muted:#8fd5a3; --accent:#22e06a; --accent2:#9dffb8; }
     [data-theme="rainbow"]  { --bg:#06060c; --bg2:#0c0c16; --panel:#15151f; --panel2:#1d1d2b; --border:#2b2b40; --accent:#ff0080; --accent2:#40e0d0; }
     [data-theme="light"]    { --bg:#f3f4f8; --bg2:#e9eaf0; --panel:#ffffff; --panel2:#f1f2f7; --border:#d7d9e3; --text:#1b1b2a; --muted:#5b5b70; --accent:#d6006b; --accent2:#0090a8; }
+    /* Seasonal (auto-selected by date — not user-switchable) */
+    [data-theme="xmas"]      { --bg:#07140d; --bg2:#0a1c12; --panel:#0d2417; --panel2:#11301e; --border:#1c4a30; --text:#eafff0; --muted:#9fd9b4; --accent:#e3342f; --accent2:#22c55e; }
+    [data-theme="halloween"] { --bg:#140a04; --bg2:#1c0f06; --panel:#241408; --panel2:#301a0a; --border:#4a2a10; --text:#ffe9d6; --muted:#d8a06a; --accent:#ff7518; --accent2:#8b5cf6; }
+    [data-theme="easter"]    { --bg:#120f18; --bg2:#181522; --panel:#201a2e; --panel2:#28213a; --border:#3a3052; --text:#fdeafd; --muted:#c9b8e0; --accent:#f9a8d4; --accent2:#6ee7b7; }
 
     * { box-sizing: border-box; }
+    /* Hide scrollbars everywhere but keep scrolling (tidy) */
+    * { scrollbar-width: none; -ms-overflow-style: none; }
+    *::-webkit-scrollbar { width: 0; height: 0; display: none; }
     body {
       margin: 0; font-family: 'Segoe UI', system-ui, sans-serif;
       background: radial-gradient(1200px 600px at 0% 0%, var(--bg2), var(--bg) 60%);
       color: var(--text); min-height: 100vh; transition: background .3s, color .3s;
     }
-    .app { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+    .app { display: grid; grid-template-columns: 76px 1fr 300px; min-height: 100vh; }
+    @media (max-width: 900px){ .app { grid-template-columns: 76px 1fr; } .rightbar { display:none !important; } }
 
-    /* Sidebar */
-    .sidebar { background: var(--bg2); border-right: 1px solid var(--border); padding: 16px 12px; display:flex; flex-direction:column; gap:6px; }
-    .brand { display:flex; align-items:center; gap:10px; padding: 4px 8px 14px; }
-    .brand h1 { font-size: 1.05rem; margin:0; font-weight:800; letter-spacing:.3px; }
-    .brand .dot { width:12px; height:12px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent2)); box-shadow:0 0 14px var(--accent); }
-    .navbtn { display:flex; align-items:center; gap:10px; text-align:left; width:100%; padding:9px 12px; border:none; border-radius:10px;
-      background:transparent; color:var(--muted); cursor:pointer; font-size:.92rem; transition:.15s; }
+    /* Right friends panel (VRChat) */
+    .rightbar { background:var(--bg2); border-left:1px solid var(--border); padding:14px 12px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; max-height:100vh; }
+    .rb-profile { display:flex; align-items:center; gap:10px; }
+    .rb-profile img { width:42px; height:42px; border-radius:12px; object-fit:cover; background:var(--panel2); }
+    .rb-profile .nm { font-weight:700; font-size:.92rem; }
+    .rb-card { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:10px 12px; }
+    .rb-search { width:100%; }
+    .rb-group { font-size:.66rem; letter-spacing:.6px; text-transform:uppercase; color:var(--muted); font-weight:700; margin:10px 0 4px; }
+    .rb-toggle { cursor:pointer; user-select:none; }
+    .rb-toggle:hover { color:var(--text); }
+    .rb-friend { display:flex; align-items:center; gap:9px; padding:6px 6px; border-radius:9px; font-size:.82rem; }
+    .rb-friend:hover { background:var(--panel); }
+    .rb-friend .ava { width:30px; height:30px; border-radius:8px; object-fit:cover; background:var(--panel2); flex:none; }
+    .rb-friend .meta { min-width:0; }
+    .rb-friend .nm { font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .rb-friend .lo { color:var(--muted); font-size:.72rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .rb-friend { cursor:pointer; }
+    .rb-friend .dot { width:8px; height:8px; border-radius:50%; flex:none; }
+
+    /* User profile modal */
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.6); backdrop-filter:blur(3px); z-index:200; display:flex; align-items:center; justify-content:center; padding:24px; }
+    .modal-card { width:560px; max-width:96vw; max-height:88vh; overflow:auto; background:var(--panel); border:1px solid var(--border); border-radius:18px; position:relative; box-shadow:0 30px 80px -20px #000; }
+    .modal-banner { height:150px; background:linear-gradient(135deg,var(--panel2),var(--bg2)); background-size:cover; background-position:center; }
+    .modal-close { position:absolute; top:12px; right:14px; background:rgba(0,0,0,.45); color:#fff; border:none; width:30px; height:30px; border-radius:50%; cursor:pointer; font-size:1rem; z-index:2; }
+    .modal-head { display:flex; gap:14px; align-items:flex-end; padding:0 20px; margin-top:-44px; }
+    .modal-ava { width:88px; height:88px; border-radius:18px; border:3px solid var(--panel); object-fit:cover; background:var(--panel2); }
+    .modal-name { font-size:1.25rem; font-weight:800; }
+    .modal-tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+    .tagchip { font-size:.68rem; padding:2px 8px; border-radius:999px; background:var(--panel2); border:1px solid var(--border); color:var(--muted); }
+    .modal-actions { display:flex; flex-wrap:wrap; gap:8px; padding:14px 20px 0; }
+    .modal-tabs { display:flex; gap:4px; padding:12px 16px 0; flex-wrap:wrap; }
+    .mtab { background:transparent; border:none; color:var(--muted); padding:7px 12px; border-radius:9px; cursor:pointer; font-size:.84rem; font-weight:600; }
+    .mtab:hover { background:var(--panel2); color:var(--text); }
+    .mtab.active { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; }
+    .modal-body { padding:14px 20px 22px; display:flex; flex-direction:column; gap:12px; }
+    .um-bio { white-space:pre-wrap; font-size:.86rem; color:var(--text); }
+    .um-sec { font-size:.66rem; letter-spacing:.6px; text-transform:uppercase; color:var(--muted); font-weight:700; margin-top:4px; }
+    .um-info > div { display:flex; justify-content:space-between; gap:10px; padding:4px 0; border-top:1px solid var(--border); font-size:.82rem; }
+    .um-info > div:first-child { border-top:none; }
+    .um-info span { color:var(--muted); }
+    .badge-grid { display:flex; flex-wrap:wrap; gap:8px; }
+    .badge-img { width:40px; height:40px; border-radius:8px; object-fit:contain; background:var(--panel2); padding:3px; }
+    .card-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .mini-card { display:flex; gap:9px; align-items:center; background:var(--panel2); border:1px solid var(--border); border-radius:10px; padding:7px; }
+    .mini-card img { width:42px; height:32px; border-radius:6px; object-fit:cover; flex:none; background:var(--bg2); }
+    .mini-card .nm { font-size:.8rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    /* Sidebar — slim icon rail (VRCNext-style) */
+    .sidebar { background: var(--bg2); border-right: 1px solid var(--border); padding: 12px 0; display:flex; flex-direction:column; align-items:center; gap:4px; overflow-y:auto; overflow-x:visible; }
+    .sidebar::-webkit-scrollbar { width:0; }
+    .brand { display:flex; align-items:center; justify-content:center; padding: 4px 0 12px; }
+    .brand h1 { display:none; }
+    .brand img { width:38px; height:38px; border-radius:11px; box-shadow:0 0 18px -4px var(--accent); }
+    .brand .dot { display:none; }
+    .navbtn { display:flex; align-items:center; justify-content:center; width:48px; height:44px; padding:0; border:none; border-radius:12px;
+      background:transparent; color:var(--muted); cursor:pointer; font-size:1.18rem; transition:.15s; position:relative; }
     .navbtn:hover { background:var(--panel); color:var(--text); }
     .navbtn.active { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; box-shadow:0 6px 18px -8px var(--accent); }
-    .navbtn .ico { width:20px; text-align:center; }
+    .navbtn .ico { width:auto; }
+    /* hover tooltip from the (hidden) label */
+    .navbtn .lbl { display:none; }
+    .navbtn:hover .lbl { display:block; position:absolute; left:56px; top:50%; transform:translateY(-50%);
+      background:var(--panel2); color:var(--text); border:1px solid var(--border); padding:5px 11px; border-radius:9px;
+      white-space:nowrap; font-size:.82rem; z-index:60; box-shadow:0 8px 22px -10px #000; pointer-events:none; }
+    .navlabel { font-size:0; line-height:0; width:36px; height:1px; background:var(--border); margin:8px 0; opacity:.6; padding:0; }
+    /* bottom rail: clock + launch */
+    .railclock { font-size:.7rem; color:var(--muted); font-variant-numeric:tabular-nums; margin-top:6px; }
+    .launchbtn { width:48px; height:48px; border-radius:50%; border:none; cursor:pointer; color:#fff; font-size:1.1rem; margin:8px 0 4px;
+      background:linear-gradient(135deg,var(--accent),var(--accent2)); box-shadow:0 8px 22px -8px var(--accent); transition:.15s; }
+    .launchbtn:hover { filter:brightness(1.12); transform:scale(1.05); }
+    /* notifications */
+    .bell { position:relative; background:var(--panel2); border:1px solid var(--border); color:var(--text); width:38px; height:38px; border-radius:10px; cursor:pointer; font-size:1rem; }
+    .bell:hover { border-color:var(--accent); }
+    .notif-badge { position:absolute; top:-6px; right:-6px; background:var(--bad); color:#fff; font-size:.62rem; font-weight:700; min-width:17px; height:17px; border-radius:9px; padding:0 4px; display:flex; align-items:center; justify-content:center; }
+    .notif-panel { position:absolute; top:60px; right:26px; width:340px; max-height:70vh; overflow:auto; z-index:80;
+      background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:14px; box-shadow:0 18px 50px -18px #000; }
+    .notif-head { display:flex; justify-content:space-between; align-items:center; }
+    .notif-item { display:flex; gap:8px; align-items:flex-start; padding:9px 0; border-top:1px solid var(--border); font-size:.82rem; color:var(--text); }
+    .notif-item:first-of-type { border-top:none; }
+    .notif-item .grow { flex:1; min-width:0; }
+    .notif-item .when { color:var(--muted); font-size:.7rem; }
 
     /* Main */
     .main { padding: 22px 26px; overflow:auto; }
@@ -62,7 +141,7 @@
     .grid { display:grid; gap:14px; }
     .grid.cols-2 { grid-template-columns:1fr 1fr; }
     .grid.cols-3 { grid-template-columns:repeat(3,1fr); }
-    @media (max-width: 820px){ .grid.cols-2,.grid.cols-3 { grid-template-columns:1fr; } .app{ grid-template-columns:64px 1fr; } .brand h1,.navbtn span.lbl{display:none;} }
+    @media (max-width: 820px){ .grid.cols-2,.grid.cols-3 { grid-template-columns:1fr; } .app{ grid-template-columns:64px 1fr; } .brand h1,.navbtn span.lbl,.navlabel{display:none;} }
     .btn { border:none; border-radius:10px; padding:9px 14px; font-weight:600; cursor:pointer; color:#fff; background:linear-gradient(135deg,var(--accent),var(--accent2)); transition:.15s; }
     .btn:hover { filter:brightness(1.1); }
     .btn.ghost { background:var(--panel2); color:var(--text); border:1px solid var(--border); }
@@ -95,36 +174,51 @@
   <div class="app">
     <!-- Sidebar -->
     <aside class="sidebar">
-      <div class="brand"><span class="dot"></span><h1>NekoSuneOSC</h1></div>
+      <div class="brand" title="NekoSuneAPPS"><img src="assets/logo.png" alt="NekoSuneAPPS" /><h1>NekoSuneAPPS</h1></div>
+      <div class="navlabel">VRChat</div>
       <button class="navbtn active" data-tab="chatbox"><span class="ico">💬</span><span class="lbl">Chatbox</span></button>
-      <button class="navbtn" data-tab="audio"><span class="ico">🔊</span><span class="lbl">AudioLink</span></button>
       <button class="navbtn" data-tab="nowplaying"><span class="ico">🎵</span><span class="lbl">Now Playing</span></button>
+      <button class="navbtn" data-tab="audio"><span class="ico">🔊</span><span class="lbl">AudioLink</span></button>
+      <button class="navbtn" data-tab="heartrate"><span class="ico">❤️</span><span class="lbl">Heart Rate</span></button>
+      <button class="navbtn" data-tab="vrchat"><span class="ico">🦊</span><span class="lbl">VRChat</span></button>
+      <button class="navbtn" data-tab="radar"><span class="ico">🛰</span><span class="lbl">Radar</span></button>
+      <button class="navbtn" data-tab="friendden"><span class="ico">🫂</span><span class="lbl">Friend Den</span></button>
+      <button class="navbtn" data-tab="eventscout"><span class="ico">🔭</span><span class="lbl">Event Scout</span></button>
+      <button class="navbtn" data-tab="pawprints"><span class="ico">🐾</span><span class="lbl">Pawprints</span></button>
+      <button class="navbtn" data-tab="groups"><span class="ico">👥</span><span class="lbl">Groups</span></button>
+      <button class="navbtn" data-tab="content"><span class="ico">🌐</span><span class="lbl">Content</span></button>
+      <button class="navbtn" data-tab="weather"><span class="ico">🌦</span><span class="lbl">Weather</span></button>
+      <button class="navbtn" data-tab="osccontrol"><span class="ico">🎛</span><span class="lbl">OSC Control</span></button>
+      <button class="navbtn" data-tab="vrctools"><span class="ico">🧰</span><span class="lbl">VRChat Tools</span></button>
+      <div class="navlabel">Social</div>
       <button class="navbtn" data-tab="live"><span class="ico">📡</span><span class="lbl">Live</span></button>
+      <button class="navbtn" data-tab="discord"><span class="ico">💜</span><span class="lbl">Discord</span></button>
+      <div class="navlabel">General</div>
       <button class="navbtn" data-tab="stats"><span class="ico">📊</span><span class="lbl">Stats</span></button>
-      <button class="navbtn" data-tab="integrations"><span class="ico">🧩</span><span class="lbl">Integrations</span></button>
+      <button class="navbtn" data-tab="overlay"><span class="ico">🖥</span><span class="lbl">Overlay</span></button>
+      <button class="navbtn" data-tab="tools"><span class="ico">🧩</span><span class="lbl">Tools</span></button>
       <button class="navbtn" data-tab="settings"><span class="ico">⚙️</span><span class="lbl">Settings</span></button>
       <button class="navbtn" data-tab="docs"><span class="ico">📖</span><span class="lbl">Docs / Setup</span></button>
       <button class="navbtn" data-tab="log"><span class="ico">📜</span><span class="lbl">OSC Log</span></button>
       <div style="flex:1"></div>
-      <div class="muted" style="padding:0 8px; font-size:.7rem;">v1.0.0 · NekoSuneVR</div>
+      <div class="railclock" id="railClock">--:--</div>
+      <button class="launchbtn" id="launchVrc" title="Launch VRChat">▶</button>
     </aside>
 
     <!-- Main -->
     <main class="main">
       <div class="topbar">
         <h2 id="pageTitle">Chatbox</h2>
-        <div class="row" style="width:auto">
-          <label style="margin:0">Theme</label>
-          <select id="themeSelect" style="width:auto">
-            <option value="midnight">Midnight</option>
-            <option value="dark">Dark</option>
-            <option value="neon">Neon</option>
-            <option value="rainbow">Rainbow</option>
-            <option value="pink">Pink</option>
-            <option value="green">Green</option>
-            <option value="light">Light</option>
-          </select>
+        <div class="row" style="width:auto;gap:14px">
+          <div class="muted" id="seasonBadge" style="font-size:.8rem"></div>
+          <button id="notifBell" class="bell" title="Notifications">🔔<span id="notifCount" class="notif-badge" style="display:none">0</span></button>
         </div>
+      </div>
+
+      <!-- Notifications flyout -->
+      <div id="notifPanel" class="notif-panel" style="display:none">
+        <div class="notif-head"><b>Notifications</b><button id="notifRefresh" class="btn ghost" style="padding:3px 9px;font-size:.74rem">↻</button></div>
+        <div id="notifList" class="muted" style="margin-top:8px">Not loaded — log in on the VRChat tab.</div>
       </div>
 
       <!-- CHATBOX -->
@@ -262,7 +356,7 @@
           <div class="card">
             <h3>🟣 Twitch <span class="pill off" id="twitchState">offline</span></h3>
             <label>Channel login</label><input type="text" id="twitchLogin" placeholder="channel" />
-            <label style="margin-top:8px">Client ID</label><input type="text" id="twitchClientId" placeholder="client id" />
+            <label style="margin-top:8px">Client ID</label><input type="password" id="twitchClientId" placeholder="client id" autocomplete="off" />
             <label style="margin-top:8px">Client Secret</label><input type="password" id="twitchClientSecret" placeholder="client secret" />
             <div class="row" style="margin-top:8px">
               <button class="btn ghost" id="twitchLogin2">🔑 Login with Twitch</button>
@@ -305,12 +399,6 @@
             <div id="netOut" class="muted" style="margin-top:10px">—</div>
           </div>
           <div class="card">
-            <h3>❤️ Heart rate (Pulsoid) <span class="pill off" id="hrState">offline</span></h3>
-            <label>Pulsoid access token</label><input type="password" id="pulsoidToken" placeholder="token" />
-            <div class="row" style="margin-top:8px"><button class="btn" id="hrStart">Start</button><button class="btn ghost" id="hrStop">Stop</button></div>
-            <div class="stat-big" id="hrOut" style="margin-top:8px">—</div><div class="muted">bpm</div>
-          </div>
-          <div class="card">
             <h3>🪟 Window activity <span class="pill" id="winState">off</span></h3>
             <label class="switch"><input type="checkbox" id="enableWindow"> Track active window</label>
             <div id="winOut" class="muted" style="margin-top:10px">—</div>
@@ -323,8 +411,32 @@
         </div>
       </section>
 
-      <!-- INTEGRATIONS -->
-      <section id="integrations" class="tabpanel">
+      <!-- HEART RATE -->
+      <section id="heartrate" class="tabpanel">
+        <div class="card">
+          <h3>❤️ Heart rate <span class="pill off" id="hrState">offline</span></h3>
+          <label>Provider</label>
+          <select id="hrProvider">
+            <option value="pulsoid">Pulsoid</option>
+            <option value="hyperate">HypeRate.io</option>
+          </select>
+          <div id="hrPulsoidFields" style="margin-top:8px">
+            <label>Pulsoid access token</label><input type="password" id="pulsoidToken" placeholder="token" />
+          </div>
+          <div id="hrHyperateFields" style="margin-top:8px; display:none">
+            <label>HypeRate API key</label><input type="password" id="hyperateKey" placeholder="api key" />
+            <label style="margin-top:8px">HypeRate device / session ID</label><input type="text" id="hyperateDevice" placeholder="e.g. abc123 (from hyperate.io/abc123)" />
+          </div>
+          <div class="row" style="margin-top:8px"><button class="btn" id="hrStart">Start</button><button class="btn ghost" id="hrStop">Stop</button></div>
+          <div class="stat-big" id="hrOut" style="margin-top:8px">—</div><div class="muted" id="hrSub">bpm</div>
+          <hr style="border:none;border-top:1px solid var(--border);margin:12px 0" />
+          <div class="row" style="justify-content:space-between"><label style="margin:0">Session history</label><button class="btn ghost" id="hrClear" style="padding:4px 10px;font-size:.78rem">Clear</button></div>
+          <div id="hrSessions" class="muted" style="font-size:.78rem;margin-top:6px;max-height:160px;overflow:auto">No saved sessions yet.</div>
+        </div>
+      </section>
+
+      <!-- DISCORD -->
+      <section id="discord" class="tabpanel">
         <div class="card">
           <h3>💜 Discord <span class="pill off" id="discordState">off</span></h3>
           <label>Discord Application (Client) ID</label>
@@ -339,10 +451,46 @@
             <label class="switch"><input type="checkbox" id="discordVoiceOsc" checked> Send voice state to VRChat (OSC)</label>
             <label class="switch"><input type="checkbox" id="discordMuteOsc" checked> Send mute/deafen to VRChat (OSC)</label>
           </div>
+
+          <hr style="border:none;border-top:1px solid var(--line,#23233a);margin:12px 0" />
+          <label>VRChat status <span class="muted" style="font-size:.72rem">(controls what your presence reveals — not your Discord status)</span></label>
+          <div class="grid cols-2" style="margin-top:6px">
+            <select id="discordVrcStatus">
+              <option value="join">🟢 Join Me — show world + join button</option>
+              <option value="active" selected>🔵 Active — show world + join button</option>
+              <option value="ask">🟠 Ask Me — hide world</option>
+              <option value="busy">🔴 Do Not Disturb — hide world</option>
+            </select>
+            <label class="switch"><input type="checkbox" id="discordShowWorld" checked> Show VRChat world + Join button</label>
+          </div>
+          <label style="margin-top:8px">VRChat profile URL <span class="muted" style="font-size:.72rem">(optional — auto-detected from VRChat log)</span></label>
+          <input type="text" id="discordVrcProfile" placeholder="https://vrchat.com/home/user/usr_..." />
+          <div class="grid cols-2" style="margin-top:8px">
+            <label class="switch"><input type="checkbox" id="discordShowHr" checked> ❤️ Show heart rate in presence</label>
+            <label class="switch"><input type="checkbox" id="discordShowNp" checked> 🎵 Show now playing in presence</label>
+          </div>
+
           <div class="row" style="margin-top:10px"><button class="btn" id="discordStart">Connect</button><button class="btn ghost" id="discordStop">Stop</button></div>
           <div class="muted" id="discordOut" style="margin-top:8px">Not connected</div>
+          <div class="muted" id="discordWorldOut" style="margin-top:4px;font-size:.78rem">World: not detected</div>
           <div class="muted" style="font-size:.72rem; margin-top:4px">Voice detection needs Discord's private voice scope (approved apps only) — falls back to Rich Presence if rejected. See Docs.</div>
         </div>
+
+        <div class="card">
+          <h3>🤖 Discord Voice Bot <span class="pill off" id="botState">off</span></h3>
+          <div class="muted" style="font-size:.75rem;margin-bottom:8px">The no-allowlist alternative to voice scope. Create a bot in the <a href="https://discord.com/developers/applications" target="_blank">Developer Portal</a>, paste its <b>token</b>, invite it to <b>your own private server</b>, and enter your Discord <b>user ID</b>. It stays invisible (appears offline) and reads your voice state + can server-mute/deafen you via OSC.</div>
+          <label>Bot token</label><input type="password" id="botToken" placeholder="bot token" autocomplete="off" />
+          <div class="grid cols-2" style="margin-top:8px">
+            <div><label>Your Discord user ID</label><input type="text" id="botUserId" placeholder="e.g. 123456789012345678" /></div>
+            <div><label>Application ID (for invite)</label><input type="text" id="botAppId" placeholder="application id (optional)" /></div>
+          </div>
+          <div class="row" style="margin-top:10px"><button class="btn" id="botStart">Connect</button><button class="btn ghost" id="botStop">Stop</button><button class="btn ghost" id="botInvite">Invite link</button></div>
+          <div class="muted" id="botOut" style="margin-top:8px">Not connected</div>
+        </div>
+      </section>
+
+      <!-- OVERLAY -->
+      <section id="overlay" class="tabpanel">
         <div class="card">
           <h3>🖥 OBS Overlay</h3>
           <div class="grid cols-3">
@@ -362,6 +510,197 @@
       </section>
 
       <!-- SETTINGS -->
+      <!-- VRCHAT -->
+      <section id="vrchat" class="tabpanel">
+        <div class="card">
+          <h3>🔐 VRChat Account <span class="pill off" id="vrcAcctState">logged out</span></h3>
+          <div class="muted" style="font-size:.75rem;margin-bottom:8px">Logs into the VRChat API to auto-detect your status (🟢/🔵/🟠/🔴) and drive the Discord world gate. Your password is never stored — only the session cookie.</div>
+          <div class="grid cols-2">
+            <div><label>Username / email</label><input type="text" id="vrcUser" placeholder="username" autocomplete="off" /></div>
+            <div><label>Password</label><input type="password" id="vrcPass" placeholder="password" autocomplete="off" /></div>
+          </div>
+          <div class="row" style="margin-top:10px"><button class="btn" id="vrcLogin">Login</button><button class="btn ghost" id="vrcLogout">Logout</button></div>
+          <div id="vrc2faRow" style="margin-top:10px; display:none">
+            <label>2FA code <span class="muted" id="vrc2faHint" style="font-size:.72rem"></span></label>
+            <div class="row"><input type="text" id="vrc2faCode" placeholder="123456" autocomplete="off" /><button class="btn" id="vrc2faVerify">Verify</button></div>
+          </div>
+          <label class="switch" style="margin-top:10px"><input type="checkbox" id="vrcAutoStatus"> Auto-apply my VRChat status to Discord</label>
+          <div class="muted" id="vrcAcctOut" style="margin-top:8px">Not logged in</div>
+        </div>
+      </section>
+
+      <!-- RADAR -->
+      <section id="radar" class="tabpanel">
+        <div class="card">
+          <h3>📡 Radar <span class="pill" id="radarCount">0</span></h3>
+          <div class="muted" style="font-size:.75rem">Players currently in your instance, read live from the VRChat log.</div>
+          <div id="radarList" class="muted" style="margin-top:8px;max-height:220px;overflow:auto;font-size:.82rem">Not in a world.</div>
+        </div>
+      </section>
+
+      <!-- WEATHER -->
+      <section id="weather" class="tabpanel">
+        <div class="card">
+          <h3>🌦 Weather <span class="pill off" id="weatherState">off</span></h3>
+          <div class="grid cols-2">
+            <div><label>City</label><input type="text" id="weatherCity" placeholder="e.g. London" /></div>
+            <div><label>Units</label><select id="weatherUnits"><option value="celsius">Celsius (°C)</option><option value="fahrenheit">Fahrenheit (°F)</option></select></div>
+          </div>
+          <label class="switch" style="margin-top:8px"><input type="checkbox" id="weatherEnable"> Enable weather (updates every 15 min)</label>
+          <div class="stat-big" id="weatherOut" style="margin-top:8px">—</div>
+          <div class="muted" id="weatherSub">Use {weather} in a status preset to post it to the chatbox.</div>
+        </div>
+      </section>
+
+      <!-- OSC CONTROL -->
+      <section id="osccontrol" class="tabpanel">
+        <div class="card">
+          <h3>🎛 OSC Control <span class="muted" style="font-size:.72rem">(needs OSC receive enabled in Settings)</span></h3>
+          <label class="switch"><input type="checkbox" id="spotiOscEnable"> 🎵 SpotiOSC — control Spotify from VRChat avatar params</label>
+          <div class="muted" style="font-size:.72rem;margin:6px 0 10px">Bool params (trigger on true): <code>/avatar/parameters/VRCOSC/Spotify/PlayPause</code>, <code>/Next</code>, <code>/Previous</code>, <code>/Stop</code>. Uses global media keys.</div>
+          <label class="switch"><input type="checkbox" id="discordOscEnable"> 🎙 DiscordOSC — mute/deafen from VRChat avatar params</label>
+          <div class="muted" style="font-size:.72rem;margin:6px 0 4px">Bool params: <code>/avatar/parameters/VRCOSC/Discord/Mute</code>, <code>/Deafen</code> (server mute/deafen via the bot). Requires the Discord Voice Bot connected + you in a voice channel.</div>
+          <div class="muted" id="oscControlOut" style="margin-top:6px">Idle</div>
+        </div>
+      </section>
+
+      <!-- VRCHAT TOOLS -->
+      <section id="vrctools" class="tabpanel">
+        <div class="card">
+          <h3>🧰 VRChat Tools</h3>
+          <div class="muted" style="font-size:.75rem;margin-bottom:8px">External, file-based maintenance only — nothing here modifies or injects into VRChat.</div>
+          <div class="row">
+            <button class="btn" id="ytFix">▶️ YouTube fix (update yt-dlp)</button>
+          </div>
+          <div class="muted" id="ytFixOut" style="margin-top:6px;font-size:.78rem">Updates yt-dlp.exe in VRChat's Tools folder so world video players work.</div>
+          <div class="row" style="margin-top:12px">
+            <button class="btn ghost" id="cacheCheck">Check cache size</button>
+            <button class="btn danger" id="cacheClear">Clear cache</button>
+          </div>
+          <div class="muted" id="cacheOut" style="margin-top:6px;font-size:.78rem">—</div>
+          <label style="margin-top:12px">Open folder</label>
+          <div class="row" style="flex-wrap:wrap;gap:8px">
+            <button class="btn ghost" data-folder="data">VRChat data</button>
+            <button class="btn ghost" data-folder="cache">Cache</button>
+            <button class="btn ghost" data-folder="tools">Tools</button>
+            <button class="btn ghost" data-folder="photos">Photos</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- FRIEND DEN -->
+      <section id="friendden" class="tabpanel">
+        <div class="card">
+          <h3>🫂 Friend Den <span class="pill" id="friendCount">0</span></h3>
+          <div class="muted" style="font-size:.75rem;margin-bottom:8px">Your online friends and where they are, via the VRChat API. Needs VRChat login (VRChat tab).</div>
+          <div class="row"><button class="btn" id="friendRefresh">Refresh</button><label class="switch" style="margin:0"><input type="checkbox" id="friendAuto" checked> Auto-refresh (60s)</label></div>
+          <div id="friendList" class="muted" style="margin-top:10px;max-height:460px;overflow:auto;font-size:.84rem">Not loaded.</div>
+        </div>
+      </section>
+
+      <!-- EVENT SCOUT -->
+      <section id="eventscout" class="tabpanel">
+        <div class="card">
+          <h3>🔭 Event Scout</h3>
+          <div class="muted" style="font-size:.75rem;margin-bottom:8px">Track upcoming events across multiple VRChat groups. Tick the groups to watch; events from all of them are merged below.</div>
+          <div class="row"><button class="btn" id="eventLoadGroups">Load my groups</button><button class="btn ghost" id="eventRefresh">Refresh events</button></div>
+          <div id="eventGroups" class="muted" style="margin-top:10px;font-size:.82rem">No groups loaded.</div>
+          <hr style="border:none;border-top:1px solid var(--border);margin:12px 0" />
+          <div id="eventList" class="muted" style="max-height:360px;overflow:auto;font-size:.84rem">No events.</div>
+        </div>
+      </section>
+
+      <!-- GROUPS -->
+      <section id="groups" class="tabpanel">
+        <div class="card">
+          <h3>👥 My Groups</h3>
+          <div class="row"><button class="btn" id="myGroupsRefresh">Refresh</button></div>
+          <div id="myGroupsList" class="muted" style="margin-top:10px">Log in on the VRChat tab.</div>
+        </div>
+      </section>
+
+      <!-- CONTENT -->
+      <section id="content" class="tabpanel">
+        <div class="card">
+          <h3>🌐 My Content</h3>
+          <div class="modal-tabs" style="padding:0 0 10px">
+            <button class="mtab active" data-ctab="worlds">Worlds</button>
+            <button class="mtab" data-ctab="avatars">Avatars</button>
+          </div>
+          <div id="myContentBody" class="muted">Log in on the VRChat tab.</div>
+        </div>
+      </section>
+
+      <!-- PAWPRINTS -->
+      <section id="pawprints" class="tabpanel">
+        <div class="card">
+          <h3>🐾 Pawprints</h3>
+          <div class="muted" style="font-size:.75rem;margin-bottom:8px">Time you've spent in each VRChat world (tracked locally from the log).</div>
+          <div class="row"><button class="btn" id="pawRefresh">Refresh</button><button class="btn danger" id="pawClear">Clear</button></div>
+          <div id="pawList" class="muted" style="margin-top:10px;max-height:460px;overflow:auto;font-size:.84rem">No data yet.</div>
+        </div>
+      </section>
+
+      <!-- TOOLS -->
+      <section id="tools" class="tabpanel">
+        <div class="card">
+          <h3>⏱ Stopwatch</h3>
+          <div class="stat-big" id="swDisplay" style="font-variant-numeric:tabular-nums">00:00:00.0</div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn" id="swStartStop">Start</button>
+            <button class="btn ghost" id="swReset">Reset</button>
+            <button class="btn ghost" id="swSend">Send to chatbox</button>
+          </div>
+          <label class="switch" style="margin-top:10px"><input type="checkbox" id="swLiveChatbox"> Live-update a chatbox line while running</label>
+          <div class="muted" id="swOut" style="margin-top:6px">Stopped</div>
+        </div>
+
+        <div class="card">
+          <h3>🧮 Calculator</h3>
+          <input type="text" id="calcInput" placeholder="e.g. (12 * 3) + sqrt(81) / 2" />
+          <div class="row" style="margin-top:8px">
+            <button class="btn" id="calcEval">=</button>
+            <button class="btn ghost" id="calcClear">Clear</button>
+            <button class="btn ghost" id="calcSend">Send to chatbox</button>
+          </div>
+          <div class="stat-big" id="calcResult" style="margin-top:8px">0</div>
+          <div class="muted" style="font-size:.72rem;margin-top:4px">Powered by mathjs — supports + - * / ^, sqrt(), sin(), %, parentheses, etc.</div>
+        </div>
+
+        <div class="card">
+          <h3>🔊 Soundpad <span class="pill off" id="soundpadState">—</span></h3>
+          <div class="muted" style="font-size:.75rem;margin-bottom:8px">Controls Leppsoft Soundpad via its Remote Control pipe. Soundpad must be running.</div>
+          <div class="row">
+            <input type="number" id="soundpadIndex" placeholder="sound #" value="1" min="1" style="max-width:120px" />
+            <button class="btn" id="soundpadPlay">Play</button>
+            <button class="btn ghost" id="soundpadStop">Stop</button>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <button class="btn ghost" id="soundpadPrev">⏮ Prev</button>
+            <button class="btn ghost" id="soundpadPause">⏯ Pause</button>
+            <button class="btn ghost" id="soundpadNext">⏭ Next</button>
+            <button class="btn ghost" id="soundpadRandom">🎲 Random</button>
+            <button class="btn ghost" id="soundpadRefresh">Load list</button>
+          </div>
+          <div id="soundpadList" class="muted" style="margin-top:8px;max-height:160px;overflow:auto;font-size:.8rem"></div>
+          <div class="muted" id="soundpadOut" style="margin-top:6px"></div>
+        </div>
+
+        <div class="card">
+          <h3>💤 Auto-AFK <span class="pill off" id="afkState">off</span></h3>
+          <label class="switch"><input type="checkbox" id="afkEnable"> Detect idle and announce AFK</label>
+          <div class="grid cols-2" style="margin-top:8px">
+            <div><label>Go AFK after (seconds idle)</label><input type="number" id="afkThreshold" value="120" min="10" /></div>
+            <label class="switch"><input type="checkbox" id="afkToChatbox" checked> Post AFK line to chatbox</label>
+          </div>
+          <label style="margin-top:8px">AFK message <span class="muted" style="font-size:.72rem">tokens: {mins} {time}</span></label>
+          <input type="text" id="afkMessage" placeholder="💤 AFK since {time} ({mins}m)" />
+          <label style="margin-top:8px">Back message</label>
+          <input type="text" id="afkBackMessage" placeholder="👋 Back!" />
+          <div class="muted" id="afkOut" style="margin-top:6px">Active</div>
+        </div>
+      </section>
+
       <section id="settings" class="tabpanel">
         <div class="card">
           <h3>⚙️ OSC</h3>
@@ -370,6 +709,24 @@
             <div><label>VRChat Receive Port</label><input type="number" id="receiverPortInput" placeholder="9001" /></div>
           </div>
           <label class="switch" style="margin-top:12px"><input type="checkbox" id="enableReceive"> Enable VRChat OSC receive (needed for KAT auto-detect)</label>
+        </div>
+        <div class="card">
+          <h3>🚀 Startup</h3>
+          <div class="grid cols-2">
+            <label class="switch"><input type="checkbox" id="autoLaunch"> Launch on system login</label>
+            <label class="switch"><input type="checkbox" id="autoMinimized"> Start minimized to tray</label>
+          </div>
+          <label style="margin-top:10px">Auto-start these when the app opens</label>
+          <div class="grid cols-2" style="margin-top:6px">
+            <label class="switch"><input type="checkbox" id="autoDiscord"> 💜 Discord Rich Presence</label>
+            <label class="switch"><input type="checkbox" id="autoHeartrate"> ❤️ Heart rate</label>
+            <label class="switch"><input type="checkbox" id="autoStats"> 🖥 Component stats</label>
+            <label class="switch"><input type="checkbox" id="autoNet"> 🌐 Network stats</label>
+            <label class="switch"><input type="checkbox" id="autoWindow"> 🪟 Window activity</label>
+            <label class="switch"><input type="checkbox" id="autoTwitch"> 🟣 Twitch followers</label>
+            <label class="switch"><input type="checkbox" id="autoKick"> 🟢 Kick followers</label>
+          </div>
+          <div class="muted" style="font-size:.75rem; margin-top:6px">Saved tokens/IDs are reused — no need to press Connect each launch.</div>
         </div>
         <div class="card">
           <h3>🤖 IntelliChat (AI provider)</h3>
@@ -496,6 +853,54 @@
         </div>
       </section>
     </main>
+
+    <!-- Right friends panel -->
+    <aside class="rightbar" id="rightbar">
+      <div class="rb-profile">
+        <img id="rbAvatar" src="assets/logo.png" alt="" />
+        <div class="meta" style="min-width:0">
+          <div class="nm" id="rbName">Not logged in</div>
+          <div class="muted" id="rbStatus" style="font-size:.74rem">VRChat tab → log in</div>
+        </div>
+      </div>
+      <div class="rb-card">
+        <div id="rbWorld" style="font-weight:600;font-size:.85rem">Not in a world</div>
+        <div class="muted" id="rbInstCount" style="font-size:.74rem;margin-top:2px">—</div>
+      </div>
+      <input type="text" id="rbSearch" class="rb-search" placeholder="Search friends..." />
+      <div id="rbFriends" class="muted" style="font-size:.82rem">Log in to see friends.</div>
+    </aside>
+  </div>
+
+  <!-- User profile modal -->
+  <div id="userModal" class="modal-overlay" style="display:none">
+    <div class="modal-card">
+      <button id="userModalClose" class="modal-close">×</button>
+      <div class="modal-banner" id="umBanner"></div>
+      <div class="modal-head">
+        <img id="umAvatar" class="modal-ava" src="assets/logo.png" alt="" />
+        <div style="min-width:0;padding-bottom:6px">
+          <div class="modal-name" id="umName">—</div>
+          <div class="muted" id="umStatusDesc" style="font-size:.84rem"></div>
+          <div class="modal-tags" id="umTags"></div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" id="umAddFriend">➕ Add Friend</button>
+        <button class="btn ghost" id="umInvite">📨 Invite</button>
+        <button class="btn ghost" id="umRequestInvite">✉️ Request Invite</button>
+        <button class="btn ghost" id="umBoop" title="VRChat boop is in-game only — no API">👉 Boop</button>
+      </div>
+      <div id="umActionOut" class="muted" style="padding:6px 20px 0;font-size:.78rem"></div>
+      <div class="modal-tabs">
+        <button class="mtab active" data-mtab="info">Info</button>
+        <button class="mtab" data-mtab="groups">Groups</button>
+        <button class="mtab" data-mtab="mutuals">Mutuals</button>
+        <button class="mtab" data-mtab="content">Content</button>
+        <button class="mtab" data-mtab="favs">Favs.</button>
+      </div>
+      <div class="modal-body" id="umTabBody"></div>
+    </div>
   </div>
 
   <script src="renderer.js"></script>

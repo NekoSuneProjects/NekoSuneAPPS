@@ -1,12 +1,12 @@
-/* NekoSuneOSC renderer - wires the themed UI to the OSC layer and all modules. */
-const { loadAudioDevices, setupAudioAnalysis, stopAudioAnalysis } = require('./modules/audio/audioModule')
+/* NekoSuneAPPS renderer - wires the themed UI to the OSC layer and all modules. */
+const { loadAudioDevices, setupAudioAnalysis, stopAudioAnalysis } = require('./modules/vrchat/audio/audioModule')
 const {
   setOscPort, setOscReceiverPort, sendOsc, sendBeat, sendChatboxMessage,
   startOscReceiver, stopOscReceiver, addOscListener
-} = require('./modules/vrchatosc/oscModule')
-const { KatOscText } = require('./modules/vrchatosc/katOscText')
-const { ChatboxComposer } = require('./modules/chatbox/chatboxComposer')
-const { DEFAULT_PRESETS } = require('./modules/status/statusModule')
+} = require('./modules/vrchat/osc/oscModule')
+const { KatOscText } = require('./modules/vrchat/osc/katOscText')
+const { ChatboxComposer } = require('./modules/vrchat/chatbox/chatboxComposer')
+const { DEFAULT_PRESETS } = require('./modules/vrchat/status/statusModule')
 
 const api = window.electronAPI
 const $ = id => document.getElementById(id)
@@ -14,7 +14,7 @@ const $ = id => document.getElementById(id)
 // No credentials are shipped. Users enter their own Client / Application IDs
 // (see Docs / Setup). Never hardcode IDs, secrets, or tokens in the repo.
 const DEFAULT_TWITCH_CLIENT_ID = ''
-const DEFAULT_DISCORD_APP_ID = ''
+const DEFAULT_DISCORD_APP_ID = '1513908316324233216'
 
 let isAnalyzing = false
 let beatState = false
@@ -35,14 +35,29 @@ document.querySelectorAll('.navbtn').forEach(btn => {
   })
 })
 
-const themeSelect = $('themeSelect')
-const savedTheme = localStorage.getItem('theme') || 'midnight'
-document.documentElement.setAttribute('data-theme', savedTheme)
-themeSelect.value = savedTheme
-themeSelect.addEventListener('change', e => {
-  document.documentElement.setAttribute('data-theme', e.target.value)
-  localStorage.setItem('theme', e.target.value)
-})
+// Theme is auto-selected by date (seasonal) and is NOT user-switchable.
+// Default is green; seasons override it around the holiday.
+function easterDate (y) {
+  const a = y % 19; const b = Math.floor(y / 100); const c = y % 100
+  const d = Math.floor(b / 4); const e = b % 4; const f = Math.floor((b + 8) / 25)
+  const g = Math.floor((b - f + 1) / 3); const h = (19 * a + b - d - g + 15) % 30
+  const i = Math.floor(c / 4); const k = c % 4; const l = (32 + 2 * e + 2 * i - h - k) % 7
+  const m = Math.floor((a + 11 * h + 22 * l) / 451)
+  const mo = Math.floor((h + l - 7 * m + 114) / 31); const da = ((h + l - 7 * m + 114) % 31) + 1
+  return new Date(y, mo - 1, da)
+}
+function seasonalTheme (now) {
+  const mo = now.getMonth() + 1; const day = now.getDate()
+  if (mo === 10 && day >= 24) return { theme: 'halloween', label: '🎃 Halloween' }
+  if (mo === 12) return { theme: 'xmas', label: '🎄 Christmas' }
+  if (mo === 6) return { theme: 'rainbow', label: '🏳️‍🌈 Pride' }
+  const diff = (now - easterDate(now.getFullYear())) / 86400000
+  if (diff >= -7 && diff <= 1) return { theme: 'easter', label: '🐰 Easter' }
+  return { theme: 'green', label: '' }
+}
+const season = seasonalTheme(new Date())
+document.documentElement.setAttribute('data-theme', season.theme)
+if ($('seasonBadge')) $('seasonBadge').textContent = season.label
 
 /* ---------------- helpers ---------------- */
 function setText (id, v) { const el = $(id); if (el) el.textContent = v }
@@ -160,11 +175,13 @@ $('enableChatboxNowPlaying').addEventListener('change', async e => {
   setText('chatboxNowPlayingStatus', chatboxNpEnabled ? 'Chatbox output is on' : 'Chatbox output is off')
 })
 
+let discordConnected = false
 function nowPlayingNeeded () {
   // Only spawn the PowerShell media query when something actually consumes it.
   return katEnabled || chatboxNpEnabled ||
     composer.modes.nowPlaying !== 'off' ||
     (composer.modes.status === 'rotate' && /\{(song|artist|title)\}/.test($('presetsText').value)) ||
+    (discordConnected && $('discordShowNp') && $('discordShowNp').checked) ||
     ($('nowplaying') && $('nowplaying').offsetParent !== null)
 }
 async function refreshNowPlaying () {
@@ -184,6 +201,8 @@ async function refreshNowPlaying () {
       const key = song
       if (key !== lastSongKey) { lastSongKey = key; sendChatboxMessage(`Now Playing: ${song}`, false); setText('chatboxNowPlayingStatus', 'Posted current song') }
     }
+    // Feed the Discord presence (it shows 🎵 song when no world line is up).
+    if (discordConnected) api.discordLive({ nowPlaying: (m && m.found && song) ? song : '' })
   } catch (err) { renderNowPlaying({ found: false }) }
 }
 // Now Playing spawns a PowerShell query, so poll gently (every 10s). It still
@@ -433,10 +452,38 @@ $('enableNet').addEventListener('change', e => { setPill('netState', e.target.ch
 
 api.on('hr:update', s => {
   setPill('hrState', s.online, 'live'); setText('hrOut', s.bpm || '—')
+  setText('hrSub', s.online ? `bpm · avg ${s.avg || 0} · max ${s.max || 0} · min ${s.min || 0}` : 'bpm')
   composer.update({ hr: s.bpm, hrOnline: s.online, hrAvg: s.avg, hrMax: s.max, hrMin: s.min })
 })
-$('hrStart').addEventListener('click', async () => { await api.saveSetting('pulsoidToken', $('pulsoidToken').value); api.hrStart($('pulsoidToken').value) })
+function hrCfg () {
+  return { provider: $('hrProvider').value, token: $('pulsoidToken').value, apiKey: $('hyperateKey').value, deviceId: $('hyperateDevice').value }
+}
+function syncHrFields () {
+  const hy = $('hrProvider').value === 'hyperate'
+  $('hrHyperateFields').style.display = hy ? '' : 'none'
+  $('hrPulsoidFields').style.display = hy ? 'none' : ''
+}
+$('hrProvider').addEventListener('change', () => { syncHrFields(); api.saveSetting('hrProvider', $('hrProvider').value) })
+$('hrStart').addEventListener('click', async () => {
+  const c = hrCfg()
+  await api.saveSetting('pulsoidToken', c.token)
+  await api.saveSetting('hrProvider', c.provider)
+  await api.saveSetting('hyperate', { apiKey: c.apiKey, deviceId: c.deviceId })
+  api.hrStart(c)
+})
 $('hrStop').addEventListener('click', () => api.hrStop())
+$('hrClear').addEventListener('click', async () => { await api.hrClearSessions(); renderHrSessions([]) })
+
+function fmtDur (sec) { const m = Math.floor(sec / 60); const s = sec % 60; return `${m}m ${s}s` }
+function renderHrSessions (list) {
+  const el = $('hrSessions')
+  if (!list || !list.length) { el.textContent = 'No saved sessions yet.'; return }
+  el.innerHTML = list.map(x => {
+    const d = new Date(x.startedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+    return `<div style="padding:2px 0">❤️ ${d} · ${fmtDur(x.durationSec)} · avg ${x.avg} · ${x.min}–${x.max} <span style="opacity:.55">(${x.provider})</span></div>`
+  }).join('')
+}
+api.on('hr:sessions', renderHrSessions)
 
 api.on('window:update', s => {
   setText('winOut', `${s.app || ''}${s.title ? ' — ' + s.title : ''}`)
@@ -460,7 +507,12 @@ function currentDiscordCfg () {
     enableRichPresence: $('discordRP').checked,
     enableVoice: $('discordVoice').checked,
     sendVoiceStateOsc: $('discordVoiceOsc').checked,
-    sendMuteDeafenOsc: $('discordMuteOsc').checked
+    sendMuteDeafenOsc: $('discordMuteOsc').checked,
+    vrcStatus: $('discordVrcStatus').value,
+    showWorld: $('discordShowWorld').checked,
+    vrcProfileUrl: $('discordVrcProfile').value.trim(),
+    showHeartRate: $('discordShowHr').checked,
+    showNowPlaying: $('discordShowNp').checked
   }
 }
 $('discordStart').addEventListener('click', async () => {
@@ -476,7 +528,599 @@ $('discordStop').addEventListener('click', async () => { await api.discordStop()
 ;['discordRP', 'discordVoice', 'discordVoiceOsc', 'discordMuteOsc'].forEach(id =>
   $(id).addEventListener('change', () => api.saveSetting('discord', currentDiscordCfg())))
 
+// VRChat status / world-visibility / presence-content changes apply instantly.
+;['discordVrcStatus', 'discordShowWorld', 'discordVrcProfile', 'discordShowHr', 'discordShowNp'].forEach(id =>
+  $(id).addEventListener('change', () => {
+    const cfg = currentDiscordCfg()
+    api.saveSetting('discord', cfg)
+    api.discordVrc({ vrcStatus: cfg.vrcStatus, showWorld: cfg.showWorld, vrcProfileUrl: cfg.vrcProfileUrl, showHeartRate: cfg.showHeartRate, showNowPlaying: cfg.showNowPlaying })
+  }))
+
+// Live world readout + radar from the VRChat log tracker.
+api.on('vrc:world', w => {
+  if (w && w.inWorld && w.worldName) setText('discordWorldOut', `World: ${w.worldName}`)
+  else if (w && w.inWorld) setText('discordWorldOut', 'World: (joining…)')
+  else setText('discordWorldOut', 'World: not in a world')
+  renderRadar(w)
+  if (w) {
+    composer.update({ players: (w.players || []).length })
+    window.__myLocation = (w.worldId && w.instanceId) ? `${w.worldId}:${w.instanceId}` : ''
+    if ($('rbWorld')) {
+      setText('rbWorld', w.inWorld ? (w.worldName || 'In a world') : 'Not in a world')
+      setText('rbInstCount', w.inWorld ? `${(w.players || []).length} player(s) in instance` : '—')
+    }
+    if (typeof renderRightbar === 'function' && rbFriendsCache.online && rbFriendsCache.online.length) renderRightbar()
+  }
+})
+function renderRadar (w) {
+  const players = (w && w.players) || []
+  setText('radarCount', String(players.length))
+  const el = $('radarList'); if (!el) return
+  if (!w || !w.inWorld) { el.textContent = 'Not in a world.' } else if (!players.length) { el.textContent = 'No other players detected.' } else {
+    el.innerHTML = players.map(p => `<div style="padding:2px 0">🧍 ${p.replace(/</g, '&lt;')}</div>`).join('')
+  }
+}
+
+/* ---------------- tools: stopwatch ---------------- */
+let swRunning = false; let swAccum = 0; let swStart = 0; let swTick = 0
+const swElapsed = () => swAccum + (swRunning ? Date.now() - swStart : 0)
+function fmtSw (ms) {
+  const t = Math.max(0, ms)
+  const h = Math.floor(t / 3600000); const m = Math.floor(t % 3600000 / 60000)
+  const s = Math.floor(t % 60000 / 1000); const d = Math.floor(t % 1000 / 100)
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${d}`
+}
+setInterval(() => {
+  setText('swDisplay', fmtSw(swElapsed()))
+  // Live-post once a second (10th 100ms tick) to respect VRChat's chatbox rate.
+  if (swRunning && $('swLiveChatbox').checked && (++swTick % 10 === 0)) sendChatboxMessage(`⏱ ${fmtSw(swElapsed())}`, false)
+}, 100)
+$('swStartStop').addEventListener('click', () => {
+  if (swRunning) { swAccum = swElapsed(); swRunning = false; $('swStartStop').textContent = 'Start'; setText('swOut', 'Paused') } else { swStart = Date.now(); swRunning = true; $('swStartStop').textContent = 'Stop'; setText('swOut', 'Running') }
+})
+$('swReset').addEventListener('click', () => { swRunning = false; swAccum = 0; $('swStartStop').textContent = 'Start'; setText('swDisplay', fmtSw(0)); setText('swOut', 'Stopped') })
+$('swSend').addEventListener('click', () => { const v = `⏱ ${fmtSw(swElapsed())}`; sendChatboxMessage(v, false); logLine(`OUT chatbox: ${v}`) })
+
+/* ---------------- tools: calculator ---------------- */
+let _mathEval = null
+function calcEval () {
+  const expr = $('calcInput').value.trim()
+  if (!expr) return
+  try {
+    if (!_mathEval) _mathEval = require('mathjs').evaluate
+    setText('calcResult', String(_mathEval(expr)))
+  } catch (_) { setText('calcResult', 'Error') }
+}
+$('calcEval').addEventListener('click', calcEval)
+$('calcInput').addEventListener('keydown', e => { if (e.key === 'Enter') calcEval() })
+$('calcClear').addEventListener('click', () => { $('calcInput').value = ''; setText('calcResult', '0') })
+$('calcSend').addEventListener('click', () => { const v = `${$('calcInput').value} = ${$('calcResult').textContent}`; sendChatboxMessage(v, false); logLine(`OUT chatbox: ${v}`) })
+
+/* ---------------- tools: auto-afk ---------------- */
+function afkCfg () {
+  return {
+    enabled: $('afkEnable').checked,
+    thresholdSec: parseInt($('afkThreshold').value, 10) || 120,
+    toChatbox: $('afkToChatbox').checked,
+    message: $('afkMessage').value || '💤 AFK since {time} ({mins}m)',
+    backMessage: $('afkBackMessage').value || '👋 Back!'
+  }
+}
+function applyAfk () {
+  const c = afkCfg()
+  api.saveSetting('afk', c)
+  if (c.enabled) api.afkStart({ thresholdSec: c.thresholdSec })
+  else { api.afkStop(); setPill('afkState', false); setText('afkOut', 'Active') }
+}
+;['afkEnable', 'afkThreshold', 'afkToChatbox', 'afkMessage', 'afkBackMessage'].forEach(id => $(id).addEventListener('change', applyAfk))
+api.on('afk:update', s => {
+  const c = afkCfg()
+  setPill('afkState', s.afk, 'on')
+  if (s.afk) {
+    const since = s.since || Date.now()
+    const mins = Math.max(0, Math.round((Date.now() - since) / 60000))
+    const time = new Date(since).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    const msg = c.message.replace(/\{mins\}/g, mins).replace(/\{time\}/g, time)
+    setText('afkOut', `AFK — ${msg}`)
+    if (c.toChatbox && c.enabled) { sendChatboxMessage(msg, false); logLine(`OUT chatbox: ${msg}`) }
+  } else {
+    setText('afkOut', 'Active')
+    if (c.toChatbox && c.enabled && c.backMessage) { sendChatboxMessage(c.backMessage, false); logLine(`OUT chatbox: ${c.backMessage}`) }
+  }
+})
+
+/* ---------------- vrchat account (auto status) ---------------- */
+let vrc2faMethod = 'totp'
+function setAcctState (loggedIn, txt) {
+  setPill('vrcAcctState', loggedIn, 'on')
+  $('vrcAcctState').textContent = loggedIn ? 'logged in' : 'logged out'
+  if (txt) setText('vrcAcctOut', txt)
+}
+$('vrcLogin').addEventListener('click', async () => {
+  const u = $('vrcUser').value.trim(); const p = $('vrcPass').value
+  if (!u || !p) { setText('vrcAcctOut', 'Enter username + password'); return }
+  setText('vrcAcctOut', 'Logging in…')
+  const r = await api.vrchatLogin(u, p)
+  $('vrcPass').value = ''
+  if (r.ok && r.needs2fa) {
+    vrc2faMethod = (r.methods || []).includes('emailOtp') ? 'emailotp' : 'totp'
+    $('vrc2faRow').style.display = ''
+    setText('vrc2faHint', vrc2faMethod === 'emailotp' ? '(emailed code)' : '(authenticator app)')
+    setText('vrcAcctOut', '2FA required — enter your code')
+  } else if (r.ok && r.user) {
+    $('vrc2faRow').style.display = 'none'
+    setAcctState(true, `Logged in as ${r.user.displayName} · status: ${r.user.status}`)
+    await api.saveSetting('vrcUser', u)
+    if ($('vrcAutoStatus').checked) api.vrchatAutoStatus(true)
+    loadRightbar(); loadNotifications()
+  } else setText('vrcAcctOut', 'Error: ' + (r.error || 'login failed'))
+})
+$('vrc2faVerify').addEventListener('click', async () => {
+  const code = $('vrc2faCode').value.trim(); if (!code) return
+  setText('vrcAcctOut', 'Verifying…')
+  const r = await api.vrchatVerify2fa(code, vrc2faMethod)
+  if (r.ok && r.user) {
+    $('vrc2faRow').style.display = 'none'; $('vrc2faCode').value = ''
+    setAcctState(true, `Logged in as ${r.user.displayName} · status: ${r.user.status}`)
+    await api.saveSetting('vrcUser', $('vrcUser').value.trim())
+    if ($('vrcAutoStatus').checked) api.vrchatAutoStatus(true)
+    loadRightbar(); loadNotifications()
+  } else setText('vrcAcctOut', 'Error: ' + (r.error || '2FA failed'))
+})
+$('vrcLogout').addEventListener('click', async () => { await api.vrchatLogout(); setAcctState(false, 'Logged out'); $('vrcAutoStatus').checked = false; api.saveSetting('vrcAutoStatus', false) })
+$('vrcAutoStatus').addEventListener('change', e => { api.saveSetting('vrcAutoStatus', e.target.checked); api.vrchatAutoStatus(e.target.checked); $('discordVrcStatus').disabled = e.target.checked })
+api.on('vrchat:account', s => {
+  if (s.ok) { setAcctState(true, `${s.displayName} · ${s.status}${s.statusDescription ? ' — ' + s.statusDescription : ''}`) } else if (s.needs2fa) { $('vrc2faRow').style.display = ''; setText('vrcAcctOut', '2FA required') } else if (s.error) setText('vrcAcctOut', 'Error: ' + s.error)
+})
+
+/* ---------------- weather ---------------- */
+function weatherCfg () { return { city: $('weatherCity').value.trim(), units: $('weatherUnits').value } }
+function applyWeather () {
+  const c = weatherCfg()
+  api.saveSetting('weather', { enabled: $('weatherEnable').checked, city: c.city, units: c.units })
+  if ($('weatherEnable').checked && c.city) { setPill('weatherState', true, 'on'); api.weatherStart(c) } else { setPill('weatherState', false); api.weatherStop(); setText('weatherOut', '—') }
+}
+;['weatherEnable', 'weatherCity', 'weatherUnits'].forEach(id => $(id).addEventListener('change', applyWeather))
+api.on('weather:update', s => {
+  if (s && s.ok) {
+    setText('weatherOut', `${s.desc} · ${s.temp}${s.unit} (feels ${s.feels}${s.unit})`)
+    setText('weatherSub', `${s.city} · wind ${s.wind} ${s.windUnit} · use {weather} in a preset`)
+    composer.update({ weather: `${s.desc} ${s.temp}${s.unit}` })
+  } else { setText('weatherOut', '—'); if (s && s.error) setText('weatherSub', s.error) }
+})
+
+/* ---------------- discord voice bot ---------------- */
+function botCfg () { return { token: $('botToken').value.trim(), userId: $('botUserId').value.trim(), appId: $('botAppId').value.trim() } }
+$('botStart').addEventListener('click', async () => {
+  const c = botCfg()
+  await api.saveSetting('discordBotToken', c.token)
+  await api.saveSetting('discordBot', { userId: c.userId, appId: c.appId })
+  setText('botOut', 'Connecting…')
+  const r = await api.botStart(c)
+  if (!r.ok) setText('botOut', 'Error: ' + (r.error || 'failed'))
+})
+$('botStop').addEventListener('click', async () => { await api.botStop(); setPill('botState', false); setText('botOut', 'Stopped') })
+$('botInvite').addEventListener('click', async () => {
+  const url = await api.botInvite($('botAppId').value.trim())
+  setText('botOut', url ? ('Invite (copy): ' + url) : 'Connect first, or enter the Application ID for the invite link.')
+})
+api.on('bot:update', s => {
+  setPill('botState', s.connected, 'on')
+  if (!s.connected) { if (s.error) setText('botOut', 'Error: ' + s.error); return }
+  const bits = []
+  bits.push(s.inVoice ? `🔊 ${s.channelName} (${s.userCount})` : 'not in voice')
+  if (s.selfMute) bits.push('🔇 muted')
+  if (s.selfDeaf) bits.push('🔈 deafened')
+  setText('botOut', bits.join(' · '))
+  composer.update({ discordChannel: s.inVoice ? s.channelName : '', discordUsers: s.userCount || 0, discordMute: !!s.selfMute, discordDeaf: !!s.selfDeaf })
+  if (s.callEvent === 'started') { logLine('Discord call started'); setText('oscControlOut', '📞 Call started') }
+  if (s.callEvent === 'ended') { logLine('Discord call ended'); setText('oscControlOut', '📞 Call ended') }
+})
+
+/* ---------------- soundpad ---------------- */
+function spOut (r) {
+  const ok = !!(r && r.ok)
+  setPill('soundpadState', ok, 'on'); $('soundpadState').textContent = ok ? 'ok' : 'error'
+  setText('soundpadOut', ok ? 'OK' : ('Error: ' + ((r && r.error) || 'Soundpad not running?')))
+}
+$('soundpadPlay').addEventListener('click', async () => spOut(await api.soundpadCmd('play', parseInt($('soundpadIndex').value, 10) || 1)))
+$('soundpadStop').addEventListener('click', async () => spOut(await api.soundpadCmd('stop')))
+$('soundpadNext').addEventListener('click', async () => spOut(await api.soundpadCmd('next')))
+$('soundpadPrev').addEventListener('click', async () => spOut(await api.soundpadCmd('previous')))
+$('soundpadPause').addEventListener('click', async () => spOut(await api.soundpadCmd('pause')))
+$('soundpadRandom').addEventListener('click', async () => spOut(await api.soundpadCmd('random')))
+$('soundpadRefresh').addEventListener('click', async () => {
+  const r = await api.soundpadList()
+  if (r.ok) {
+    $('soundpadList').innerHTML = r.list.map(x => `<div class="row" style="justify-content:space-between;padding:2px 0"><span>#${x.index} ${String(x.title).replace(/</g, '&lt;')}</span><button class="btn ghost sp-play" data-i="${x.index}" style="padding:2px 8px;font-size:.72rem">Play</button></div>`).join('') || 'Empty'
+    spOut({ ok: true })
+  } else spOut(r)
+})
+$('soundpadList').addEventListener('click', async e => { const b = e.target.closest('.sp-play'); if (b) spOut(await api.soundpadCmd('play', parseInt(b.dataset.i, 10))) })
+
+/* ---------------- SpotiOSC + DiscordOSC (OSC-in → action) ---------------- */
+;['spotiOscEnable', 'discordOscEnable'].forEach(id => $(id).addEventListener('change', () => api.saveSetting(id, $(id).checked)))
+const SPOTI_MAP = {
+  '/avatar/parameters/VRCOSC/Spotify/PlayPause': 'playpause',
+  '/avatar/parameters/VRCOSC/Spotify/Next': 'next',
+  '/avatar/parameters/VRCOSC/Spotify/Previous': 'previous',
+  '/avatar/parameters/VRCOSC/Spotify/Stop': 'stop'
+}
+addOscListener((address, args) => {
+  const val = args && args[0]
+  if ($('spotiOscEnable') && $('spotiOscEnable').checked && SPOTI_MAP[address] && val === true) {
+    api.mediaKey(SPOTI_MAP[address]); setText('oscControlOut', `🎵 Spotify: ${SPOTI_MAP[address]}`)
+  }
+  if ($('discordOscEnable') && $('discordOscEnable').checked) {
+    if (address === '/avatar/parameters/VRCOSC/Discord/Mute') { api.botSetMute(!!val); setText('oscControlOut', `🎙 mute: ${!!val}`) }
+    if (address === '/avatar/parameters/VRCOSC/Discord/Deafen') { api.botSetDeaf(!!val); setText('oscControlOut', `🎙 deafen: ${!!val}`) }
+  }
+}, getRecvPort())
+
+/* ---------------- vrchat maintenance tools ---------------- */
+function fmtBytes (b) {
+  if (!b) return '0 B'
+  const u = ['B', 'KB', 'MB', 'GB']; let i = 0
+  while (b >= 1024 && i < u.length - 1) { b /= 1024; i++ }
+  return b.toFixed(i ? 1 : 0) + ' ' + u[i]
+}
+$('ytFix').addEventListener('click', async () => {
+  setText('ytFixOut', 'Downloading latest yt-dlp…'); $('ytFix').disabled = true
+  const r = await api.vrcToolsYtDlp()
+  $('ytFix').disabled = false
+  setText('ytFixOut', r.ok ? `✅ Updated yt-dlp (${fmtBytes(r.bytes)}). Restart any open VRChat video player.` : ('Error: ' + (r.error || 'failed')))
+})
+$('cacheCheck').addEventListener('click', async () => {
+  const r = await api.vrcToolsCacheSize()
+  setText('cacheOut', r.exists ? `Cache size: ${fmtBytes(r.bytes)}` : 'No cache folder found')
+})
+$('cacheClear').addEventListener('click', async () => {
+  setText('cacheOut', 'Clearing…')
+  const r = await api.vrcToolsClearCache()
+  setText('cacheOut', r.ok ? `✅ Cleared ${fmtBytes(r.freedBytes)}` : ('Error: ' + (r.error || 'failed')))
+})
+document.querySelectorAll('[data-folder]').forEach(b => b.addEventListener('click', () => api.vrcToolsOpenFolder(b.dataset.folder)))
+
+/* ---------------- Friend Den ---------------- */
+const STATUS_DOT = { 'join me': '🟢', active: '🔵', 'ask me': '🟠', busy: '🔴', offline: '⚫' }
+function fmtLocation (loc) {
+  if (!loc || loc === 'offline') return 'Offline'
+  if (loc === 'private') return '🔒 Private'
+  if (loc === 'traveling') return '✈️ Traveling'
+  if (String(loc).startsWith('wrld_')) return '🌐 In a world'
+  return loc
+}
+async function loadFriends () {
+  const el = $('friendList'); el.textContent = 'Loading…'
+  const r = await api.vrchatFriends()
+  if (!r.ok) { el.textContent = 'Error: ' + (r.error || 'failed') + ' — log in on the VRChat tab.'; setText('friendCount', '0'); return }
+  const fr = r.friends.sort((a, b) => String(a.displayName || '').localeCompare(String(b.displayName || '')))
+  setText('friendCount', String(fr.length))
+  el.innerHTML = fr.map(f => {
+    const dot = STATUS_DOT[String(f.status || '').toLowerCase()] || '⚫'
+    const name = String(f.displayName || '?').replace(/</g, '&lt;')
+    const desc = f.statusDescription ? ' · ' + String(f.statusDescription).replace(/</g, '&lt;') : ''
+    return `<div class="fd-friend" data-id="${f.id}" style="padding:3px 0;cursor:pointer">${dot} <b>${name}</b> — ${fmtLocation(f.location)}${desc}</div>`
+  }).join('') || 'No online friends.'
+}
+$('friendList').addEventListener('click', e => { const row = e.target.closest('.fd-friend'); if (row && row.dataset.id) openUserModal(row.dataset.id) })
+let friendTimer = null
+function syncFriendAuto () {
+  if ($('friendAuto').checked) { if (!friendTimer) friendTimer = setInterval(() => { if ($('friendden').offsetParent !== null) loadFriends() }, 60000) } else if (friendTimer) { clearInterval(friendTimer); friendTimer = null }
+}
+$('friendRefresh').addEventListener('click', loadFriends)
+$('friendAuto').addEventListener('change', () => { api.saveSetting('friendAuto', $('friendAuto').checked); syncFriendAuto() })
+document.querySelector('[data-tab="friendden"]').addEventListener('click', loadFriends)
+
+/* ---------------- Event Scout (multi-group) ---------------- */
+let trackedGroups = []
+async function loadGroups () {
+  const el = $('eventGroups'); el.textContent = 'Loading…'
+  const r = await api.vrchatGroups()
+  if (!r.ok) { el.textContent = 'Error: ' + (r.error || 'failed') + ' — log in on the VRChat tab.'; return }
+  el.innerHTML = r.groups.map(g => `<label class="switch" style="margin:4px 0"><input type="checkbox" class="evgrp" data-id="${g.id}" ${trackedGroups.includes(g.id) ? 'checked' : ''}> ${String(g.name || g.id).replace(/</g, '&lt;')}</label>`).join('') || 'You are in no groups.'
+  el.querySelectorAll('.evgrp').forEach(c => c.addEventListener('change', () => {
+    trackedGroups = Array.from(el.querySelectorAll('.evgrp')).filter(x => x.checked).map(x => x.dataset.id)
+    api.saveSetting('eventGroups', trackedGroups); loadEvents()
+  }))
+}
+async function loadEvents () {
+  const el = $('eventList')
+  if (!trackedGroups.length) { el.textContent = 'Load your groups and tick one or more to track.'; return }
+  el.textContent = 'Loading…'
+  let all = []
+  for (const gid of trackedGroups) { const r = await api.vrchatGroupEvents(gid); if (r.ok) all = all.concat(r.events) }
+  all.sort((a, b) => new Date(a.startsAt || 0) - new Date(b.startsAt || 0))
+  el.innerHTML = all.length
+    ? all.map(e => {
+      const when = e.startsAt ? new Date(e.startsAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'TBA'
+      return `<div style="padding:3px 0">🔭 <b>${String(e.title || 'Event').replace(/</g, '&lt;')}</b> — ${when}</div>`
+    }).join('')
+    : 'No upcoming events for the selected groups.'
+}
+$('eventLoadGroups').addEventListener('click', loadGroups)
+$('eventRefresh').addEventListener('click', loadEvents)
+
+/* ---------------- Pawprints ---------------- */
+function fmtDuration (secs) { const h = Math.floor(secs / 3600); const m = Math.floor(secs % 3600 / 60); return h ? `${h}h ${m}m` : `${m}m` }
+async function loadPawprints () {
+  const map = await api.pawprintsList()
+  const el = $('pawList')
+  const entries = Object.entries(map || {}).sort((a, b) => b[1] - a[1])
+  el.innerHTML = entries.length
+    ? entries.map(([w, secs]) => `<div class="row" style="justify-content:space-between;padding:3px 0"><span>🐾 ${String(w).replace(/</g, '&lt;')}</span><span>${fmtDuration(secs)}</span></div>`).join('')
+    : 'No data yet — spend time in a world.'
+}
+$('pawRefresh').addEventListener('click', loadPawprints)
+$('pawClear').addEventListener('click', async () => { await api.pawprintsClear(); loadPawprints() })
+document.querySelector('[data-tab="pawprints"]').addEventListener('click', loadPawprints)
+
+/* ---------------- My Groups + My Content pages ---------------- */
+async function loadMyGroups () {
+  const el = $('myGroupsList'); el.textContent = 'Loading…'
+  const r = await api.vrchatGroups()
+  if (!r.ok) { el.textContent = (r.error || 'Could not load') + ' — log in on the VRChat tab.'; return }
+  el.innerHTML = r.groups.length ? `<div class="card-grid">${r.groups.map(g => `<div class="mini-card"><img src="${g.icon || 'assets/logo.png'}" referrerpolicy="no-referrer" /><div style="min-width:0"><div class="nm">${esc(g.name)}</div><div class="muted" style="font-size:.72rem">${g.members ? g.members + ' members' : ''}</div></div></div>`).join('')}</div>` : 'You are in no groups.'
+}
+$('myGroupsRefresh').addEventListener('click', loadMyGroups)
+document.querySelector('[data-tab="groups"]').addEventListener('click', loadMyGroups)
+
+async function loadMyContent (kind) {
+  const el = $('myContentBody'); el.textContent = 'Loading…'
+  if (kind === 'avatars') {
+    const r = await api.vrchatMyAvatars()
+    if (!r.ok) { el.textContent = (r.error || 'Could not load') + ' — log in on the VRChat tab.'; return }
+    el.innerHTML = r.avatars.length ? `<div class="card-grid">${r.avatars.map(a => `<div class="mini-card"><img src="${a.image || 'assets/logo.png'}" referrerpolicy="no-referrer" /><div style="min-width:0"><div class="nm">${esc(a.name)}</div><div class="muted" style="font-size:.72rem">${esc(a.releaseStatus || '')}</div></div></div>`).join('')}</div>` : 'No avatars.'
+  } else {
+    if (!myUserId) { const me = await api.vrchatStatus(); if (me && me.ok) myUserId = me.user.id }
+    const r = myUserId ? await api.vrchatUserWorlds(myUserId) : { ok: false, error: 'Log in first' }
+    if (!r.ok) { el.textContent = (r.error || 'Could not load') + ' — log in on the VRChat tab.'; return }
+    el.innerHTML = r.worlds.length ? `<div class="card-grid">${r.worlds.map(worldCard).join('')}</div>` : 'No public worlds.'
+  }
+}
+document.querySelectorAll('[data-ctab]').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-ctab]').forEach(x => x.classList.toggle('active', x === b))
+  loadMyContent(b.dataset.ctab)
+}))
+document.querySelector('[data-tab="content"]').addEventListener('click', () => loadMyContent('worlds'))
+
+/* ---------------- rail clock + launch ---------------- */
+function tickRailClock () { if ($('railClock')) $('railClock').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
+tickRailClock(); setInterval(tickRailClock, 15000)
+$('launchVrc').addEventListener('click', () => api.launchVRChat())
+
+/* ---------------- notifications flyout ---------------- */
+const notifPanel = $('notifPanel')
+$('notifBell').addEventListener('click', e => {
+  e.stopPropagation()
+  const show = notifPanel.style.display === 'none'
+  notifPanel.style.display = show ? 'block' : 'none'
+  if (show) loadNotifications()
+})
+document.addEventListener('click', e => {
+  if (notifPanel.style.display !== 'none' && !notifPanel.contains(e.target) && !$('notifBell').contains(e.target)) notifPanel.style.display = 'none'
+})
+$('notifRefresh').addEventListener('click', loadNotifications)
+function setNotifCount (n) { const c = $('notifCount'); if (n > 0) { c.style.display = 'flex'; c.textContent = n > 99 ? '99+' : String(n) } else c.style.display = 'none' }
+async function loadNotifications () {
+  const el = $('notifList'); el.textContent = 'Loading…'
+  const r = await api.vrchatNotifications()
+  if (!r.ok) { el.textContent = 'Error: ' + (r.error || 'failed') + ' — log in on the VRChat tab.'; setNotifCount(0); return }
+  const notifs = r.notifications || []
+  setNotifCount(notifs.length)
+  if (!notifs.length) { el.textContent = 'No notifications.'; return }
+  el.innerHTML = notifs.map(n => {
+    const title = n.type === 'friendRequest' ? `Friend request from ${n.senderUsername || 'someone'}` : (n.message || n.type || 'Notification')
+    const when = n.created_at ? new Date(n.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''
+    const accept = n.type === 'friendRequest' ? `<button class="btn nf-accept" data-id="${n.id}" style="padding:3px 9px;font-size:.72rem">Accept</button>` : ''
+    return `<div class="notif-item"><div class="grow"><div>${String(title).replace(/</g, '&lt;')}</div><div class="when">${when}</div></div>${accept}</div>`
+  }).join('')
+  el.querySelectorAll('.nf-accept').forEach(b => b.addEventListener('click', async () => {
+    b.disabled = true; b.textContent = '…'
+    const res = await api.vrchatAcceptFriend(b.dataset.id)
+    b.textContent = res.ok ? '✓' : '✗'
+    if (res.ok) loadNotifications()
+  }))
+}
+
+/* ---------------- right friends panel ---------------- */
+const RB_COLOR = { 'join me': '#22c55e', active: '#3b82f6', 'ask me': '#f59e0b', busy: '#ef4444', offline: '#6b7280' }
+let rbFriendsCache = { online: [], offline: [] }
+let myUserId = ''
+const rbCollapsed = { same: false, online: false, web: false, offline: true } // offline collapsed by default
+function rbFriendRow (f) {
+  const onWeb = f.state === 'active' && (!f.location || f.location === 'offline')
+  const color = onWeb ? '#f59e0b' : (RB_COLOR[String(f.status || '').toLowerCase()] || '#6b7280')
+  const name = String(f.displayName || '?').replace(/</g, '&lt;')
+  const loc = (onWeb ? '🌐 On the website' : fmtLocation(f.location)).replace(/</g, '&lt;')
+  const ava = f.image ? `<img class="ava" src="${f.image}" referrerpolicy="no-referrer" />` : '<div class="ava"></div>'
+  return `<div class="rb-friend" data-id="${f.id}">${ava}<span class="dot" style="background:${color}"></span><div class="meta grow"><div class="nm">${name}</div><div class="lo">${loc}</div></div></div>`
+}
+function rbSection (key, title, friends) {
+  if (!friends.length && key !== 'offline') return ''
+  const collapsed = rbCollapsed[key]
+  const rows = collapsed ? '' : (friends.map(rbFriendRow).join('') || '<div class="muted" style="padding:4px 6px;font-size:.78rem">None</div>')
+  return `<div class="rb-group rb-toggle" data-grp="${key}">${collapsed ? '▸' : '▾'} ${title} — ${friends.length}</div>${rows}`
+}
+function renderRightbar () {
+  const q = ($('rbSearch').value || '').toLowerCase()
+  const myLoc = window.__myLocation || ''
+  const match = f => !q || String(f.displayName || '').toLowerCase().includes(q)
+  const online = (rbFriendsCache.online || []).filter(match)
+  const offline = (rbFriendsCache.offline || []).filter(match)
+  const onWeb = f => f.state === 'active' && (!f.location || f.location === 'offline')
+  const same = online.filter(f => myLoc && f.location === myLoc)
+  const inGame = online.filter(f => !onWeb(f) && !(myLoc && f.location === myLoc))
+  const web = online.filter(f => onWeb(f))
+  $('rbFriends').innerHTML =
+    rbSection('same', '🏠 Same World', same) +
+    rbSection('online', '🟢 In-Game', inGame) +
+    rbSection('web', '🌐 On Web', web) +
+    rbSection('offline', '⚫ Offline', offline)
+}
+async function loadRightbar () {
+  if (!await api.vrchatIsLoggedIn()) { $('rbFriends').textContent = 'Log in on the VRChat tab.'; return }
+  const [frOn, frOff, me] = await Promise.all([api.vrchatFriends(false), api.vrchatFriends(true), api.vrchatStatus()])
+  if (me && me.ok && me.user) {
+    myUserId = me.user.id || ''
+    setText('rbName', me.user.displayName || '—')
+    setText('rbStatus', me.user.statusDescription || me.user.status || '')
+    if (me.user.userIcon || me.user.currentAvatarThumbnailImageUrl) $('rbAvatar').src = me.user.userIcon || me.user.currentAvatarThumbnailImageUrl
+  }
+  if (frOn && frOn.ok) rbFriendsCache.online = frOn.friends
+  if (frOff && frOff.ok) rbFriendsCache.offline = frOff.friends
+  if ((frOn && frOn.ok) || (frOff && frOff.ok)) renderRightbar()
+  else $('rbFriends').textContent = (frOn && frOn.error) || 'Could not load friends.'
+}
+$('rbSearch').addEventListener('input', renderRightbar)
+$('rbFriends').addEventListener('click', e => {
+  const toggle = e.target.closest('.rb-toggle')
+  if (toggle) { const k = toggle.dataset.grp; rbCollapsed[k] = !rbCollapsed[k]; renderRightbar(); return }
+  const row = e.target.closest('.rb-friend')
+  if (row && row.dataset.id) openUserModal(row.dataset.id)
+})
+// Click your own profile header to open your full profile.
+const rbProfileEl = document.querySelector('.rb-profile')
+if (rbProfileEl) { rbProfileEl.style.cursor = 'pointer'; rbProfileEl.addEventListener('click', () => { if (myUserId) openUserModal(myUserId) }) }
+setInterval(loadRightbar, 90000)
+
+/* ---------------- user profile modal ---------------- */
+function trustRank (tags) {
+  tags = tags || []
+  if (tags.includes('system_trust_veteran')) return { label: 'Trusted User', color: '#8b5cf6' }
+  if (tags.includes('system_trust_trusted')) return { label: 'Known User', color: '#f59e0b' }
+  if (tags.includes('system_trust_known')) return { label: 'User', color: '#22c55e' }
+  if (tags.includes('system_trust_basic')) return { label: 'New User', color: '#3b82f6' }
+  return { label: 'Visitor', color: '#9ca3af' }
+}
+function esc (s) { return String(s == null ? '' : s).replace(/</g, '&lt;') }
+let umCurrentId = null
+let umUser = null
+function closeUserModal () { $('userModal').style.display = 'none' }
+$('userModalClose').addEventListener('click', closeUserModal)
+$('userModal').addEventListener('click', e => { if (e.target === $('userModal')) closeUserModal() })
+function umLocationLine (u) {
+  if (u.location && u.location !== 'offline') return `📍 ${fmtLocation(u.location)}`
+  return u.state === 'online' ? '🟢 Active on the website' : '⚫ Offline'
+}
+async function openUserModal (id) {
+  umCurrentId = id; umUser = null
+  $('userModal').style.display = 'flex'
+  $('umName').textContent = 'Loading…'
+  setText('umStatusDesc', ''); $('umTags').innerHTML = ''; setText('umActionOut', '')
+  $('umTabBody').innerHTML = '<div class="muted">Loading…</div>'
+  const r = await api.vrchatUser(id)
+  if (!r.ok) { $('umName').textContent = 'Error'; setText('umActionOut', r.error || 'Could not load user'); $('umTabBody').innerHTML = ''; return }
+  umUser = r.user
+  const u = umUser
+  $('umName').textContent = u.displayName || '—'
+  setText('umStatusDesc', u.statusDescription || u.status || '')
+  $('umAvatar').src = u.userIcon || u.profilePicOverride || u.currentAvatarThumbnailImageUrl || 'assets/logo.png'
+  // Banner: VRC+ users' custom profile image if set, otherwise their avatar image.
+  const isVrcPlus = (u.tags || []).includes('system_supporter')
+  const bannerUrl = (isVrcPlus && u.profilePicOverride) ? u.profilePicOverride : (u.currentAvatarImageUrl || u.profilePicOverride || '')
+  $('umBanner').style.backgroundImage = bannerUrl ? `url("${bannerUrl}")` : ''
+  const tr = trustRank(u.tags)
+  const chips = [`<span class="tagchip" style="border-color:${tr.color};color:${tr.color}">${tr.label}</span>`]
+  if (u.last_platform) chips.push(`<span class="tagchip">${u.last_platform === 'standalonewindows' ? 'PC' : (u.last_platform === 'android' ? 'Quest' : u.last_platform)}</span>`)
+  if ((u.tags || []).includes('system_supporter')) chips.push('<span class="tagchip">VRC+</span>')
+  if (u.ageVerified || (u.tags || []).includes('system_age_verified')) chips.push('<span class="tagchip">18+</span>')
+  $('umTags').innerHTML = chips.join('')
+  $('umAddFriend').textContent = u.isFriend ? '➖ Unfriend' : '➕ Add Friend'
+  $('umAddFriend').classList.toggle('danger', !!u.isFriend)
+  renderMTab('info')
+}
+async function renderMTab (tab) {
+  document.querySelectorAll('.mtab').forEach(t => t.classList.toggle('active', t.dataset.mtab === tab))
+  const body = $('umTabBody'); const u = umUser; if (!u) return
+  if (tab === 'info') {
+    const links = (u.bioLinks || []).filter(Boolean).map(l => { let h = l; try { h = new URL(l).hostname } catch (_) {} return `<a href="${l}" target="_blank" class="btn ghost" style="padding:3px 10px;font-size:.74rem">🔗 ${esc(h)}</a>` }).join('')
+    const badges = (u.badges || []).filter(b => b.badgeImageUrl).map(b => `<img class="badge-img" src="${b.badgeImageUrl}" title="${esc(b.badgeName)}${b.badgeDescription ? ' — ' + esc(b.badgeDescription) : ''}" referrerpolicy="no-referrer" />`).join('')
+    const rows = [['Platform', u.last_platform === 'standalonewindows' ? 'PC' : (u.last_platform || '—')]]
+    if (u.date_joined) rows.push(['Joined', u.date_joined])
+    if (u.last_login) { try { rows.push(['Last login', new Date(u.last_login).toLocaleDateString()]) } catch (_) {} }
+    rows.push(['Age verified', u.ageVerified ? 'Yes' : 'No'])
+    rows.push(['Avatar cloning', u.allowAvatarCopying ? 'On' : 'Off'])
+    body.innerHTML =
+      `<div class="rb-card">${umLocationLine(u)}</div>` +
+      (u.bio ? `<div class="um-bio">${esc(u.bio)}</div>` : '') +
+      (links ? `<div class="row" style="flex-wrap:wrap;gap:8px">${links}</div>` : '') +
+      (badges ? `<div class="um-sec">Badges</div><div class="badge-grid">${badges}</div>` : '') +
+      `<div class="um-sec">Info</div><div class="um-info">${rows.map(r => `<div><span>${esc(r[0])}</span><b>${esc(r[1])}</b></div>`).join('')}</div>`
+  } else if (tab === 'groups') {
+    body.innerHTML = '<div class="muted">Loading groups…</div>'
+    const r = await api.vrchatUserGroups(u.id)
+    body.innerHTML = !r.ok ? `<div class="muted">${esc(r.error)}</div>` : (r.groups.length ? `<div class="card-grid">${r.groups.map(g => `<div class="mini-card"><img src="${g.icon || 'assets/logo.png'}" referrerpolicy="no-referrer" /><div style="min-width:0"><div class="nm">${esc(g.name)}</div><div class="muted" style="font-size:.72rem">${g.members ? g.members + ' members' : ''}</div></div></div>`).join('')}</div>` : '<div class="muted">No groups.</div>')
+  } else if (tab === 'content') {
+    body.innerHTML = '<div class="muted">Loading worlds…</div>'
+    const r = await api.vrchatUserWorlds(u.id)
+    body.innerHTML = !r.ok ? `<div class="muted">${esc(r.error)}</div>` : (r.worlds.length ? `<div class="card-grid">${r.worlds.map(w => `<div class="mini-card"><img src="${w.image || 'assets/logo.png'}" referrerpolicy="no-referrer" /><div style="min-width:0"><div class="nm">${esc(w.name)}</div><div class="muted" style="font-size:.72rem">👤 ${w.visits || 0} · ⭐ ${w.favorites || 0}</div></div></div>`).join('')}</div>` : '<div class="muted">No public worlds.</div>')
+  } else if (tab === 'mutuals') {
+    body.innerHTML = '<div class="modal-tabs" style="padding:0 0 10px"><button class="mtab active" data-msub="friends">Friends</button><button class="mtab" data-msub="groups">Groups</button></div><div id="umMutBody"></div>'
+    body.querySelectorAll('[data-msub]').forEach(b => b.addEventListener('click', () => { body.querySelectorAll('[data-msub]').forEach(x => x.classList.toggle('active', x === b)); renderMutSub(b.dataset.msub) }))
+    renderMutSub('friends')
+  } else if (tab === 'favs') {
+    if (umUser.id === myUserId) {
+      body.innerHTML = '<div class="muted">Loading favorites…</div>'
+      const r = await api.vrchatFavWorlds()
+      body.innerHTML = !r.ok ? `<div class="muted">${esc(r.error)}</div>` : (r.worlds.length ? `<div class="card-grid">${r.worlds.map(worldCard).join('')}</div>` : '<div class="muted">No favorite worlds.</div>')
+    } else {
+      body.innerHTML = '<div class="muted">No public favorite worlds. (A user’s favorites are only visible if they’ve made them public.)</div>'
+    }
+  }
+}
+function worldCard (w) {
+  return `<div class="mini-card"><img src="${w.image || 'assets/logo.png'}" referrerpolicy="no-referrer" /><div style="min-width:0"><div class="nm">${esc(w.name)}</div><div class="muted" style="font-size:.72rem">👤 ${w.visits || 0} · ⭐ ${w.favorites || 0}</div></div></div>`
+}
+async function renderMutSub (sub) {
+  const el = $('umMutBody'); if (!el || !umUser) return
+  el.innerHTML = '<div class="muted">Loading…</div>'
+  if (sub === 'friends') {
+    const r = await api.vrchatMutuals(umUser.id)
+    if (r.off) { el.innerHTML = '<div class="muted">This user has Shared Connections turned off.</div>'; return }
+    if (!r.ok) { el.innerHTML = `<div class="muted">${esc(r.error)}</div>`; return }
+    el.innerHTML = r.friends.length ? r.friends.map(f => `<div class="rb-friend" data-id="${f.id}"><img class="ava" src="${f.image || 'assets/logo.png'}" referrerpolicy="no-referrer" /><div class="meta grow"><div class="nm">${esc(f.displayName)}</div></div></div>`).join('') : '<div class="muted">No mutual friends.</div>'
+    el.querySelectorAll('.rb-friend').forEach(row => row.addEventListener('click', () => openUserModal(row.dataset.id)))
+  } else {
+    const [tg, mg] = await Promise.all([api.vrchatUserGroups(umUser.id), api.vrchatGroups()])
+    if (!tg.ok) { el.innerHTML = `<div class="muted">${esc(tg.error)}</div>`; return }
+    const mine = new Set((mg.ok ? mg.groups : []).map(g => g.id))
+    const shared = tg.groups.filter(g => mine.has(g.id))
+    el.innerHTML = shared.length ? `<div class="card-grid">${shared.map(g => `<div class="mini-card"><img src="${g.icon || 'assets/logo.png'}" referrerpolicy="no-referrer" /><div style="min-width:0"><div class="nm">${esc(g.name)}</div></div></div>`).join('')}</div>` : '<div class="muted">No mutual groups.</div>'
+  }
+}
+document.querySelectorAll('.mtab[data-mtab]').forEach(t => t.addEventListener('click', () => renderMTab(t.dataset.mtab)))
+$('umAddFriend').addEventListener('click', async () => {
+  if (!umCurrentId || !umUser) return
+  const isFriend = umUser.isFriend
+  setText('umActionOut', isFriend ? 'Removing friend…' : 'Sending friend request…')
+  const r = isFriend ? await api.vrchatUnfriend(umCurrentId) : await api.vrchatFriendRequest(umCurrentId)
+  if (r.ok && isFriend) { umUser.isFriend = false; $('umAddFriend').textContent = '➕ Add Friend'; $('umAddFriend').classList.remove('danger') }
+  setText('umActionOut', r.ok ? (isFriend ? '✅ Unfriended' : '✅ Friend request sent') : 'Error: ' + (r.error || 'failed'))
+})
+$('umInvite').addEventListener('click', async () => {
+  if (!umCurrentId) return
+  const myLoc = window.__myLocation || ''
+  if (!myLoc) { setText('umActionOut', 'You must be in a VRChat world to invite someone to your instance.'); return }
+  setText('umActionOut', 'Inviting…')
+  const r = await api.vrchatInvite(umCurrentId, myLoc)
+  setText('umActionOut', r.ok ? '✅ Invite sent' : 'Error: ' + (r.error || 'failed'))
+})
+$('umRequestInvite').addEventListener('click', async () => {
+  if (!umCurrentId) return
+  setText('umActionOut', 'Requesting invite…')
+  const r = await api.vrchatRequestInvite(umCurrentId)
+  setText('umActionOut', r.ok ? '✅ Invite requested' : 'Error: ' + (r.error || 'failed'))
+})
+$('umBoop').addEventListener('click', async () => {
+  if (!umCurrentId) return
+  setText('umActionOut', 'Booping…')
+  const r = await api.vrchatBoop(umCurrentId)
+  setText('umActionOut', r.ok ? '👉 Booped!' : 'Error: ' + (r.error || 'failed'))
+})
+
 api.on('discord:update', s => {
+  discordConnected = !!s.connected
   setPill('discordState', s.connected, s.voiceAuthorized ? 'voice' : 'on')
   // persist the access token so we don't re-authorize on every launch
   if (s.accessToken && s.accessToken !== discordAccessToken) {
@@ -549,6 +1193,12 @@ async function init () {
   setTwitchTokenState()
   try { const rdir = await api.twitchRedirect(); if ($('docsTwitchRedirect')) $('docsTwitchRedirect').textContent = rdir } catch (_) {}
   $('pulsoidToken').value = await api.getSetting('pulsoidToken', '')
+  $('hrProvider').value = await api.getSetting('hrProvider', 'pulsoid')
+  const hy = await api.getSetting('hyperate', {})
+  $('hyperateKey').value = hy.apiKey || ''
+  $('hyperateDevice').value = hy.deviceId || ''
+  syncHrFields()
+  try { renderHrSessions(await api.hrSessions()) } catch (_) {}
   const dc = await api.getSetting('discord', {})
   discordAccessToken = dc.accessToken || ''
   $('discordAppId').value = dc.clientId || DEFAULT_DISCORD_APP_ID
@@ -557,6 +1207,50 @@ async function init () {
   $('discordVoice').checked = !!dc.enableVoice
   $('discordVoiceOsc').checked = dc.sendVoiceStateOsc !== false
   $('discordMuteOsc').checked = dc.sendMuteDeafenOsc !== false
+  $('discordVrcStatus').value = dc.vrcStatus || 'active'
+  $('discordShowWorld').checked = dc.showWorld !== false
+  $('discordVrcProfile').value = dc.vrcProfileUrl || ''
+  $('discordShowHr').checked = dc.showHeartRate !== false
+  $('discordShowNp').checked = dc.showNowPlaying !== false
+  try { const w = await api.vrcGet(); if (w && w.inWorld && w.worldName) setText('discordWorldOut', `World: ${w.worldName}`) } catch (_) {}
+
+  // Auto-AFK restore
+  const af = await api.getSetting('afk', {})
+  $('afkEnable').checked = !!af.enabled
+  $('afkThreshold').value = af.thresholdSec || 120
+  $('afkToChatbox').checked = af.toChatbox !== false
+  $('afkMessage').value = af.message || '💤 AFK since {time} ({mins}m)'
+  $('afkBackMessage').value = af.backMessage || '👋 Back!'
+  if (af.enabled) api.afkStart({ thresholdSec: af.thresholdSec || 120 })
+
+  // VRChat account restore
+  $('vrcUser').value = await api.getSetting('vrcUser', '')
+  const vrcLoggedIn = await api.vrchatIsLoggedIn()
+  const vrcAuto = await api.getSetting('vrcAutoStatus', false)
+  $('vrcAutoStatus').checked = !!vrcAuto
+  $('discordVrcStatus').disabled = !!vrcAuto
+  if (vrcLoggedIn) { setAcctState(true, 'Session restored'); if (vrcAuto) api.vrchatAutoStatus(true); loadRightbar(); loadNotifications() } else setAcctState(false, 'Not logged in')
+
+  // Weather restore
+  const wx = await api.getSetting('weather', {})
+  $('weatherCity').value = wx.city || ''
+  $('weatherUnits').value = wx.units || 'celsius'
+  $('weatherEnable').checked = !!wx.enabled
+  if (wx.enabled && wx.city) { setPill('weatherState', true, 'on'); api.weatherStart({ city: wx.city, units: wx.units }) }
+
+  // Discord bot + OSC control restore
+  $('botToken').value = await api.getSetting('discordBotToken', '')
+  const bcfg = await api.getSetting('discordBot', {})
+  $('botUserId').value = bcfg.userId || ''
+  $('botAppId').value = bcfg.appId || ''
+  $('spotiOscEnable').checked = await api.getSetting('spotiOscEnable', false)
+  $('discordOscEnable').checked = await api.getSetting('discordOscEnable', false)
+
+  // Friend Den + Event Scout restore
+  trackedGroups = await api.getSetting('eventGroups', [])
+  $('friendAuto').checked = await api.getSetting('friendAuto', true)
+  syncFriendAuto()
+
   await setupAiProviders()
   $('overlayEnabled') // overlay restore
   $('enableOverlay').checked = await api.getSetting('overlayEnabled', true)
@@ -566,6 +1260,30 @@ async function init () {
   if ($('enableReceive').checked) startOscReceiver(getRecvPort(), (a, args) => logLine(`IN  ${a} ${args.join(',')}`))
   if (katEnabled) startKat()
   try { renderOverlay(await api.getOverlayState()) } catch (_) {}
+
+  // ---- Startup / auto-start ----
+  const as = await api.getSetting('autostart', {})
+  const AUTO_IDS = ['autoMinimized', 'autoDiscord', 'autoHeartrate', 'autoStats', 'autoNet', 'autoWindow', 'autoTwitch', 'autoKick']
+  AUTO_IDS.forEach(id => { $(id).checked = !!as[id] })
+  try { $('autoLaunch').checked = await api.getLaunchOnLogin() } catch (_) {}
+
+  const saveAutostart = () => {
+    const out = {}
+    AUTO_IDS.forEach(id => { out[id] = $(id).checked })
+    api.saveSetting('autostart', out)
+  }
+  AUTO_IDS.forEach(id => $(id).addEventListener('change', saveAutostart))
+  $('autoLaunch').addEventListener('change', e => api.setLaunchOnLogin(e.target.checked))
+
+  // Drive the existing controls so saved tokens/IDs are reused (no manual clicks).
+  const fireToggle = id => { if (!$(id).checked) { $(id).checked = true; $(id).dispatchEvent(new Event('change')) } }
+  if (as.autoDiscord && $('discordAppId').value) $('discordStart').click()
+  if (as.autoHeartrate && ($('pulsoidToken').value || $('hyperateDevice').value)) $('hrStart').click()
+  if (as.autoStats) fireToggle('enableStats')
+  if (as.autoNet) fireToggle('enableNet')
+  if (as.autoWindow) fireToggle('enableWindow')
+  if (as.autoTwitch) $('twitchConnect').click()
+  if (as.autoKick) $('kickConnect').click()
 
   refreshNowPlaying()
 }

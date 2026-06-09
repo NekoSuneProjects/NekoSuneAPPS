@@ -44,6 +44,8 @@ let client = null
 let onUpdate = null
 let currentChannelId = null
 let selfId = null
+let buttonsSupported = true // dropped automatically if Discord rejects RP buttons over IPC
+let rpLogged = false // log the first successful presence push once
 
 const config = {
   clientId: '', // set by the user in the Discord card (no ID is shipped)
@@ -53,11 +55,33 @@ const config = {
   oscPort: 9000,
   enableRichPresence: true,
   rpDetails: 'In VRChat',
-  rpState: 'via NekoSuneOSC',
+  rpState: 'via NekoSuneAPPS',
   enableVoice: false,
   sendVoiceStateOsc: true,
-  sendMuteDeafenOsc: true
+  sendMuteDeafenOsc: true,
+  // VRChat world / status enrichment of the presence:
+  vrcStatus: 'active', // join | active | ask | busy  (green | blue | orange | red)
+  showWorld: true, // master toggle for the world + join button
+  vrcProfileUrl: '', // manual override; auto-filled from the VRChat log if blank
+  showHeartRate: true, // append ❤️ bpm to the presence
+  showNowPlaying: true // show 🎵 song when no world line is available
 }
+
+// Live context fed in via setVrcContext(): world (from the VRChat log tracker),
+// plus heart rate and now-playing (from main.js).
+const vrc = { worldName: '', joinUrl: '', worldUrl: '', profileUrl: '', hrBpm: 0, nowPlaying: '' }
+
+// Privacy gate: only green (Join Me) and blue (Active) reveal where you are.
+// Orange (Ask Me) and red (Do Not Disturb) hide the world + join button.
+const STATUS = {
+  join: { label: 'Join Me', emoji: '🟢', showWorld: true },
+  active: { label: 'Active', emoji: '🔵', showWorld: true },
+  ask: { label: 'Ask Me', emoji: '🟠', showWorld: false },
+  busy: { label: 'Do Not Disturb', emoji: '🔴', showWorld: false }
+}
+function statusInfo () { return STATUS[config.vrcStatus] || STATUS.active }
+function worldVisible () { return config.showWorld && statusInfo().showWorld }
+function effectiveProfileUrl () { return (config.vrcProfileUrl || '').trim() || vrc.profileUrl || '' }
 
 const state = {
   connected: false,
@@ -96,16 +120,74 @@ function pushVoiceOsc () {
 
 function setActivity ({ details, state: st } = {}) {
   if (!client || !state.connected || !config.enableRichPresence) return
-  client.setActivity({
-    details: (details || config.rpDetails || 'In VRChat').slice(0, 128),
-    state: (st || config.rpState || '').slice(0, 128),
+
+  const info = statusInfo()
+  const showWorld = worldVisible() && !!vrc.worldName
+
+  // details = status line (+ optional heart rate).
+  let detailsLine = details || `${info.emoji} ${info.label}`
+  if (!details && config.showHeartRate && vrc.hrBpm > 0) detailsLine += ` · ❤️ ${vrc.hrBpm}`
+
+  // state = where you are. Priority: VRChat world (if status allows) > now playing
+  // > the generic fallback. This is what makes the presence "switch" by context.
+  let stateLine = st
+  if (!stateLine) {
+    if (showWorld) stateLine = `In ${vrc.worldName}`
+    else if (config.showNowPlaying && vrc.nowPlaying) stateLine = `🎵 ${vrc.nowPlaying}`
+    else stateLine = config.rpState || 'In VRChat'
+  }
+
+  // Up to 2 buttons. "Join World" only when status reveals the world; profile
+  // is always shown if we know your user id. (Discord: 1–2 buttons, label ≤32.)
+  const buttons = []
+  if (showWorld && vrc.joinUrl) buttons.push({ label: '🌐 Join World', url: vrc.joinUrl })
+  const profileUrl = effectiveProfileUrl()
+  if (profileUrl) buttons.push({ label: '👤 VRChat Profile', url: profileUrl })
+
+  const activity = {
+    details: detailsLine.slice(0, 128),
+    state: stateLine.slice(0, 128),
     startTimestamp,
     largeImageKey: 'logo', // upload a 'logo' art asset in the Discord portal
-    largeImageText: 'NekoSuneOSC',
+    largeImageText: 'NekoSuneAPPS',
     smallImageKey: 'vrchat', // optional small badge art asset named 'vrchat'
     smallImageText: 'VRChat',
     instance: false
-  }).catch(err => console.warn('Discord setActivity:', err.message))
+  }
+  // Rich Presence buttons only work via Discord's GameSDK/gateway — NOT the local
+  // IPC (discord-rpc) we use, where they throw "Unknown Error". So we try once,
+  // and if Discord rejects them we permanently drop buttons and retry clean.
+  if (buttonsSupported && buttons.length) activity.buttons = buttons.slice(0, 2)
+
+  const send = a => client.setActivity(a).then(() => {
+    if (!rpLogged) { rpLogged = true; console.log('[discord] Rich Presence active:', a.details, '·', a.state) }
+  })
+  send(activity).catch(err => {
+    if (activity.buttons) {
+      buttonsSupported = false
+      const noBtn = { ...activity }; delete noBtn.buttons
+      send(noBtn).catch(e2 => console.warn('Discord setActivity:', e2.message))
+    } else {
+      console.warn('Discord setActivity:', err.message)
+    }
+  })
+}
+
+// Called by main when the VRChat world tracker (or the UI status dropdown)
+// updates. Stores the latest world/profile context and refreshes the presence.
+function setVrcContext (ctx = {}) {
+  if (typeof ctx.worldName === 'string') vrc.worldName = ctx.worldName
+  if (typeof ctx.joinUrl === 'string') vrc.joinUrl = ctx.joinUrl
+  if (typeof ctx.worldUrl === 'string') vrc.worldUrl = ctx.worldUrl
+  if (typeof ctx.profileUrl === 'string') vrc.profileUrl = ctx.profileUrl
+  if (typeof ctx.vrcStatus === 'string') config.vrcStatus = ctx.vrcStatus
+  if (typeof ctx.showWorld === 'boolean') config.showWorld = ctx.showWorld
+  if (typeof ctx.vrcProfileUrl === 'string') config.vrcProfileUrl = ctx.vrcProfileUrl
+  if (typeof ctx.showHeartRate === 'boolean') config.showHeartRate = ctx.showHeartRate
+  if (typeof ctx.showNowPlaying === 'boolean') config.showNowPlaying = ctx.showNowPlaying
+  if (typeof ctx.hrBpm === 'number') vrc.hrBpm = ctx.hrBpm
+  if (typeof ctx.nowPlaying === 'string') vrc.nowPlaying = ctx.nowPlaying
+  setActivity()
 }
 
 async function refreshChannel (channelId) {
@@ -257,4 +339,4 @@ async function stopDiscord () {
 function updateActivity (activity) { setActivity(activity) }
 function getDiscordState () { return { ...state } }
 
-module.exports = { startDiscord, stopDiscord, updateActivity, getDiscordState }
+module.exports = { startDiscord, stopDiscord, updateActivity, setVrcContext, getDiscordState }

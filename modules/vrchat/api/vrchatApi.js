@@ -1,0 +1,291 @@
+// modules/vrchat/api/vrchatApi.js
+// Minimal VRChat API client (same endpoints the `vrchat` npm wraps) used ONLY to
+// read your own account status (join me / active / ask me / busy) so the Discord
+// presence gate can follow it automatically. Implemented with axios (already a
+// dependency) for full control over the auth/2FA/cookie flow.
+//
+// SECURITY: we never store your password — only the session cookies VRChat
+// returns (auth + twoFactorAuth), persisted via electron-store. Runs in MAIN.
+//
+// VRChat requires a descriptive User-Agent with contact info or it returns 403.
+
+const axios = require('axios')
+const settings = require('../../../settings')
+
+const BASE = 'https://api.vrchat.cloud/api/1'
+const UA = 'NekoSuneAPPS/1.0.0 nekosunevr@nekosunevr.co.uk'
+const COOKIE_KEY = 'vrchatCookies'
+
+let cookies = {}
+
+function loadCookies () { cookies = settings.get(COOKIE_KEY, {}) || {} }
+function saveCookies () { settings.set(COOKIE_KEY, cookies) }
+function cookieHeader () { return Object.entries(cookies).map(([k, v]) => `${k}=${v}`).join('; ') }
+
+function storeSetCookie (res) {
+  const sc = res && res.headers && res.headers['set-cookie']
+  if (Array.isArray(sc)) {
+    for (const line of sc) {
+      const m = line.match(/^([^=]+)=([^;]+)/)
+      if (m) cookies[m[1].trim()] = m[2].trim()
+    }
+    saveCookies()
+  }
+}
+
+function baseHeaders (extra) {
+  return Object.assign({ 'User-Agent': UA, Cookie: cookieHeader() }, extra || {})
+}
+const REQ = { validateStatus: () => true, timeout: 15000 }
+
+let currentUserId = '' // captured on login so group/profile calls can use it
+
+function pickUser (d) {
+  if (d && d.id) currentUserId = d.id
+  return {
+    id: d.id,
+    displayName: d.displayName,
+    status: d.status, // "join me" | "active" | "ask me" | "busy" | "offline"
+    statusDescription: d.statusDescription,
+    state: d.state
+  }
+}
+function errOf (res, fallback) {
+  return (res.data && res.data.error && res.data.error.message) || fallback || `HTTP ${res.status}`
+}
+
+async function login (username, password) {
+  loadCookies()
+  const basic = Buffer.from(`${encodeURIComponent(username)}:${encodeURIComponent(password)}`).toString('base64')
+  const res = await axios.get(`${BASE}/auth/user`, Object.assign({ headers: baseHeaders({ Authorization: `Basic ${basic}` }) }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && res.data) {
+    if (res.data.requiresTwoFactorAuth) return { ok: true, needs2fa: true, methods: res.data.requiresTwoFactorAuth }
+    if (res.data.id) return { ok: true, needs2fa: false, user: pickUser(res.data) }
+  }
+  return { ok: false, error: errOf(res, 'Login failed') }
+}
+
+// method: 'emailotp' (email code) or 'totp' (authenticator app)
+async function verify2fa (code, method) {
+  loadCookies()
+  const path = method === 'emailotp' ? 'emailotp' : 'totp'
+  const res = await axios.post(`${BASE}/auth/twofactorauth/${path}/verify`, { code: String(code).trim() },
+    Object.assign({ headers: baseHeaders({ 'Content-Type': 'application/json' }) }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && res.data && res.data.verified) return fetchUser()
+  return { ok: false, error: errOf(res, 'Invalid 2FA code') }
+}
+
+async function fetchUser () {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  const res = await axios.get(`${BASE}/auth/user`, Object.assign({ headers: baseHeaders() }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && res.data && res.data.id) return { ok: true, user: pickUser(res.data) }
+  if (res.data && res.data.requiresTwoFactorAuth) return { ok: false, needs2fa: true, methods: res.data.requiresTwoFactorAuth }
+  return { ok: false, error: errOf(res, 'Could not fetch user') }
+}
+
+// Map VRChat's status string to our world-visibility gate keys.
+function mapStatus (s) {
+  switch (String(s || '').toLowerCase()) {
+    case 'join me': return 'join'
+    case 'active': return 'active'
+    case 'ask me': return 'ask'
+    case 'busy': return 'busy'
+    default: return 'busy' // offline / unknown -> hide world
+  }
+}
+
+// ---- Friend Den: online friends + their location ----
+function pickFriend (f) {
+  return {
+    id: f.id,
+    displayName: f.displayName,
+    status: f.status,
+    statusDescription: f.statusDescription,
+    location: f.location, // "offline" | "private" | "traveling" | "wrld_..:inst"
+    state: f.state, // "online" (in-game) | "active" (on website) | "offline"
+    platform: f.platform,
+    image: f.userIcon || f.profilePicOverride || f.currentAvatarThumbnailImageUrl || ''
+  }
+}
+async function getFriends (offline = false) {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  // The endpoint returns max 100 per call — paginate to get the WHOLE list.
+  const all = []
+  for (let offset = 0; offset < 5000; offset += 100) {
+    const res = await axios.get(`${BASE}/auth/user/friends`, Object.assign({ headers: baseHeaders(), params: { offline: !!offline, n: 100, offset } }, REQ))
+    storeSetCookie(res)
+    if (res.status !== 200 || !Array.isArray(res.data)) {
+      if (offset === 0) return { ok: false, error: errOf(res, 'Could not list friends') }
+      break
+    }
+    all.push(...res.data)
+    if (res.data.length < 100) break
+  }
+  return { ok: true, friends: all.map(pickFriend) }
+}
+
+// ---- User profile (clicked from the friends panel) ----
+async function getUser (id) {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  const res = await axios.get(`${BASE}/users/${id}`, Object.assign({ headers: baseHeaders() }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && res.data && res.data.id) return { ok: true, user: res.data }
+  return { ok: false, error: errOf(res, 'Could not load user') }
+}
+
+// ---- Social actions from the profile modal ----
+async function sendFriendRequest (userId) {
+  loadCookies()
+  const res = await axios.post(`${BASE}/user/${userId}/friendRequest`, null, Object.assign({ headers: baseHeaders() }, REQ))
+  storeSetCookie(res)
+  return res.status === 200 ? { ok: true } : { ok: false, error: errOf(res, 'Friend request failed') }
+}
+// Ask a user to invite you to where they are. VRChat uses canned "message slots"
+// (0–11) instead of free text; pass a slot or omit for the default request.
+async function requestInvite (userId, messageSlot) {
+  loadCookies()
+  const body = (typeof messageSlot === 'number') ? { messageSlot } : {}
+  const res = await axios.post(`${BASE}/requestInvite/${userId}`, body, Object.assign({ headers: baseHeaders({ 'Content-Type': 'application/json' }) }, REQ))
+  storeSetCookie(res)
+  return res.status === 200 ? { ok: true } : { ok: false, error: errOf(res, 'Request invite failed') }
+}
+
+// Already friends? -> remove them.
+async function unfriend (userId) {
+  loadCookies()
+  const res = await axios.delete(`${BASE}/auth/user/friends/${userId}`, Object.assign({ headers: baseHeaders() }, REQ))
+  storeSetCookie(res)
+  return res.status === 200 ? { ok: true } : { ok: false, error: errOf(res, 'Unfriend failed') }
+}
+// Invite a user to an instance (your current one). Optional canned message slot.
+async function inviteUser (userId, instanceId, messageSlot) {
+  loadCookies()
+  const body = { instanceId }
+  if (typeof messageSlot === 'number') body.messageSlot = messageSlot
+  const res = await axios.post(`${BASE}/invite/${userId}`, body, Object.assign({ headers: baseHeaders({ 'Content-Type': 'application/json' }) }, REQ))
+  storeSetCookie(res)
+  return res.status === 200 ? { ok: true } : { ok: false, error: errOf(res, 'Invite failed') }
+}
+// Profile tabs: a user's groups + public worlds.
+async function getUserGroups (userId) {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  const res = await axios.get(`${BASE}/users/${userId}/groups`, Object.assign({ headers: baseHeaders() }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && Array.isArray(res.data)) return { ok: true, groups: res.data.map(g => ({ id: g.groupId || g.id, name: g.name, icon: g.iconUrl || '', members: g.memberCount })) }
+  return { ok: false, error: errOf(res, 'Could not load groups') }
+}
+async function getUserWorlds (userId) {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  const res = await axios.get(`${BASE}/worlds`, Object.assign({ headers: baseHeaders(), params: { userId, releaseStatus: 'public', n: 50, sort: 'updated', order: 'descending' } }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && Array.isArray(res.data)) return { ok: true, worlds: res.data.map(w => ({ id: w.id, name: w.name, image: w.thumbnailImageUrl || w.imageUrl, visits: w.visits, favorites: w.favorites })) }
+  return { ok: false, error: errOf(res, 'Could not load worlds') }
+}
+
+// Boop a user (real VRChat API — POST /users/{id}/boop). Optional emoji id.
+async function sendBoop (userId, emojiId) {
+  loadCookies()
+  const body = emojiId ? { emojiId } : {}
+  const res = await axios.post(`${BASE}/users/${userId}/boop`, body, Object.assign({ headers: baseHeaders({ 'Content-Type': 'application/json' }) }, REQ))
+  storeSetCookie(res)
+  return res.status === 200 ? { ok: true } : { ok: false, error: errOf(res, 'Boop failed') }
+}
+
+// Your own avatars (for the Content page).
+async function getMyAvatars () {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  const res = await axios.get(`${BASE}/avatars`, Object.assign({ headers: baseHeaders(), params: { releaseStatus: 'all', user: 'me', n: 50, sort: 'updated', order: 'descending' } }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && Array.isArray(res.data)) return { ok: true, avatars: res.data.map(a => ({ id: a.id, name: a.name, image: a.thumbnailImageUrl || a.imageUrl, releaseStatus: a.releaseStatus })) }
+  return { ok: false, error: errOf(res, 'Could not load avatars') }
+}
+
+// Mutual friends (Shared Connections). 403 = the user has it turned OFF.
+async function getMutualFriends (userId) {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  const res = await axios.get(`${BASE}/users/${userId}/mutuals`, Object.assign({ headers: baseHeaders(), params: { n: 100 } }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && Array.isArray(res.data)) return { ok: true, friends: res.data.map(pickFriend) }
+  if (res.status === 403) return { ok: false, off: true, error: 'This user has Shared Connections turned off.' }
+  return { ok: false, error: errOf(res, 'Could not load mutual friends') }
+}
+// Your own favorite worlds (favorites are private to other users).
+async function getFavoriteWorlds () {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  const res = await axios.get(`${BASE}/worlds/favorites`, Object.assign({ headers: baseHeaders(), params: { n: 100 } }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && Array.isArray(res.data)) return { ok: true, worlds: res.data.map(w => ({ id: w.id, name: w.name, image: w.thumbnailImageUrl || w.imageUrl, visits: w.visits, favorites: w.favorites })) }
+  return { ok: false, error: errOf(res, 'Could not load favorites') }
+}
+
+// ---- Event Scout: your groups + each group's calendar events ----
+async function getMyGroups () {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  if (!currentUserId) { const u = await fetchUser(); if (!u.ok) return u }
+  const res = await axios.get(`${BASE}/users/${currentUserId}/groups`, Object.assign({ headers: baseHeaders() }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && Array.isArray(res.data)) {
+    return { ok: true, groups: res.data.map(g => ({ id: g.groupId || g.id, name: g.name, icon: g.iconUrl || '' })) }
+  }
+  return { ok: false, error: errOf(res, 'Could not list groups') }
+}
+async function getGroupEvents (groupId) {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  const res = await axios.get(`${BASE}/groups/${groupId}/events`, Object.assign({ headers: baseHeaders(), params: { n: 20 } }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200) {
+    const arr = Array.isArray(res.data) ? res.data : (res.data && res.data.results) || []
+    return { ok: true, events: arr.map(e => ({ id: e.id, title: e.title || e.name, startsAt: e.startsAt || e.startTime, description: e.description, groupId })) }
+  }
+  return { ok: false, error: errOf(res, 'Could not list events') }
+}
+
+// ---- Auto-Greeter: notifications + accept friend request ----
+async function getNotifications () {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  const res = await axios.get(`${BASE}/auth/user/notifications`, Object.assign({ headers: baseHeaders(), params: { n: 100 } }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && Array.isArray(res.data)) return { ok: true, notifications: res.data }
+  return { ok: false, error: errOf(res, 'Could not list notifications') }
+}
+async function acceptFriendRequest (notificationId) {
+  loadCookies()
+  const res = await axios.put(`${BASE}/auth/user/notifications/${notificationId}/accept`, null, Object.assign({ headers: baseHeaders() }, REQ))
+  storeSetCookie(res)
+  return res.status === 200 ? { ok: true } : { ok: false, error: errOf(res, 'Accept failed') }
+}
+
+// Map VRChat's status string to our world-visibility gate keys.
+function mapStatus (s) {
+  switch (String(s || '').toLowerCase()) {
+    case 'join me': return 'join'
+    case 'active': return 'active'
+    case 'ask me': return 'ask'
+    case 'busy': return 'busy'
+    default: return 'busy' // offline / unknown -> hide world
+  }
+}
+
+function isLoggedIn () { loadCookies(); return !!cookies.auth }
+function logout () { cookies = {}; currentUserId = ''; saveCookies() }
+
+module.exports = {
+  login, verify2fa, fetchUser, mapStatus, isLoggedIn, logout,
+  getFriends, getUser, sendFriendRequest, requestInvite, unfriend, inviteUser, getUserGroups, getUserWorlds,
+  getMutualFriends, getFavoriteWorlds, sendBoop, getMyAvatars,
+  getMyGroups, getGroupEvents, getNotifications, acceptFriendRequest
+}
