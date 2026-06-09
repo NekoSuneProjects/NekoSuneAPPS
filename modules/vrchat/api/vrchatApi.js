@@ -199,6 +199,48 @@ async function sendBoop (userId, emojiId) {
   return res.status === 200 ? { ok: true } : { ok: false, error: errOf(res, 'Boop failed') }
 }
 
+// ---- Search + detail (users / worlds / groups) ----
+async function searchUsers (q) {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  const res = await axios.get(`${BASE}/users`, Object.assign({ headers: baseHeaders(), params: { search: q, n: 24 } }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && Array.isArray(res.data)) return { ok: true, users: res.data.map(u => ({ id: u.id, displayName: u.displayName, statusDescription: u.statusDescription, status: u.status, image: u.userIcon || u.profilePicOverride || u.currentAvatarThumbnailImageUrl || '' })) }
+  return { ok: false, error: errOf(res, 'User search failed') }
+}
+async function searchWorlds (q) {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  const res = await axios.get(`${BASE}/worlds`, Object.assign({ headers: baseHeaders(), params: { search: q, n: 24, sort: 'relevance', order: 'descending' } }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && Array.isArray(res.data)) return { ok: true, worlds: res.data.map(w => ({ id: w.id, name: w.name, image: w.thumbnailImageUrl || w.imageUrl, authorName: w.authorName, visits: w.visits, favorites: w.favorites, occupants: w.occupants })) }
+  return { ok: false, error: errOf(res, 'World search failed') }
+}
+async function searchGroups (q) {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  const res = await axios.get(`${BASE}/groups`, Object.assign({ headers: baseHeaders(), params: { query: q, n: 24 } }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && Array.isArray(res.data)) return { ok: true, groups: res.data.map(g => ({ id: g.id, name: g.name, shortCode: g.shortCode, icon: g.iconUrl || '', members: g.memberCount })) }
+  return { ok: false, error: errOf(res, 'Group search failed') }
+}
+async function getWorld (id) {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  const res = await axios.get(`${BASE}/worlds/${id}`, Object.assign({ headers: baseHeaders() }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && res.data && res.data.id) return { ok: true, world: res.data }
+  return { ok: false, error: errOf(res, 'Could not load world') }
+}
+async function getGroup (id) {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  const res = await axios.get(`${BASE}/groups/${id}`, Object.assign({ headers: baseHeaders() }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && res.data && res.data.id) return { ok: true, group: res.data }
+  return { ok: false, error: errOf(res, 'Could not load group') }
+}
+
 // Your own avatars (for the Content page).
 async function getMyAvatars () {
   loadCookies()
@@ -287,5 +329,6 @@ module.exports = {
   login, verify2fa, fetchUser, mapStatus, isLoggedIn, logout,
   getFriends, getUser, sendFriendRequest, requestInvite, unfriend, inviteUser, getUserGroups, getUserWorlds,
   getMutualFriends, getFavoriteWorlds, sendBoop, getMyAvatars,
+  searchUsers, searchWorlds, searchGroups, getWorld, getGroup,
   getMyGroups, getGroupEvents, getNotifications, acceptFriendRequest
 }

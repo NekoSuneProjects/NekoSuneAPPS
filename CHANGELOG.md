@@ -156,6 +156,16 @@ built on the proven OSCAudiolink architecture.
   (Dec), 🏳️‍🌈 Pride (June), 🐰 Easter (computed), green otherwise — with a season badge
   in the top bar.
 
+### VRChat browser (search + detail)
+- **Search** page — search **users / worlds / groups** (results are clickable cards).
+- **Open by ID / URL** — paste a `usr_`/`wrld_`/`grp_` id or a vrchat.com link to open it.
+- **World** and **Group** detail modals (image, author/members, description, stats, open-on-VRChat).
+- Group/world cards everywhere are now clickable into those modals.
+- Profile modal: real **Boop** (`POST /users/{id}/boop`), **Mutuals** (friends via `/mutuals`,
+  groups via intersection), **Favs** (own worlds), **Add Friend ↔ Unfriend**, **Invite**.
+- **My Groups** + **My Content** (worlds/avatars) sidebar pages.
+- Friends fetch is now **paginated** (full list, not just the first 100).
+
 ### VRChat companion (VRCNext-style, our names — all API/local, no game injection)
 - **🫂 Friend Den** — your online friends and where they are (status + location), via the
   VRChat API, with optional 60s auto-refresh.

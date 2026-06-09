@@ -187,6 +187,7 @@
       <button class="navbtn" data-tab="pawprints"><span class="ico">🐾</span><span class="lbl">Pawprints</span></button>
       <button class="navbtn" data-tab="groups"><span class="ico">👥</span><span class="lbl">Groups</span></button>
       <button class="navbtn" data-tab="content"><span class="ico">🌐</span><span class="lbl">Content</span></button>
+      <button class="navbtn" data-tab="search"><span class="ico">🔍</span><span class="lbl">Search</span></button>
       <button class="navbtn" data-tab="weather"><span class="ico">🌦</span><span class="lbl">Weather</span></button>
       <button class="navbtn" data-tab="osccontrol"><span class="ico">🎛</span><span class="lbl">OSC Control</span></button>
       <button class="navbtn" data-tab="vrctools"><span class="ico">🧰</span><span class="lbl">VRChat Tools</span></button>
@@ -610,6 +611,24 @@
         </div>
       </section>
 
+      <!-- SEARCH -->
+      <section id="search" class="tabpanel">
+        <div class="card">
+          <h3>🔗 Open by ID / URL</h3>
+          <div class="row"><input type="text" id="idLoadInput" placeholder="usr_… / wrld_… / grp_… or a vrchat.com link" /><button class="btn" id="idLoadBtn">Open</button></div>
+          <div class="muted" id="idLoadOut" style="margin-top:6px;font-size:.78rem">Paste a VRChat ID or profile/world/group link.</div>
+        </div>
+        <div class="card">
+          <h3>🔍 Search</h3>
+          <div class="row">
+            <select id="searchType" style="max-width:130px"><option value="users">Users</option><option value="worlds">Worlds</option><option value="groups">Groups</option></select>
+            <input type="text" id="searchQuery" placeholder="Search…" />
+            <button class="btn" id="searchBtn">Search</button>
+          </div>
+          <div id="searchResults" class="muted" style="margin-top:12px">Type a query and search.</div>
+        </div>
+      </section>
+
       <!-- GROUPS -->
       <section id="groups" class="tabpanel">
         <div class="card">
@@ -900,6 +919,23 @@
         <button class="mtab" data-mtab="favs">Favs.</button>
       </div>
       <div class="modal-body" id="umTabBody"></div>
+    </div>
+  </div>
+
+  <!-- World / Group detail modal -->
+  <div id="detailModal" class="modal-overlay" style="display:none">
+    <div class="modal-card">
+      <button id="detailModalClose" class="modal-close">×</button>
+      <div class="modal-banner" id="dmBanner"></div>
+      <div class="modal-head">
+        <img id="dmImage" class="modal-ava" src="assets/logo.png" alt="" />
+        <div style="min-width:0;padding-bottom:6px">
+          <div class="modal-name" id="dmName">—</div>
+          <div class="muted" id="dmSub" style="font-size:.84rem"></div>
+        </div>
+      </div>
+      <div class="modal-actions" id="dmActions"></div>
+      <div class="modal-body" id="dmBody"></div>
     </div>
   </div>
 

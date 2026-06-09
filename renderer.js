@@ -860,7 +860,7 @@ async function loadMyGroups () {
   const el = $('myGroupsList'); el.textContent = 'Loading…'
   const r = await api.vrchatGroups()
   if (!r.ok) { el.textContent = (r.error || 'Could not load') + ' — log in on the VRChat tab.'; return }
-  el.innerHTML = r.groups.length ? `<div class="card-grid">${r.groups.map(g => `<div class="mini-card"><img src="${g.icon || 'assets/logo.png'}" referrerpolicy="no-referrer" /><div style="min-width:0"><div class="nm">${esc(g.name)}</div><div class="muted" style="font-size:.72rem">${g.members ? g.members + ' members' : ''}</div></div></div>`).join('')}</div>` : 'You are in no groups.'
+  el.innerHTML = r.groups.length ? `<div class="card-grid">${r.groups.map(groupCard).join('')}</div>` : 'You are in no groups.'
 }
 $('myGroupsRefresh').addEventListener('click', loadMyGroups)
 document.querySelector('[data-tab="groups"]').addEventListener('click', loadMyGroups)
@@ -883,6 +883,88 @@ document.querySelectorAll('[data-ctab]').forEach(b => b.addEventListener('click'
   loadMyContent(b.dataset.ctab)
 }))
 document.querySelector('[data-tab="content"]').addEventListener('click', () => loadMyContent('worlds'))
+
+/* ---------------- Search + ID/URL loader + detail modals ---------------- */
+async function doSearch () {
+  const q = $('searchQuery').value.trim(); if (!q) return
+  const type = $('searchType').value
+  const el = $('searchResults'); el.textContent = 'Searching…'
+  if (type === 'users') {
+    const r = await api.vrchatSearchUsers(q)
+    if (!r.ok) { el.textContent = r.error || 'Search failed'; return }
+    el.innerHTML = r.users.length ? `<div class="card-grid">${r.users.map(u => `<div class="mini-card" data-kind="user" data-id="${u.id}" style="cursor:pointer"><img src="${u.image || 'assets/logo.png'}" referrerpolicy="no-referrer" /><div style="min-width:0"><div class="nm">${esc(u.displayName)}</div><div class="muted" style="font-size:.72rem">${esc(u.statusDescription || u.status || '')}</div></div></div>`).join('')}</div>` : 'No users found.'
+  } else if (type === 'worlds') {
+    const r = await api.vrchatSearchWorlds(q)
+    if (!r.ok) { el.textContent = r.error || 'Search failed'; return }
+    el.innerHTML = r.worlds.length ? `<div class="card-grid">${r.worlds.map(worldCard).join('')}</div>` : 'No worlds found.'
+  } else {
+    const r = await api.vrchatSearchGroups(q)
+    if (!r.ok) { el.textContent = r.error || 'Search failed'; return }
+    el.innerHTML = r.groups.length ? `<div class="card-grid">${r.groups.map(groupCard).join('')}</div>` : 'No groups found.'
+  }
+}
+$('searchBtn').addEventListener('click', doSearch)
+$('searchQuery').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch() })
+// user result cards open the user modal
+$('searchResults').addEventListener('click', e => { const c = e.target.closest('.mini-card[data-kind="user"]'); if (c) openUserModal(c.dataset.id) })
+
+function parseVrcId (s) {
+  s = String(s || '').trim()
+  let m
+  if ((m = s.match(/usr_[0-9a-fA-F-]+/))) return { type: 'user', id: m[0] }
+  if ((m = s.match(/wrld_[0-9a-fA-F-]+/))) return { type: 'world', id: m[0] }
+  if ((m = s.match(/grp_[0-9a-fA-F-]+/))) return { type: 'group', id: m[0] }
+  if ((m = s.match(/avtr_[0-9a-fA-F-]+/))) return { type: 'avatar', id: m[0] }
+  return null
+}
+$('idLoadBtn').addEventListener('click', () => {
+  const p = parseVrcId($('idLoadInput').value)
+  if (!p) { setText('idLoadOut', 'No usr_/wrld_/grp_ id found in that text.'); return }
+  setText('idLoadOut', `Opening ${p.type}…`)
+  if (p.type === 'user') openUserModal(p.id)
+  else if (p.type === 'world') openWorldModal(p.id)
+  else if (p.type === 'group') openGroupModal(p.id)
+  else setText('idLoadOut', 'Avatars of other users can’t be opened (VRChat API restricts them).')
+})
+$('idLoadInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('idLoadBtn').click() })
+
+function closeDetailModal () { $('detailModal').style.display = 'none' }
+$('detailModalClose').addEventListener('click', closeDetailModal)
+$('detailModal').addEventListener('click', e => { if (e.target === $('detailModal')) closeDetailModal() })
+function dmInfo (rows) { return `<div class="um-sec">Info</div><div class="um-info">${rows.filter(r => r[1] !== '' && r[1] != null).map(r => `<div><span>${esc(r[0])}</span><b>${esc(r[1])}</b></div>`).join('')}</div>` }
+async function openWorldModal (id) {
+  $('detailModal').style.display = 'flex'
+  $('dmName').textContent = 'Loading…'; setText('dmSub', ''); $('dmActions').innerHTML = ''; $('dmBody').innerHTML = ''
+  const r = await api.vrchatWorld(id)
+  if (!r.ok) { $('dmName').textContent = 'Error'; $('dmBody').innerHTML = `<div class="muted">${esc(r.error)}</div>`; return }
+  const w = r.world
+  $('dmName').textContent = w.name || '—'
+  setText('dmSub', 'World by ' + (w.authorName || '?'))
+  $('dmImage').src = w.thumbnailImageUrl || w.imageUrl || 'assets/logo.png'
+  $('dmBanner').style.backgroundImage = (w.imageUrl || w.thumbnailImageUrl) ? `url("${w.imageUrl || w.thumbnailImageUrl}")` : ''
+  $('dmActions').innerHTML = `<a class="btn" href="https://vrchat.com/home/world/${w.id}" target="_blank">Open on VRChat</a>`
+  $('dmBody').innerHTML = (w.description ? `<div class="um-bio">${esc(w.description)}</div>` : '') + dmInfo([
+    ['Players', w.occupants || 0], ['Capacity', w.capacity || '?'], ['Visits', w.visits || 0],
+    ['Favorites', w.favorites || 0], ['Status', w.releaseStatus || ''],
+    ['Updated', w.updated_at ? new Date(w.updated_at).toLocaleDateString() : '']
+  ])
+}
+async function openGroupModal (id) {
+  $('detailModal').style.display = 'flex'
+  $('dmName').textContent = 'Loading…'; setText('dmSub', ''); $('dmActions').innerHTML = ''; $('dmBody').innerHTML = ''
+  const r = await api.vrchatGroup(id)
+  if (!r.ok) { $('dmName').textContent = 'Error'; $('dmBody').innerHTML = `<div class="muted">${esc(r.error)}</div>`; return }
+  const g = r.group
+  $('dmName').textContent = g.name || '—'
+  setText('dmSub', (g.shortCode ? '@' + g.shortCode + ' · ' : '') + (g.memberCount || 0) + ' members')
+  $('dmImage').src = g.iconUrl || 'assets/logo.png'
+  $('dmBanner').style.backgroundImage = g.bannerUrl ? `url("${g.bannerUrl}")` : ''
+  $('dmActions').innerHTML = `<a class="btn" href="https://vrchat.com/home/group/${g.id}" target="_blank">Open on VRChat</a>`
+  $('dmBody').innerHTML = (g.description ? `<div class="um-bio">${esc(g.description)}</div>` : '') + dmInfo([
+    ['Members', g.memberCount || 0], ['Code', g.shortCode ? '@' + g.shortCode : ''],
+    ['Privacy', g.privacy || ''], ['Created', g.createdAt ? new Date(g.createdAt).toLocaleDateString() : '']
+  ])
+}
 
 /* ---------------- rail clock + launch ---------------- */
 function tickRailClock () { if ($('railClock')) $('railClock').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
@@ -1050,7 +1132,7 @@ async function renderMTab (tab) {
   } else if (tab === 'groups') {
     body.innerHTML = '<div class="muted">Loading groups…</div>'
     const r = await api.vrchatUserGroups(u.id)
-    body.innerHTML = !r.ok ? `<div class="muted">${esc(r.error)}</div>` : (r.groups.length ? `<div class="card-grid">${r.groups.map(g => `<div class="mini-card"><img src="${g.icon || 'assets/logo.png'}" referrerpolicy="no-referrer" /><div style="min-width:0"><div class="nm">${esc(g.name)}</div><div class="muted" style="font-size:.72rem">${g.members ? g.members + ' members' : ''}</div></div></div>`).join('')}</div>` : '<div class="muted">No groups.</div>')
+    body.innerHTML = !r.ok ? `<div class="muted">${esc(r.error)}</div>` : (r.groups.length ? `<div class="card-grid">${r.groups.map(groupCard).join('')}</div>` : '<div class="muted">No groups.</div>')
   } else if (tab === 'content') {
     body.innerHTML = '<div class="muted">Loading worlds…</div>'
     const r = await api.vrchatUserWorlds(u.id)
@@ -1070,8 +1152,18 @@ async function renderMTab (tab) {
   }
 }
 function worldCard (w) {
-  return `<div class="mini-card"><img src="${w.image || 'assets/logo.png'}" referrerpolicy="no-referrer" /><div style="min-width:0"><div class="nm">${esc(w.name)}</div><div class="muted" style="font-size:.72rem">👤 ${w.visits || 0} · ⭐ ${w.favorites || 0}</div></div></div>`
+  return `<div class="mini-card" data-kind="world" data-id="${w.id}" style="cursor:pointer"><img src="${w.image || 'assets/logo.png'}" referrerpolicy="no-referrer" /><div style="min-width:0"><div class="nm">${esc(w.name)}</div><div class="muted" style="font-size:.72rem">👤 ${w.visits || w.occupants || 0} · ⭐ ${w.favorites || 0}</div></div></div>`
 }
+function groupCard (g) {
+  return `<div class="mini-card" data-kind="group" data-id="${g.id}" style="cursor:pointer"><img src="${g.icon || 'assets/logo.png'}" referrerpolicy="no-referrer" /><div style="min-width:0"><div class="nm">${esc(g.name)}</div><div class="muted" style="font-size:.72rem">${g.members ? g.members + ' members' : (g.shortCode ? '@' + esc(g.shortCode) : '')}</div></div></div>`
+}
+// Any clickable world/group mini-card opens its detail modal.
+document.addEventListener('click', e => {
+  const c = e.target.closest('.mini-card[data-id]')
+  if (!c) return
+  if (c.dataset.kind === 'world') openWorldModal(c.dataset.id)
+  else if (c.dataset.kind === 'group') openGroupModal(c.dataset.id)
+})
 async function renderMutSub (sub) {
   const el = $('umMutBody'); if (!el || !umUser) return
   el.innerHTML = '<div class="muted">Loading…</div>'
@@ -1086,7 +1178,7 @@ async function renderMutSub (sub) {
     if (!tg.ok) { el.innerHTML = `<div class="muted">${esc(tg.error)}</div>`; return }
     const mine = new Set((mg.ok ? mg.groups : []).map(g => g.id))
     const shared = tg.groups.filter(g => mine.has(g.id))
-    el.innerHTML = shared.length ? `<div class="card-grid">${shared.map(g => `<div class="mini-card"><img src="${g.icon || 'assets/logo.png'}" referrerpolicy="no-referrer" /><div style="min-width:0"><div class="nm">${esc(g.name)}</div></div></div>`).join('')}</div>` : '<div class="muted">No mutual groups.</div>'
+    el.innerHTML = shared.length ? `<div class="card-grid">${shared.map(groupCard).join('')}</div>` : '<div class="muted">No mutual groups.</div>'
   }
 }
 document.querySelectorAll('.mtab[data-mtab]').forEach(t => t.addEventListener('click', () => renderMTab(t.dataset.mtab)))
