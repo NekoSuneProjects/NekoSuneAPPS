@@ -115,6 +115,12 @@ window.electronAPI = {
   historyLog: ev => ipcRenderer.invoke('history:log', ev),
   historyImportVrcx: p => ipcRenderer.invoke('history:importVrcx', p),
 
+  // notifications (cached)
+  notifList: () => ipcRenderer.invoke('notif:list'),
+  notifDismiss: id => ipcRenderer.invoke('notif:dismiss', id),
+  notifAccept: id => ipcRenderer.invoke('notif:accept', id),
+  notifClear: () => ipcRenderer.invoke('notif:clear'),
+
   // auto-greeter
   greeterSet: cfg => ipcRenderer.invoke('greeter:set', cfg),
 

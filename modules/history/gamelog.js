@@ -31,8 +31,34 @@ async function init (userDataDir) {
     world TEXT
   )`)
   db.run('CREATE INDEX IF NOT EXISTS idx_events_ts ON events(ts)')
+  db.run(`CREATE TABLE IF NOT EXISTS notifications (
+    id TEXT PRIMARY KEY, ts INTEGER, type TEXT, sender TEXT, message TEXT, world TEXT, link TEXT
+  )`)
   return true
 }
+
+// ---- notifications cache (persists until dismissed) ----
+function notifExists (id) {
+  if (!db) return false
+  const st = db.prepare('SELECT 1 FROM notifications WHERE id = :id'); st.bind({ ':id': id })
+  const e = st.step(); st.free(); return e
+}
+// Returns true if this notification was NEW (not previously cached).
+function upsertNotif (n) {
+  if (!db || !n || !n.id) return false
+  const isNew = !notifExists(n.id)
+  db.run('INSERT OR REPLACE INTO notifications (id,ts,type,sender,message,world,link) VALUES (?,?,?,?,?,?,?)',
+    [n.id, n.ts || Date.now(), n.type || '', n.sender || '', n.message || '', n.world || '', n.link || ''])
+  persist()
+  return isNew
+}
+function listNotifs () {
+  if (!db) return []
+  const st = db.prepare('SELECT id,ts,type,sender,message,world,link FROM notifications ORDER BY ts DESC LIMIT 100')
+  const out = []; while (st.step()) out.push(st.getAsObject()); st.free(); return out
+}
+function removeNotif (id) { if (db) { db.run('DELETE FROM notifications WHERE id = ?', [id]); persist() } }
+function clearNotifs () { if (db) { db.run('DELETE FROM notifications'); persist() } }
 
 function persist () {
   if (!db || !dbPath) return
@@ -94,4 +120,4 @@ async function importVrcx (filePath) {
 
 function close () { try { if (db) { fs.writeFileSync(dbPath, Buffer.from(db.export())) } } catch (_) {} }
 
-module.exports = { init, log, list, clear, close, importVrcx }
+module.exports = { init, log, list, clear, close, importVrcx, upsertNotif, listNotifs, removeNotif, clearNotifs }

@@ -1109,27 +1109,38 @@ document.addEventListener('click', e => {
   if (notifPanel.style.display !== 'none' && !notifPanel.contains(e.target) && !$('notifBell').contains(e.target)) notifPanel.style.display = 'none'
 })
 $('notifRefresh').addEventListener('click', loadNotifications)
+$('notifRefreshPage').addEventListener('click', loadNotifications)
+$('notifClearAll').addEventListener('click', async () => { await api.notifClear(); loadNotifications() })
+document.querySelector('[data-tab="notify"]').addEventListener('click', loadNotifications)
 function setNotifCount (n) { const c = $('notifCount'); if (n > 0) { c.style.display = 'flex'; c.textContent = n > 99 ? '99+' : String(n) } else c.style.display = 'none' }
-async function loadNotifications () {
-  const el = $('notifList'); el.textContent = 'Loading…'
-  const r = await api.vrchatNotifications()
-  if (!r.ok) { el.textContent = 'Error: ' + (r.error || 'failed') + ' — log in on the VRChat tab.'; setNotifCount(0); return }
-  const notifs = r.notifications || []
-  setNotifCount(notifs.length)
-  if (!notifs.length) { el.textContent = 'No notifications.'; return }
-  el.innerHTML = notifs.map(n => {
-    const title = n.type === 'friendRequest' ? `Friend request from ${n.senderUsername || 'someone'}` : (n.message || n.type || 'Notification')
-    const when = n.created_at ? new Date(n.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''
-    const accept = n.type === 'friendRequest' ? `<button class="btn nf-accept" data-id="${n.id}" style="padding:3px 9px;font-size:.72rem">Accept</button>` : ''
-    return `<div class="notif-item"><div class="grow"><div>${String(title).replace(/</g, '&lt;')}</div><div class="when">${when}</div></div>${accept}</div>`
-  }).join('')
-  el.querySelectorAll('.nf-accept').forEach(b => b.addEventListener('click', async () => {
-    b.disabled = true; b.textContent = '…'
-    const res = await api.vrchatAcceptFriend(b.dataset.id)
-    b.textContent = res.ok ? '✓' : '✗'
-    if (res.ok) loadNotifications()
-  }))
+function notifItemHtml (n) {
+  const when = new Date(n.ts || Date.now()).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  let title
+  if (n.type === 'friendRequest') title = `Friend request from <b>${esc(n.sender)}</b>`
+  else if (n.type === 'invite') title = `<b>${esc(n.sender)}</b> invited you${n.world ? ` to <b>${esc(n.world)}</b>` : ''}`
+  else if (n.type === 'requestInvite') title = `<b>${esc(n.sender)}</b> requested an invite`
+  else if (n.type === 'boop') title = `<b>${esc(n.sender)}</b> booped you 👉`
+  else title = `<b>${esc(n.sender || n.type)}</b> ${esc(n.message || '')}`
+  const sub = (n.message && n.type !== 'friendRequest' && n.type !== 'boop') ? `<div class="muted" style="font-size:.74rem">${esc(n.message)}</div>` : ''
+  const accept = n.type === 'friendRequest' ? `<button class="btn nf-accept" data-id="${n.id}" style="padding:3px 9px;font-size:.72rem">Accept</button>` : ''
+  const join = (n.link) ? `<a class="btn nf-join" href="${n.link}" target="_blank" style="padding:3px 9px;font-size:.72rem">Join</a>` : ''
+  return `<div class="notif-item"><div class="grow">${title}${sub}<div class="when">${when}</div></div>${accept}${join}<button class="btn ghost nf-dismiss" data-id="${n.id}" title="Dismiss" style="padding:3px 8px;font-size:.72rem">×</button></div>`
 }
+async function loadNotifications () {
+  const list = await api.notifList()
+  setNotifCount(list.length)
+  const html = list.length ? list.map(notifItemHtml).join('') : '<div class="muted">No notifications.</div>'
+  if ($('notifList')) $('notifList').innerHTML = html
+  if ($('notifPageList')) $('notifPageList').innerHTML = html
+}
+// Delegated accept/dismiss for notification items (flyout + page).
+document.addEventListener('click', async e => {
+  const acc = e.target.closest('.nf-accept'); const dis = e.target.closest('.nf-dismiss')
+  if (acc) { acc.disabled = true; acc.textContent = '…'; await api.notifAccept(acc.dataset.id); loadNotifications() }
+  if (dis) { dis.disabled = true; await api.notifDismiss(dis.dataset.id); loadNotifications() }
+})
+api.on('notif:new', n => { toast(`<b>🔔 ${esc(n.sender || 'VRChat')}</b><br>${esc((n.type === 'invite' ? 'invited you' + (n.world ? ' to ' + n.world : '') : n.type === 'boop' ? 'booped you 👉' : n.type === 'friendRequest' ? 'friend request' : n.message || n.type))}`) })
+api.on('notif:update', () => loadNotifications())
 
 /* ---------------- right friends panel ---------------- */
 const RB_COLOR = { 'join me': '#3b82f6', active: '#22c55e', 'ask me': '#f59e0b', busy: '#ef4444', offline: '#6b7280' }

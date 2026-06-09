@@ -75,8 +75,9 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 - [ ] **Multiple dashboards / customizable widgets** (VRCX-style configurable panels)
 
 ### Group alerts (requested)
-- [x] **Group alerts** — polls watched groups' posts → toast + History `group` entry
-- [~] **Alerts** — group posts done; world/event alerts still todo
+- [x] **Group alerts** — polls watched groups' posts **and events** → toast + History
+- [x] **Notifications** — rich (invite world+link, boop, requestInvite, group), **cached in SQLite**
+  until accepted/dismissed; top-right flyout + **Notify sidebar tab**; toast on new
 
 ---
 

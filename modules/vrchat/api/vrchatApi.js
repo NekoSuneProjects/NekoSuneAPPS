@@ -463,7 +463,8 @@ async function getGroupEvents (groupId) {
 }
 
 // ---- Auto-Greeter: notifications + accept friend request ----
-async function getNotifications () {
+function getNotifications () { return _memo('notifs', 30000, _getNotifications) }
+async function _getNotifications () {
   loadCookies()
   if (!cookies.auth) return { ok: false, error: 'Not logged in' }
   const res = await axios.get(`${BASE}/auth/user/notifications`, Object.assign({ headers: baseHeaders(), params: { n: 100 } }, REQ))
@@ -474,8 +475,15 @@ async function getNotifications () {
 async function acceptFriendRequest (notificationId) {
   loadCookies()
   const res = await axios.put(`${BASE}/auth/user/notifications/${notificationId}/accept`, null, Object.assign({ headers: baseHeaders() }, REQ))
-  storeSetCookie(res)
+  storeSetCookie(res); invalidate('notifs')
   return res.status === 200 ? { ok: true } : { ok: false, error: errOf(res, 'Accept failed') }
+}
+// Dismiss / hide a notification.
+async function hideNotification (notificationId) {
+  loadCookies()
+  const res = await axios.put(`${BASE}/auth/user/notifications/${notificationId}/hide`, null, Object.assign({ headers: baseHeaders() }, REQ))
+  storeSetCookie(res); invalidate('notifs')
+  return res.status === 200 ? { ok: true } : { ok: false, error: errOf(res, 'Dismiss failed') }
 }
 
 // Map VRChat's status string to our world-visibility gate keys.
@@ -499,5 +507,5 @@ module.exports = {
   searchUsers, searchWorlds, searchGroups, getWorld, getGroup,
   updateProfile, selectAvatar, deleteAvatar, createInstance, inviteSelf, groupInvite,
   setNote, moderate, unmoderate, getFavoriteFriendIds, getOnlineCount, getGroupPosts,
-  getMyGroups, getGroupEvents, getNotifications, acceptFriendRequest
+  getMyGroups, getGroupEvents, getNotifications, acceptFriendRequest, hideNotification
 }

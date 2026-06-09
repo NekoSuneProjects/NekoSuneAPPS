@@ -194,6 +194,7 @@
       <button class="navbtn" data-tab="content"><span class="ico">🌐</span><span class="lbl">Content</span></button>
       <button class="navbtn" data-tab="search"><span class="ico">🔍</span><span class="lbl">Search</span></button>
       <button class="navbtn" data-tab="media"><span class="ico">🖼</span><span class="lbl">Media</span></button>
+      <button class="navbtn" data-tab="notify"><span class="ico">🔔</span><span class="lbl">Notify</span></button>
       <button class="navbtn" data-tab="history"><span class="ico">📜</span><span class="lbl">History</span></button>
       <button class="navbtn" data-tab="weather"><span class="ico">🌦</span><span class="lbl">Weather</span></button>
       <button class="navbtn" data-tab="osccontrol"><span class="ico">🎛</span><span class="lbl">OSC Control</span></button>
@@ -649,6 +650,15 @@
             <button class="btn" id="searchBtn">Search</button>
           </div>
           <div id="searchResults" class="muted" style="margin-top:12px">Type a query and search.</div>
+        </div>
+      </section>
+
+      <!-- NOTIFY -->
+      <section id="notify" class="tabpanel">
+        <div class="card">
+          <h3>🔔 Notifications <span class="muted" style="font-size:.72rem">(cached until you act / dismiss)</span></h3>
+          <div class="row"><button class="btn" id="notifRefreshPage">Refresh</button><button class="btn danger" id="notifClearAll">Clear all</button></div>
+          <div id="notifPageList" class="muted" style="margin-top:10px">No notifications.</div>
         </div>
       </section>
 

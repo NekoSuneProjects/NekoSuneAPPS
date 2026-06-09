@@ -137,6 +137,7 @@ app.whenReady().then(async () => {
   setInterval(() => pawprints.tickCommit(), 60000) // persist ongoing world time
   startFriendDiff()
   startGroupAlerts()
+  startNotifPoll()
 })
 
 app.on('window-all-closed', () => {
@@ -150,7 +151,7 @@ app.on('activate', () => {
 app.on('before-quit', () => {
   stopComponentStats(); stopNetworkStats(); stopPulsoid(); stopHyperate(); stopWindowActivity()
   disconnectTikTok(); stopTwitch(); stopKick(); stopDiscord(); stopVrBattery(); stopVrcWorld(); stopAfk()
-  stopWeather(); stopVrcStatusPoll(); stopBot(); pawprints.tickCommit(); stopFriendDiff(); stopGreeter(); gamelog.close(); photoRelay.stop(); stopGroupAlerts()
+  stopWeather(); stopVrcStatusPoll(); stopBot(); pawprints.tickCommit(); stopFriendDiff(); stopGreeter(); gamelog.close(); photoRelay.stop(); stopGroupAlerts(); stopNotifPoll()
 })
 
 /* ------------------------------------------------------------------ */
@@ -477,26 +478,75 @@ ipcMain.handle('data:import', async () => {
   } catch (err) { return { ok: false, error: err.message } }
 })
 
-// Group alerts — poll watched groups' posts, log new ones + toast.
+// Group alerts — poll watched groups' posts AND events, log new ones + toast.
 let alertTimer = null
 const lastPostByGroup = {}
+const lastEventByGroup = {}
 async function pollGroupAlerts () {
   if (!vrchatApi.isLoggedIn()) return
   const groups = settings.get('eventGroups', [])
   for (const gid of groups) {
     const r = await vrchatApi.getGroupPosts(gid)
-    if (!r.ok || !r.posts.length) continue
-    const newest = r.posts[0]
-    if (lastPostByGroup[gid] && lastPostByGroup[gid] !== newest.id) {
-      gamelog.log('group', newest.title || 'Group post', newest.text || '', gid)
-      push('alert:group', { groupId: gid, title: newest.title, text: newest.text })
+    if (r.ok && r.posts.length) {
+      const newest = r.posts[0]
+      if (lastPostByGroup[gid] && lastPostByGroup[gid] !== newest.id) {
+        gamelog.log('group', newest.title || 'Group post', newest.text || '', gid)
+        push('alert:group', { groupId: gid, title: '📣 ' + (newest.title || 'Group post'), text: newest.text })
+      }
+      lastPostByGroup[gid] = newest.id
     }
-    lastPostByGroup[gid] = newest.id
+    const ev = await vrchatApi.getGroupEvents(gid)
+    if (ev.ok && ev.events.length) {
+      const ne = ev.events[0]
+      if (lastEventByGroup[gid] && lastEventByGroup[gid] !== ne.id) {
+        gamelog.log('group', ne.title || 'Group event', 'New event', gid)
+        push('alert:group', { groupId: gid, title: '📅 New event: ' + (ne.title || ''), text: ne.description || '' })
+      }
+      lastEventByGroup[gid] = ne.id
+    }
   }
 }
 function startGroupAlerts () { stopGroupAlerts(); pollGroupAlerts(); alertTimer = setInterval(pollGroupAlerts, 300000) }
 function stopGroupAlerts () { if (alertTimer) { clearInterval(alertTimer); alertTimer = null } }
 ipcMain.handle('alerts:groupsRefresh', () => { startGroupAlerts(); return true })
+
+// Notifications — poll, parse, cache in SQLite (persist until dismissed), toast new.
+let notifTimer = null
+function parseNotif (n) {
+  let det = n.details
+  if (typeof det === 'string') { try { det = JSON.parse(det) } catch (_) { det = {} } }
+  det = det || {}
+  let link = ''
+  if (det.worldId) link = `https://vrchat.com/home/launch?worldId=${det.worldId}` + (det.instanceId ? `&instanceId=${encodeURIComponent(det.instanceId)}` : '')
+  return { id: n.id, ts: Date.parse(n.created_at) || Date.now(), type: n.type || 'notification', sender: n.senderUsername || det.senderUsername || '', message: n.message || det.inviteMessage || '', world: det.worldName || '', link }
+}
+function notifText (p) {
+  switch (p.type) {
+    case 'friendRequest': return 'sent a friend request'
+    case 'invite': return 'invited you' + (p.world ? ' to ' + p.world : '')
+    case 'requestInvite': return 'requested an invite'
+    case 'requestInviteResponse': return 'responded to your invite request'
+    case 'inviteResponse': return 'responded to your invite'
+    case 'boop': return 'booped you 👉'
+    default: return p.message || p.type
+  }
+}
+async function pollNotifications () {
+  if (!vrchatApi.isLoggedIn()) return
+  const r = await vrchatApi.getNotifications()
+  if (!r.ok) return
+  for (const n of r.notifications) {
+    const p = parseNotif(n)
+    if (gamelog.upsertNotif(p)) { push('notif:new', p); gamelog.log('alert', p.sender || p.type, notifText(p), p.world) }
+  }
+  push('notif:update')
+}
+function startNotifPoll () { stopNotifPoll(); pollNotifications(); notifTimer = setInterval(pollNotifications, 60000) }
+function stopNotifPoll () { if (notifTimer) { clearInterval(notifTimer); notifTimer = null } }
+ipcMain.handle('notif:list', () => gamelog.listNotifs())
+ipcMain.handle('notif:dismiss', async (e, id) => { await vrchatApi.hideNotification(id); gamelog.removeNotif(id); return true })
+ipcMain.handle('notif:accept', async (e, id) => { const r = await vrchatApi.acceptFriendRequest(id); if (r.ok) gamelog.removeNotif(id); return r })
+ipcMain.handle('notif:clear', () => { gamelog.clearNotifs(); return true })
 
 /* ------------------------------------------------------------------ */
 /* Weather                                                             */
