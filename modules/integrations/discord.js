@@ -119,7 +119,16 @@ function pushVoiceOsc () {
   }
 }
 
-function setActivity ({ details, state: st } = {}) {
+// Throttle presence updates — Discord RP limits to ~5 updates / 20s. HR/world/song
+// changes can fire many times a second, so coalesce them to one push every ~5s.
+let _actTimer = null
+let _actLast = 0
+function setActivity (opts) {
+  const wait = 5000 - (Date.now() - _actLast)
+  if (wait <= 0) { _actLast = Date.now(); _pushActivity(opts) } else if (!_actTimer) { _actTimer = setTimeout(() => { _actTimer = null; _actLast = Date.now(); _pushActivity() }, wait) }
+}
+
+function _pushActivity ({ details, state: st } = {}) {
   if (!client || !state.connected || !config.enableRichPresence) return
 
   const info = statusInfo()
