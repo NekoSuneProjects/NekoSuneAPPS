@@ -45,6 +45,7 @@ let onUpdate = null
 let currentChannelId = null
 let selfId = null
 let buttonsSupported = true // dropped automatically if Discord rejects RP buttons over IPC
+let richSupported = true // dropped to text-only if art assets/buttons cause "Unknown Error"
 let rpLogged = false // log the first successful presence push once
 
 const config = {
@@ -144,33 +145,30 @@ function setActivity ({ details, state: st } = {}) {
   const profileUrl = effectiveProfileUrl()
   if (profileUrl) buttons.push({ label: '👤 VRChat Profile', url: profileUrl })
 
-  const activity = {
-    details: detailsLine.slice(0, 128),
-    state: stateLine.slice(0, 128),
-    startTimestamp,
-    largeImageKey: 'logo', // upload a 'logo' art asset in the Discord portal
-    largeImageText: 'NekoSuneAPPS',
-    smallImageKey: 'vrchat', // optional small badge art asset named 'vrchat'
-    smallImageText: 'VRChat',
-    instance: false
+  // Minimal, always-valid presence (text only).
+  const minimal = { details: detailsLine.slice(0, 128), state: stateLine.slice(0, 128), startTimestamp, instance: false }
+  // Full presence adds art assets + buttons — but those FAIL over the local RPC/IPC
+  // if the Discord app has no uploaded 'logo'/'vrchat' art assets, or for buttons
+  // (GameSDK-only). On the first "Unknown Error" we drop to text-only permanently.
+  let activity = minimal
+  if (richSupported) {
+    activity = Object.assign({}, minimal, { largeImageKey: 'logo', largeImageText: 'NekoSuneAPPS', smallImageKey: 'vrchat', smallImageText: 'VRChat' })
+    if (buttonsSupported && buttons.length) activity.buttons = buttons.slice(0, 2)
   }
-  // Rich Presence buttons only work via Discord's GameSDK/gateway — NOT the local
-  // IPC (discord-rpc) we use, where they throw "Unknown Error". So we try once,
-  // and if Discord rejects them we permanently drop buttons and retry clean.
-  if (buttonsSupported && buttons.length) activity.buttons = buttons.slice(0, 2)
 
-  const send = a => client.setActivity(a).then(() => {
-    if (!rpLogged) { rpLogged = true; console.log('[discord] Rich Presence active:', a.details, '·', a.state) }
-  })
-  send(activity).catch(err => {
-    if (activity.buttons) {
-      buttonsSupported = false
-      const noBtn = { ...activity }; delete noBtn.buttons
-      send(noBtn).catch(e2 => console.warn('Discord setActivity:', e2.message))
-    } else {
-      console.warn('Discord setActivity:', err.message)
-    }
-  })
+  client.setActivity(activity)
+    .then(() => { if (!rpLogged) { rpLogged = true; console.log('[discord] Rich Presence active:', activity.details, '·', activity.state) } })
+    .catch(err => {
+      if (richSupported) {
+        // Strip art assets + buttons and retry once with text only.
+        richSupported = false; buttonsSupported = false
+        client.setActivity(minimal)
+          .then(() => { if (!rpLogged) { rpLogged = true; console.log('[discord] Rich Presence active (text only — no art assets on this app).') } })
+          .catch(e2 => console.warn('Discord setActivity:', e2.message))
+      } else {
+        console.warn('Discord setActivity:', err.message)
+      }
+    })
 }
 
 // Called by main when the VRChat world tracker (or the UI status dropdown)
