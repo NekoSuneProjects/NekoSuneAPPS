@@ -43,7 +43,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 ## 🔜 Next day — VRCX parity gaps
 
 ### Activity & logging
-- [ ] **Video/media link tracking** — parse VRChat log for played video URLs, log to History
+- [x] **Video/media link tracking** — video URLs parsed from the log → History
 - [ ] **Name-change tracking** — detect & log when a friend renames (store last known name)
 - [ ] **Activity heatmap** — online-time-by-day/hour visualisation
 - [ ] **Instance join/leave history** for yourself (which instances you joined, duration)
@@ -53,12 +53,12 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 - [x] **VRC Notes editor** — read + write your note on a user (profile Info tab)
 - [x] **Social status presets** — save/apply status + statusDescription combos (Profile Editor)
 - [ ] **Last-seen / time-together** per friend on the profile (we have some via History)
-- [~] **Block / mute** — Block/Mute toggle buttons on profiles (list/log of moderations still todo)
+- [x] **Block / mute** — toggle on profiles + a Blocked/Muted list (Settings) with Remove
 - [ ] **Trust/feedback view** beyond the trust chip
 
 ### Search & data
 - [ ] **Local fuzzy quick-search** across cached friends/worlds/groups (instant, offline)
-- [ ] **Avatar search** via avtrdb.com / public avatar DB (VRCNext uses avtrdb)
+- [x] **Avatar search** — via the Avatars page (provider-based)
 - [ ] **Favorites backup** — export/restore favorite worlds/avatars/friends groups
 - [x] **Data export/import** — settings + history to JSON
 
@@ -71,7 +71,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 - [x] **VRChat server status** — online-user count in the top bar (poll /visits)
 - [x] **Configured Start** — launch companion apps (+ optional VRChat)
 - [x] **Data export/import** — settings + history to JSON
-- [ ] **Crash recovery / auto-rejoin** last instance (detect VRChat crash, relaunch+join)
+- [x] **Crash recovery / auto-rejoin** — opt-in; relaunches last instance if VRChat closes
 - [ ] **Custom themes** (optional — currently fixed green + seasonal by design)
 - [ ] **Registry tools** — VRChat registry backup/restore (Windows registry under VRChat)
 - [ ] **Multiple dashboards / customizable widgets** (VRCX-style configurable panels)
@@ -86,7 +86,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 ## 🥽 Requested big features (next session)
 
 ### Avatars (own + others)
-- [~] **Avatar detail** view — Content shows all avatars; full detail modal still todo
+- [x] **Avatar detail** — modal with image, author, platforms, performance, wear/favourite
 - [x] **Switch avatar** — Wear button (`PUT /avatars/{id}/select`)
 - [x] **Delete personal avatar** — Delete with Yes/No confirm
 
@@ -96,7 +96,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 
 ### Groups
 - [x] **Invite people to a group** via friend picker
-- [ ] Group detail: members, roles, posts, your permissions
+- [x] Group detail: members, roles, posts, gallery, your permissions
 
 ### Shared UI
 - [x] **Friend-picker modal** (searchable, multi-select)
@@ -108,7 +108,7 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
 - [x] **Messenger / message-slot editor** — edit invite & response message slots (Messenger tab)
 - [x] **Multi-Invite** — friend-picker multi-select invite to instance/group
 - [ ] **Inventory** — view/manage Photos, Gallery, custom **icons / emojis / stickers / prints** (endpoints need verifying)
-- [ ] **Avatar browse via avtrdb.com** (paginated public avatar search) → switch/favourite
+- [x] **Avatar browse** — configurable providers (avtrdb + **custom VRCX-style endpoints**) → wear/favourite
 - [x] **Group posts** + **group image gallery** — shown in the group detail modal
 - [ ] **Create group instances** — POST /instances type=group + groupAccessType (needs world picker)
 - [x] **Media Library** — local screenshot gallery (folders/metadata filters todo)

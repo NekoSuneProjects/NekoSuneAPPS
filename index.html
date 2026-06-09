@@ -192,6 +192,7 @@
       <button class="navbtn" data-tab="pawprints"><span class="ico">🐾</span><span class="lbl">Pawprints</span></button>
       <button class="navbtn" data-tab="groups"><span class="ico">👥</span><span class="lbl">Groups</span></button>
       <button class="navbtn" data-tab="content"><span class="ico">🌐</span><span class="lbl">Content</span></button>
+      <button class="navbtn" data-tab="avatars"><span class="ico">🧍</span><span class="lbl">Avatars</span></button>
       <button class="navbtn" data-tab="messenger"><span class="ico">✉️</span><span class="lbl">Messenger</span></button>
       <button class="navbtn" data-tab="search"><span class="ico">🔍</span><span class="lbl">Search</span></button>
       <button class="navbtn" data-tab="media"><span class="ico">🖼</span><span class="lbl">Media</span></button>
@@ -636,6 +637,21 @@
         </div>
       </section>
 
+      <!-- AVATARS BROWSE -->
+      <section id="avatars" class="tabpanel">
+        <div class="card">
+          <h3>🧍 Avatar Search <span class="muted" style="font-size:.72rem">(avtrdb + custom providers)</span></h3>
+          <div class="row">
+            <select id="avProvider" style="max-width:170px"></select>
+            <input type="text" id="avQuery" placeholder="Search avatars…" />
+            <button class="btn" id="avSearch">Search</button>
+          </div>
+          <label style="margin-top:8px">Add custom provider <span class="muted" style="font-size:.7rem">(URL with {query} and {page})</span></label>
+          <div class="row"><input type="text" id="avCustomUrl" placeholder="https://your-server/search/{query}?page={page}" /><button class="btn ghost" id="avAddProvider">Add</button></div>
+          <div id="avResults" style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px"><div class="muted">Search an avatar database. Click a result to view, wear, or favourite.</div></div>
+        </div>
+      </section>
+
       <!-- MESSENGER -->
       <section id="messenger" class="tabpanel">
         <div class="card">
@@ -852,8 +868,14 @@
           <label>App paths (one per line)</label>
           <textarea id="startApps" rows="3" placeholder="C:\Program Files\SlimeVR Server\SlimeVR.exe"></textarea>
           <label class="switch" style="margin-top:8px"><input type="checkbox" id="startWithVrc"> Also launch VRChat</label>
+          <label class="switch" style="margin-top:8px"><input type="checkbox" id="autoRejoin"> Auto-rejoin VRChat if it crashes (relaunch last instance)</label>
           <div class="row" style="margin-top:8px"><button class="btn" id="startLaunch">Launch now</button></div>
           <div class="muted" id="startOut" style="margin-top:6px;font-size:.78rem"></div>
+        </div>
+        <div class="card">
+          <h3>🚫 Blocked &amp; Muted</h3>
+          <button class="btn" id="modRefresh">Refresh</button>
+          <div id="modList" class="muted" style="margin-top:8px">Log in on the VRChat tab.</div>
         </div>
         <div class="card">
           <h3>💾 Backup &amp; data</h3>

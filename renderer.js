@@ -914,7 +914,7 @@ async function loadMyContent (kind) {
   if (kind === 'avatars') {
     const r = await api.vrchatMyAvatars()
     if (!r.ok) { el.textContent = (r.error || 'Could not load') + ' — log in on the VRChat tab.'; return }
-    el.innerHTML = r.avatars.length ? `<div class="card-grid">${r.avatars.map(a => `<div class="mini-card" style="flex-direction:column;align-items:stretch"><div style="display:flex;gap:9px;align-items:center"><img src="${a.image || 'assets/logo.png'}" referrerpolicy="no-referrer" /><div style="min-width:0"><div class="nm">${esc(a.name)}</div><div class="muted" style="font-size:.72rem">${esc(a.releaseStatus || '')}</div></div></div><div class="row" style="margin-top:6px;gap:6px"><button class="btn av-switch" data-id="${a.id}" style="padding:3px 10px;font-size:.72rem">Wear</button><button class="btn danger av-del" data-id="${a.id}" data-name="${esc(a.name)}" style="padding:3px 10px;font-size:.72rem">Delete</button></div></div>`).join('')}</div>` : 'No avatars.'
+    el.innerHTML = r.avatars.length ? `<div class="card-grid">${r.avatars.map(a => `<div class="mini-card" data-kind="avatar" data-id="${a.id}" style="cursor:pointer;flex-direction:column;align-items:stretch"><div style="display:flex;gap:9px;align-items:center"><img src="${a.image || 'assets/logo.png'}" referrerpolicy="no-referrer" /><div style="min-width:0"><div class="nm">${esc(a.name)}</div><div class="muted" style="font-size:.72rem">${esc(a.releaseStatus || '')}</div></div></div><div class="row" style="margin-top:6px;gap:6px"><button class="btn av-switch" data-id="${a.id}" style="padding:3px 10px;font-size:.72rem">Wear</button><button class="btn danger av-del" data-id="${a.id}" data-name="${esc(a.name)}" style="padding:3px 10px;font-size:.72rem">Delete</button></div></div>`).join('')}</div>` : 'No avatars.'
   } else {
     const r = await api.vrchatMyWorlds()
     if (!r.ok) { el.textContent = (r.error || 'Could not load') + ' — log in on the VRChat tab.'; return }
@@ -937,6 +937,33 @@ $('myContentBody').addEventListener('click', async e => {
     if (r.ok) loadMyContent('avatars'); else { del.textContent = 'Delete'; alert('Delete failed: ' + (r.error || '')) }
   }
 })
+
+/* ---------------- Avatar browse (avtrdb + custom providers) ---------------- */
+let avProviders = []
+async function loadAvProviders () {
+  let defaults = []
+  try { defaults = await api.avatarsDefaultProviders() } catch (_) {}
+  const custom = await api.getSetting('avatarProviders', [])
+  avProviders = [...defaults, ...custom]
+  $('avProvider').innerHTML = avProviders.map((p, i) => `<option value="${i}">${esc(p.name)}</option>`).join('')
+}
+async function doAvatarSearch () {
+  const p = avProviders[$('avProvider').value]; if (!p) return
+  const q = $('avQuery').value.trim(); if (!q) return
+  const el = $('avResults'); el.innerHTML = '<div class="muted">Searching…</div>'
+  const r = await api.avatarsSearch(p.url, q, 1)
+  if (!r.ok) { el.innerHTML = `<div class="muted">Error: ${esc(r.error)}</div>`; return }
+  el.innerHTML = r.avatars.length ? r.avatars.map(a => `<div class="mini-card" data-kind="avatar" data-id="${a.id}" style="cursor:pointer;flex-direction:column;align-items:stretch;padding:0;overflow:hidden"><img src="${a.image || 'assets/logo.png'}" referrerpolicy="no-referrer" style="width:100%;height:120px;object-fit:cover" /><div style="padding:5px 7px;min-width:0"><div class="nm">${esc(a.name)}</div><div class="muted" style="font-size:.7rem">${esc(a.author || '')}</div></div></div>`).join('') : '<div class="muted">No results (or this provider’s response format isn’t recognised).</div>'
+}
+$('avSearch').addEventListener('click', doAvatarSearch)
+$('avQuery').addEventListener('keydown', e => { if (e.key === 'Enter') doAvatarSearch() })
+$('avAddProvider').addEventListener('click', async () => {
+  const url = $('avCustomUrl').value.trim(); if (!url) return
+  let name = 'custom'; try { name = new URL(url.replace('{query}', 'x').replace('{page}', '1')).hostname } catch (_) {}
+  const custom = await api.getSetting('avatarProviders', []); custom.push({ name, url }); await api.saveSetting('avatarProviders', custom)
+  $('avCustomUrl').value = ''; loadAvProviders()
+})
+document.querySelector('[data-tab="avatars"]').addEventListener('click', loadAvProviders)
 
 /* ---------------- Messenger (message slots) ---------------- */
 async function loadMessages () {
@@ -980,7 +1007,7 @@ $('searchQuery').addEventListener('keydown', e => { if (e.key === 'Enter') doSea
 $('searchResults').addEventListener('click', e => { const c = e.target.closest('.mini-card[data-kind="user"]'); if (c) openUserModal(c.dataset.id) })
 
 /* ---------------- History page ---------------- */
-const HIST_ICON = { join: '➡️', leave: '⬅️', friend_add: '➕', friend_remove: '➖', name_change: '✏️', world: '🌐', alert: '🔔', group: '👥' }
+const HIST_ICON = { join: '➡️', leave: '⬅️', friend_add: '➕', friend_remove: '➖', name_change: '✏️', world: '🌐', video: '🎬', alert: '🔔', group: '👥' }
 async function loadHistory () {
   const el = $('histList'); el.textContent = 'Loading…'
   const rows = await api.historyList({ type: $('histType').value || undefined, limit: 300 })
@@ -1106,10 +1133,23 @@ async function openGroupModal (id) {
   $('dmBody').innerHTML = (g.description ? `<div class="um-bio">${esc(g.description)}</div>` : '') + dmInfo([
     ['Members', g.memberCount || 0], ['Code', g.shortCode ? '@' + g.shortCode : ''],
     ['Privacy', g.privacy || ''], ['Created', g.createdAt ? new Date(g.createdAt).toLocaleDateString() : '']
-  ]) + '<div class="um-sec">Posts</div><div id="grpPosts" class="muted">Loading…</div><div class="um-sec">Gallery</div><div id="grpGallery" class="muted">Loading…</div>'
+  ]) +
+    (g.myMember ? `<div class="um-sec">Your membership</div><div class="muted" style="font-size:.8rem">${(g.myMember.roleIds || []).length} role(s) · ${(g.myMember.permissions || []).length} permission(s)</div>` : '') +
+    '<div class="um-sec">Members</div><div id="grpMembers" class="muted">Loading…</div>' +
+    '<div class="um-sec">Roles</div><div id="grpRoles" class="muted">Loading…</div>' +
+    '<div class="um-sec">Posts</div><div id="grpPosts" class="muted">Loading…</div><div class="um-sec">Gallery</div><div id="grpGallery" class="muted">Loading…</div>'
   loadGroupExtras(g.id)
 }
 async function loadGroupExtras (gid) {
+  const mr = await api.vrchatGroupMembers(gid)
+  if ($('grpMembers')) {
+    $('grpMembers').innerHTML = (mr.ok && mr.members.length)
+      ? `<div class="card-grid">${mr.members.map(m => `<div class="rb-friend" data-id="${m.id}" style="cursor:pointer"><img class="ava" src="${m.icon || 'assets/logo.png'}" referrerpolicy="no-referrer" /><div class="meta grow"><div class="nm">${esc(m.name)}</div></div></div>`).join('')}</div>`
+      : (mr.ok ? 'No members visible.' : esc(mr.error))
+    $('grpMembers').querySelectorAll('.rb-friend').forEach(row => row.addEventListener('click', () => openUserModal(row.dataset.id)))
+  }
+  const rr = await api.vrchatGroupRoles(gid)
+  if ($('grpRoles')) $('grpRoles').innerHTML = (rr.ok && rr.roles.length) ? rr.roles.map(r => `<span class="tagchip">${esc(r.name)}</span>`).join(' ') : (rr.ok ? 'No roles.' : esc(rr.error))
   const pr = await api.vrchatGroupPosts(gid)
   if ($('grpPosts')) $('grpPosts').innerHTML = (pr.ok && pr.posts.length) ? pr.posts.map(p => `<div style="padding:5px 0;border-top:1px solid var(--border)"><b>${esc(p.title || 'Post')}</b><div class="muted" style="font-size:.78rem">${esc(p.text || '')}</div></div>`).join('') : 'No posts.'
   const gal = await api.vrchatGroupGalleries(gid)
@@ -1359,13 +1399,32 @@ function worldCard (w) {
 function groupCard (g) {
   return `<div class="mini-card" data-kind="group" data-id="${g.id}" style="cursor:pointer"><img src="${g.icon || 'assets/logo.png'}" referrerpolicy="no-referrer" /><div style="min-width:0"><div class="nm">${esc(g.name)}</div><div class="muted" style="font-size:.72rem">${g.members ? g.members + ' members' : (g.shortCode ? '@' + esc(g.shortCode) : '')}</div></div></div>`
 }
-// Any clickable world/group mini-card opens its detail modal.
+// Any clickable world/group/avatar mini-card opens its detail modal.
 document.addEventListener('click', e => {
+  if (e.target.closest('button') || e.target.closest('a')) return // let buttons/links act
   const c = e.target.closest('.mini-card[data-id]')
   if (!c) return
   if (c.dataset.kind === 'world') openWorldModal(c.dataset.id)
   else if (c.dataset.kind === 'group') openGroupModal(c.dataset.id)
+  else if (c.dataset.kind === 'avatar') openAvatarModal(c.dataset.id)
 })
+async function openAvatarModal (id) {
+  $('detailModal').style.display = 'flex'
+  $('dmName').textContent = 'Loading…'; setText('dmSub', ''); $('dmActions').innerHTML = ''; $('dmBody').innerHTML = ''
+  const r = await api.vrchatAvatar(id)
+  if (!r.ok) { $('dmName').textContent = 'Error'; $('dmBody').innerHTML = `<div class="muted">${esc(r.error)}</div>`; return }
+  const a = r.avatar
+  $('dmName').textContent = a.name || '—'; setText('dmSub', 'Avatar by ' + (a.author || '?'))
+  $('dmImage').src = a.image || 'assets/logo.png'; $('dmBanner').style.backgroundImage = a.image ? `url("${a.image}")` : ''
+  $('dmActions').innerHTML = `<button class="btn" id="avWear">Wear</button><button class="btn ghost" id="avFav">⭐ Favorite</button>`
+  $('avWear').addEventListener('click', async () => { $('avWear').textContent = '…'; const w = await api.vrchatSelectAvatar(a.id); $('avWear').textContent = w.ok ? '✓ Worn' : '✗ ' + (w.error || '') })
+  $('avFav').addEventListener('click', async () => { const f = await api.vrchatAddFav('avatar', a.id); setText('dmSub', f.ok ? '⭐ Favorited' : 'Error: ' + (f.error || '')) })
+  $('dmBody').innerHTML = (a.description ? `<div class="um-bio">${esc(a.description)}</div>` : '') + dmInfo([
+    ['Platforms', (a.platforms || []).map(p => p === 'standalonewindows' ? 'PC' : p === 'android' ? 'Quest' : p).join(', ') || '—'],
+    ['Performance', (a.performance || []).join(', ') || '—'],
+    ['Status', a.releaseStatus || ''], ['Updated', a.updated ? new Date(a.updated).toLocaleDateString() : '']
+  ])
+}
 async function renderMutSub (sub) {
   const el = $('umMutBody'); if (!el || !umUser) return
   el.innerHTML = '<div class="muted">Loading…</div>'
@@ -1538,6 +1597,18 @@ $('startLaunch').addEventListener('click', async () => {
   setText('startOut', r.ok ? `✅ Launched ${r.launched} app(s)` : 'Error')
 })
 
+/* ---------------- crash recovery + moderation list ---------------- */
+$('autoRejoin').addEventListener('change', e => { api.saveSetting('autoRejoin', e.target.checked); api.setAutoRejoin(e.target.checked) })
+async function loadModerations () {
+  const el = $('modList'); el.textContent = 'Loading…'
+  const r = await api.vrchatModerations()
+  if (!r.ok) { el.textContent = (r.error || 'failed') + ' — log in on the VRChat tab.'; return }
+  if (!r.moderations.length) { el.textContent = 'No blocked or muted users.'; return }
+  el.innerHTML = r.moderations.map(m => `<div class="row" style="justify-content:space-between;padding:3px 0"><span>${m.type === 'block' ? '🚫' : '🔇'} ${esc(m.targetName || m.targetUserId)}</span><button class="btn ghost mod-un" data-id="${m.targetUserId}" data-type="${m.type}" style="padding:3px 9px;font-size:.72rem">Remove</button></div>`).join('')
+  el.querySelectorAll('.mod-un').forEach(b => b.addEventListener('click', async () => { b.textContent = '…'; await api.vrchatUnmoderate(b.dataset.id, b.dataset.type); loadModerations() }))
+}
+$('modRefresh').addEventListener('click', loadModerations)
+
 /* ---------------- data export / import ---------------- */
 $('dataExport').addEventListener('click', async () => { const r = await api.dataExport(); setText('dataOut', r.ok ? '✅ Saved to ' + r.path : (r.error === 'cancelled' ? 'Cancelled' : 'Error: ' + r.error)) })
 $('dataImport').addEventListener('click', async () => { const r = await api.dataImport(); setText('dataOut', r.ok ? '✅ Imported — restart to apply.' : (r.error === 'cancelled' ? 'Cancelled' : 'Error: ' + r.error)) })
@@ -1671,6 +1742,7 @@ async function init () {
   // Configured Start + presets + server status
   $('startApps').value = await api.getSetting('startApps', '')
   $('startWithVrc').checked = await api.getSetting('startWithVrc', false)
+  $('autoRejoin').checked = await api.getSetting('autoRejoin', false)
   loadStatusPresets()
   loadOnlineCount()
 

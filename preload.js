@@ -111,6 +111,13 @@ window.electronAPI = {
   vrchatGroupGalleries: id => ipcRenderer.invoke('vrchat:groupGalleries', id),
   vrchatGroupGalleryImages: (groupId, galleryId) => ipcRenderer.invoke('vrchat:groupGalleryImages', { groupId, galleryId }),
   vrchatGroupPosts: id => ipcRenderer.invoke('vrchat:groupPosts', id),
+  vrchatAvatar: id => ipcRenderer.invoke('vrchat:avatar', id),
+  vrchatGroupMembers: id => ipcRenderer.invoke('vrchat:groupMembers', id),
+  vrchatGroupRoles: id => ipcRenderer.invoke('vrchat:groupRoles', id),
+  vrchatModerations: () => ipcRenderer.invoke('vrchat:moderations'),
+  avatarsSearch: (url, query, page) => ipcRenderer.invoke('avatars:search', { url, query, page }),
+  avatarsDefaultProviders: () => ipcRenderer.invoke('avatars:defaultProviders'),
+  setAutoRejoin: on => ipcRenderer.invoke('app:setAutoRejoin', on),
   pawprintsList: () => ipcRenderer.invoke('pawprints:list'),
   pawprintsClear: () => ipcRenderer.invoke('pawprints:clear'),
 

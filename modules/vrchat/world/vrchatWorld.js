@@ -30,7 +30,8 @@ const state = {
   joinUrl: '', // launch straight into this instance
   worldUrl: '', // the world's public page
   profileUrl: '', // your VRChat profile
-  players: [] // RADAR: display names currently in your instance (from the log)
+  players: [], // RADAR: display names currently in your instance (from the log)
+  lastVideo: '' // last video URL played in the instance (from the log)
 }
 
 // Radar player set, kept in sync with state.players.
@@ -92,6 +93,9 @@ function processLine (line) {
     playerSet.clear(); syncPlayers()
     return true
   }
+  // Video player URLs (for media-link history).
+  m = line.match(/\[Video Playback\][^']*resolve URL '([^']+)'/) || line.match(/added URL '([^']+)'/)
+  if (m) { state.lastVideo = m[1]; return true }
   // "User Authenticated: DisplayName (usr_xxxx-...)"
   m = line.match(/User Authenticated:.*\((usr_[^)]+)\)/)
   if (m) {

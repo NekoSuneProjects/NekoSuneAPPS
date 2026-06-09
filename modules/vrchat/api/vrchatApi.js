@@ -243,6 +243,45 @@ async function getGroupPosts (groupId) {
   return { ok: false, error: errOf(res, 'Could not load posts') }
 }
 
+// ---- Avatar detail, group members/roles, moderations ----
+async function getAvatar (id) {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  const res = await axios.get(`${BASE}/avatars/${id}`, Object.assign({ headers: baseHeaders() }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && res.data && res.data.id) {
+    const a = res.data
+    const platforms = [...new Set((a.unityPackages || []).map(p => p.platform).filter(Boolean))]
+    const perf = [...new Set((a.unityPackages || []).map(p => p.performanceRating).filter(Boolean))]
+    return { ok: true, avatar: { id: a.id, name: a.name, description: a.description, image: a.thumbnailImageUrl || a.imageUrl, authorName: a.authorName, authorId: a.authorId, releaseStatus: a.releaseStatus, platforms, performance: perf, created: a.created_at, updated: a.updated_at } }
+  }
+  return { ok: false, error: errOf(res, 'Could not load avatar') }
+}
+async function getGroupMembers (groupId) {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  const res = await axios.get(`${BASE}/groups/${groupId}/members`, Object.assign({ headers: baseHeaders(), params: { n: 50 } }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && Array.isArray(res.data)) return { ok: true, members: res.data.map(m => ({ id: (m.user && m.user.id) || m.userId, name: (m.user && m.user.displayName) || '', icon: (m.user && (m.user.userIcon || m.user.currentAvatarThumbnailImageUrl)) || '', roleIds: m.roleIds || [], isOwner: m.isGroupRepresentation || false })) }
+  return { ok: false, error: errOf(res, 'Could not load members') }
+}
+async function getGroupRoles (groupId) {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  const res = await axios.get(`${BASE}/groups/${groupId}/roles`, Object.assign({ headers: baseHeaders() }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && Array.isArray(res.data)) return { ok: true, roles: res.data.map(r => ({ id: r.id, name: r.name, permissions: r.permissions || [] })) }
+  return { ok: false, error: errOf(res, 'Could not load roles') }
+}
+async function getModerations () {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  const res = await axios.get(`${BASE}/auth/user/playermoderations`, Object.assign({ headers: baseHeaders() }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && Array.isArray(res.data)) return { ok: true, moderations: res.data.map(m => ({ id: m.id, type: m.type, targetUserId: m.targetUserId, targetName: m.targetDisplayName })) }
+  return { ok: false, error: errOf(res, 'Could not load moderations') }
+}
+
 // ---- Messenger (invite/response message slots) ----
 // type: message (invite) | response | request (request invite) | requestResponse
 async function getMessages (type) {
@@ -550,5 +589,6 @@ module.exports = {
   updateProfile, selectAvatar, deleteAvatar, createInstance, inviteSelf, groupInvite,
   setNote, moderate, unmoderate, getFavoriteFriendIds, getOnlineCount, getGroupPosts,
   getMessages, updateMessage, getGroupGalleries, getGroupGalleryImages,
+  getAvatar, getGroupMembers, getGroupRoles, getModerations,
   getMyGroups, getGroupEvents, getNotifications, acceptFriendRequest, hideNotification
 }

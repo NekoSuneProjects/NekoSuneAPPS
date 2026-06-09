@@ -36,6 +36,8 @@ const vrcTools = require('./modules/vrchat/tools/vrcTools')
 const pawprints = require('./modules/vrchat/tools/pawprints')
 const gamelog = require('./modules/history/gamelog')
 const photoRelay = require('./modules/integrations/photoRelay')
+const avatarDb = require('./modules/vrchat/avatars/avatarDb')
+const crashGuard = require('./modules/vrchat/tools/crashGuard')
 
 // Keep a stray error in any poller/network module from hard-crashing the app.
 process.on('uncaughtException', err => console.error('[uncaughtException]', err))
@@ -133,7 +135,9 @@ app.whenReady().then(async () => {
     setVrcContext({ worldName: w.inWorld ? w.worldName : '', joinUrl: w.joinUrl, worldUrl: w.worldUrl, profileUrl: w.profileUrl })
     pawprints.setWorld(w.inWorld ? w.worldName : '')
     logWorldDiff(w)
+    if (w.lastVideo && w.lastVideo !== lastVideoLogged) { lastVideoLogged = w.lastVideo; gamelog.log('video', '🎬 Video', w.lastVideo, w.worldName) }
   })
+  crashGuard.start({ enabled: settings.get('autoRejoin', false), getLocation: () => { const w = getVrcWorld(); return (w.inWorld && w.worldId && w.instanceId) ? `${w.worldId}:${w.instanceId}` : '' } })
   setInterval(() => pawprints.tickCommit(), 60000) // persist ongoing world time
   startFriendDiff()
   startGroupAlerts()
@@ -151,7 +155,7 @@ app.on('activate', () => {
 app.on('before-quit', () => {
   stopComponentStats(); stopNetworkStats(); stopPulsoid(); stopHyperate(); stopWindowActivity()
   disconnectTikTok(); stopTwitch(); stopKick(); stopDiscord(); stopVrBattery(); stopVrcWorld(); stopAfk()
-  stopWeather(); stopVrcStatusPoll(); stopBot(); pawprints.tickCommit(); stopFriendDiff(); stopGreeter(); gamelog.close(); photoRelay.stop(); stopGroupAlerts(); stopNotifPoll()
+  stopWeather(); stopVrcStatusPoll(); stopBot(); pawprints.tickCommit(); stopFriendDiff(); stopGreeter(); gamelog.close(); photoRelay.stop(); stopGroupAlerts(); stopNotifPoll(); crashGuard.stop()
 })
 
 /* ------------------------------------------------------------------ */
@@ -367,6 +371,13 @@ ipcMain.handle('vrchat:updateMessage', (e, { type, slot, message } = {}) => vrch
 ipcMain.handle('vrchat:groupGalleries', (e, id) => vrchatApi.getGroupGalleries(id))
 ipcMain.handle('vrchat:groupGalleryImages', (e, { groupId, galleryId } = {}) => vrchatApi.getGroupGalleryImages(groupId, galleryId))
 ipcMain.handle('vrchat:groupPosts', (e, id) => vrchatApi.getGroupPosts(id))
+ipcMain.handle('vrchat:avatar', (e, id) => vrchatApi.getAvatar(id))
+ipcMain.handle('vrchat:groupMembers', (e, id) => vrchatApi.getGroupMembers(id))
+ipcMain.handle('vrchat:groupRoles', (e, id) => vrchatApi.getGroupRoles(id))
+ipcMain.handle('vrchat:moderations', () => vrchatApi.getModerations())
+ipcMain.handle('avatars:search', (e, { url, query, page } = {}) => avatarDb.search(url, query, page))
+ipcMain.handle('avatars:defaultProviders', () => avatarDb.DEFAULT_PROVIDERS)
+ipcMain.handle('app:setAutoRejoin', (e, on) => { crashGuard.setEnabled(!!on); settings.set('autoRejoin', !!on); return true })
 ipcMain.handle('pawprints:list', () => pawprints.list())
 ipcMain.handle('pawprints:clear', () => { pawprints.clear(); return true })
 
@@ -376,6 +387,7 @@ ipcMain.handle('pawprints:clear', () => { pawprints.clear(); return true })
 let lastPlayers = new Set()
 let playersPrimed = false
 let lastWorldLogged = ''
+let lastVideoLogged = ''
 function logWorldDiff (w) {
   if (!w) return
   if (!w.inWorld) { lastPlayers = new Set(); playersPrimed = false; lastWorldLogged = ''; return }
