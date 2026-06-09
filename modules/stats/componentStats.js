@@ -4,12 +4,13 @@
 // the snapshot into a chatbox line.
 
 const si = require('systeminformation')
+const { acquireSiShell, releaseSiShell } = require('./siShell')
 
 let pollTimer = null
 let onUpdate = null
 let lastSnapshot = null
 
-const DEFAULT_INTERVAL_MS = 3000
+const DEFAULT_INTERVAL_MS = 5000
 
 function round (value, digits = 0) {
   if (!Number.isFinite(value)) return 0
@@ -82,14 +83,16 @@ async function tick () {
 function startComponentStats (listener, intervalMs = DEFAULT_INTERVAL_MS) {
   onUpdate = listener
   stopComponentStats()
+  acquireSiShell() // reuse one PowerShell for all WMI queries instead of spawning per call
   tick()
-  pollTimer = setInterval(tick, Math.max(1000, intervalMs))
+  pollTimer = setInterval(tick, Math.max(2000, intervalMs))
 }
 
 function stopComponentStats () {
   if (pollTimer) {
     clearInterval(pollTimer)
     pollTimer = null
+    releaseSiShell()
   }
 }
 

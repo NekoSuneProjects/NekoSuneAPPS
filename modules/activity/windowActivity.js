@@ -57,11 +57,13 @@ function tick () {
   }
 }
 
-function startWindowActivity (listener, intervalMs = 3000) {
+function startWindowActivity (listener, intervalMs = 10000) {
   onUpdate = listener
   stopWindowActivity()
   tick()
-  pollTimer = setInterval(tick, Math.max(2000, intervalMs))
+  // Each tick spawns a fresh powershell.exe (+ conhost), so poll gently — a
+  // chatbox/status line doesn't need sub-10s foreground-window granularity.
+  pollTimer = setInterval(tick, Math.max(5000, intervalMs))
 }
 
 function stopWindowActivity () {

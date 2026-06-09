@@ -3,6 +3,22 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.1] - 2026-06-09
+
+### Performance
+- **Far fewer background processes** — fixed the "too many programs running" lag
+  where the app spawned a constant churn of `powershell.exe` and `conhost.exe`
+  ("Console Window") processes:
+  - **System & Network stats** now route every CPU/GPU/RAM/temperature/network/
+    ping query through a single, reused PowerShell session (via
+    `systeminformation`'s persistent shell) instead of spawning a brand-new
+    `powershell.exe` (+ `conhost.exe`) for *every* reading. The shell is
+    ref-counted: started when the first poller turns on, released when the last
+    one turns off.
+  - **Window Activity** polling slowed from every 3s to every 10s (5s floor),
+    cutting its PowerShell spawns by ~70%.
+  - **System Stats** poll interval relaxed 3s → 5s; **Network Stats** 3s → 5s.
+
 ## [Unreleased]
 
 ### Added

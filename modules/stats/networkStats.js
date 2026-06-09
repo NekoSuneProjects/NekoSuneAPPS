@@ -2,6 +2,7 @@
 // Network up/down throughput + ping, using systeminformation. Runs in MAIN process.
 
 const si = require('systeminformation')
+const { acquireSiShell, releaseSiShell } = require('./siShell')
 
 let pollTimer = null
 let onUpdate = null
@@ -40,17 +41,19 @@ async function tick (pingHost) {
   }
 }
 
-function startNetworkStats (listener, { intervalMs = 3000, pingHost = '1.1.1.1' } = {}) {
+function startNetworkStats (listener, { intervalMs = 5000, pingHost = '1.1.1.1' } = {}) {
   onUpdate = listener
   stopNetworkStats()
+  acquireSiShell() // reuse one PowerShell for all WMI queries instead of spawning per call
   tick(pingHost)
-  pollTimer = setInterval(() => tick(pingHost), Math.max(1000, intervalMs))
+  pollTimer = setInterval(() => tick(pingHost), Math.max(2000, intervalMs))
 }
 
 function stopNetworkStats () {
   if (pollTimer) {
     clearInterval(pollTimer)
     pollTimer = null
+    releaseSiShell()
   }
 }
 

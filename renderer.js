@@ -441,14 +441,14 @@ api.on('stats:update', s => {
   })
 })
 $('enableStats').addEventListener('change', e => {
-  setPill('statsState', e.target.checked, 'on'); e.target.checked ? api.statsStart(3000) : api.statsStop()
+  setPill('statsState', e.target.checked, 'on'); e.target.checked ? api.statsStart(5000) : api.statsStop()
   api.saveSetting('statsEnabled', e.target.checked)
 })
 api.on('net:update', s => {
   setText('netOut', `↓ ${s.downMbps} Mbps · ↑ ${s.upMbps} Mbps${s.pingMs ? ' · ' + s.pingMs + 'ms' : ''} (${s.iface})`)
   composer.update({ down: s.downMbps, up: s.upMbps, ping: s.pingMs })
 })
-$('enableNet').addEventListener('change', e => { setPill('netState', e.target.checked, 'on'); e.target.checked ? api.netStart({ intervalMs: 3000 }) : api.netStop(); api.saveSetting('netEnabled', e.target.checked) })
+$('enableNet').addEventListener('change', e => { setPill('netState', e.target.checked, 'on'); e.target.checked ? api.netStart({ intervalMs: 5000 }) : api.netStop(); api.saveSetting('netEnabled', e.target.checked) })
 
 api.on('hr:update', s => {
   setPill('hrState', s.online, 'live'); setText('hrOut', s.bpm || '—')
@@ -1862,8 +1862,8 @@ async function init () {
   updatePreview()
 
   // restore + auto-start the stat pollers that were left enabled
-  if (await api.getSetting('statsEnabled', false)) { $('enableStats').checked = true; setPill('statsState', true, 'on'); api.statsStart(3000) }
-  if (await api.getSetting('netEnabled', false)) { $('enableNet').checked = true; setPill('netState', true, 'on'); api.netStart({ intervalMs: 3000 }) }
+  if (await api.getSetting('statsEnabled', false)) { $('enableStats').checked = true; setPill('statsState', true, 'on'); api.statsStart(5000) }
+  if (await api.getSetting('netEnabled', false)) { $('enableNet').checked = true; setPill('netState', true, 'on'); api.netStart({ intervalMs: 5000 }) }
   if (await api.getSetting('windowEnabled', false)) { $('enableWindow').checked = true; setPill('winState', true, 'on'); api.windowStart() }
   $('tiktokUser').value = await api.getSetting('tiktokUser', '')
   $('tiktokSignKey').value = await api.getSetting('tiktokSignKey', '')
