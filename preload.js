@@ -57,6 +57,12 @@ window.electronAPI = {
   tonMgrSetAuto: on => ipcRenderer.invoke('tonmgr:setAuto', on),
   tonMgrGetAuto: () => ipcRenderer.invoke('tonmgr:getAuto'),
 
+  // ToN VR/desktop alerts
+  tonNotifyGet: () => ipcRenderer.invoke('tonNotify:get'),
+  tonNotifySet: cfg => ipcRenderer.invoke('tonNotify:set', cfg),
+  tonNotifyTest: () => ipcRenderer.invoke('tonNotify:test'),
+  tonNotifyDetect: () => ipcRenderer.invoke('tonNotify:detect'),
+
   // tiktok
   tiktokConnect: (user, signApiKey) => ipcRenderer.invoke('tiktok:connect', { username: user, signApiKey }),
   tiktokDisconnect: () => ipcRenderer.invoke('tiktok:disconnect'),

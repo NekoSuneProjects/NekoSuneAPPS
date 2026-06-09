@@ -791,10 +791,24 @@ if ($('tonMgrStop')) $('tonMgrStop').addEventListener('click', async () => { awa
 if ($('tonMgrAuto')) $('tonMgrAuto').addEventListener('change', e => api.tonMgrSetAuto(e.target.checked))
 api.on('tonmgr:status', () => loadTonMgr())
 
+// ToN alerts (vrnotications: VR overlay ↔ Windows toast)
+async function loadTonNotify () {
+  const c = await api.tonNotifyGet()
+  if ($('tonNotify')) $('tonNotify').checked = !!c.enabled
+  if ($('tonNotifyTerrors')) $('tonNotifyTerrors').checked = !!c.terrors
+  if ($('tonNotifyMode')) $('tonNotifyMode').value = c.mode || 'auto'
+  api.tonNotifyDetect().then(d => { if ($('tonNotifyDetect')) setText('tonNotifyDetect', `detected: ${d.xsoverlay ? 'XSOverlay ' : ''}${d.ovrtoolkit ? 'OVRToolkit ' : ''}${d.steamvr ? 'SteamVR' : ''}`.trim() || 'detected: desktop (no VR)') })
+}
+function saveTonNotify () { api.tonNotifySet({ enabled: $('tonNotify').checked, terrors: $('tonNotifyTerrors').checked, mode: $('tonNotifyMode').value }) }
+if ($('tonNotify')) $('tonNotify').addEventListener('change', saveTonNotify)
+if ($('tonNotifyTerrors')) $('tonNotifyTerrors').addEventListener('change', saveTonNotify)
+if ($('tonNotifyMode')) $('tonNotifyMode').addEventListener('change', saveTonNotify)
+if ($('tonNotifyTest')) $('tonNotifyTest').addEventListener('click', async () => { const b = $('tonNotifyTest'); b.textContent = 'Sent ✓'; await api.tonNotifyTest(); setTimeout(() => { b.textContent = 'Test' }, 1500) })
+
 const tonRefBtn = document.querySelector('[data-tab="tonref"]')
 if (tonRefBtn) tonRefBtn.addEventListener('click', () => {
   tonEnsureConnected() // auto-connect the WS when viewing Terrors; module retries until connected
-  loadTonCache(); loadTonPlayer(); loadTonSaves(); loadTonMgr()
+  loadTonCache(); loadTonPlayer(); loadTonSaves(); loadTonMgr(); loadTonNotify()
   api.tonMgrGetAuto().then(v => { if ($('tonMgrAuto')) $('tonMgrAuto').checked = !!v })
 })
 

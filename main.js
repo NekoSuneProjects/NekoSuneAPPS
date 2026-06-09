@@ -41,6 +41,7 @@ const crashGuard = require('./modules/vrchat/tools/crashGuard')
 const { startTon, stopTon, getTonState } = require('./modules/integrations/tonModule')
 const tonData = require('./modules/integrations/tonData')
 const tonManager = require('./modules/integrations/tonManager')
+const vrNotify = require('./modules/integrations/vrNotify')
 
 // Keep a stray error in any poller/network module from hard-crashing the app.
 process.on('uncaughtException', err => console.error('[uncaughtException]', err))
@@ -252,7 +253,10 @@ const tonUnlockRounds = new Set(settings.get('tonUnlockRounds', []))
 let tonSeenSaveTimer = null
 function tonRecordSeen (s) {
   let changed = false
-  if (s.roundActive && s.terror && s.terror !== '???' && !tonSeenTerrors.has(s.terror)) { tonSeenTerrors.add(s.terror); changed = true }
+  if (s.roundActive && s.terror && s.terror !== '???' && !tonSeenTerrors.has(s.terror)) {
+    tonSeenTerrors.add(s.terror); changed = true
+    if (settings.get('tonNotify', true) && settings.get('tonNotifyTerrors', false)) vrNotify.notify('👹 New Terror Encountered', s.terror, settings.get('tonNotifyMode', 'auto'))
+  }
   if (s.map && !tonSeenMaps.has(s.map)) { tonSeenMaps.add(s.map); changed = true }
   if (changed) {
     clearTimeout(tonSeenSaveTimer)
@@ -272,10 +276,11 @@ ipcMain.handle('ton:start', (e, opts) => {
         JSON.stringify({ terror: rec.terror, map: rec.map, result: rec.result, dur: rec.durationSec }), rec.map || '')
       push('ton:round', rec)
     },
-    // Live achievement unlock from the game — mark it, persist, and tell the renderer.
+    // Live achievement unlock from the game — mark it, persist, alert, tell renderer.
     onAchievement: name => {
       if (!tonUnlockAch.has(name)) { tonUnlockAch.add(name); settings.set('tonUnlockAch', [...tonUnlockAch]) }
       push('ton:achievement', name)
+      if (settings.get('tonNotify', true)) vrNotify.notify('🏆 ToN Achievement Unlocked', name, settings.get('tonNotifyMode', 'auto'))
     },
     // The game's save code — keep a dated backup history.
     onSave: code => { const rec = tonAddSave(code); if (rec) push('ton:save', { ts: rec.ts, length: code.length }) }
@@ -339,6 +344,21 @@ ipcMain.handle('tonmgr:start', () => tonManager.start())
 ipcMain.handle('tonmgr:stop', () => tonManager.stop())
 ipcMain.handle('tonmgr:setAuto', (e, on) => { settings.set('tonAutoManager', !!on); return true })
 ipcMain.handle('tonmgr:getAuto', () => settings.get('tonAutoManager', false))
+
+// VR / desktop alerts for ToN achievements & unlocks (vrnotications).
+ipcMain.handle('tonNotify:get', () => ({
+  enabled: settings.get('tonNotify', true),
+  mode: settings.get('tonNotifyMode', 'auto'),
+  terrors: settings.get('tonNotifyTerrors', false)
+}))
+ipcMain.handle('tonNotify:set', (e, cfg = {}) => {
+  if ('enabled' in cfg) settings.set('tonNotify', !!cfg.enabled)
+  if ('mode' in cfg) settings.set('tonNotifyMode', cfg.mode)
+  if ('terrors' in cfg) settings.set('tonNotifyTerrors', !!cfg.terrors)
+  return true
+})
+ipcMain.handle('tonNotify:test', () => vrNotify.notify('🏆 NekoSuneAPPS', 'ToN alerts are working!', settings.get('tonNotifyMode', 'auto')))
+ipcMain.handle('tonNotify:detect', () => vrNotify.detect())
 
 // Export / import the player's ToN data (stats + encounters + round history).
 ipcMain.handle('ton:export', async () => {

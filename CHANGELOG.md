@@ -21,6 +21,11 @@ This project follows [Semantic Versioning](https://semver.org/).
   GitHub, extracts and runs it in the background — the same job as the official
   `update.bat`, built in). Optional **auto-launch on app start** so the WS source
   is always up. No more separate download/update step.
+- **VR / desktop alerts** (via `vrnotications`) — achievement unlocks (and
+  optionally new-terror encounters) pop a notification, **auto-routed** by whether
+  you're in VR: XSOverlay or OVR Toolkit overlay toast when running, otherwise a
+  Windows desktop notification. Channel is selectable (Auto / XSOverlay / OVR
+  Toolkit / Windows / Off) with a Test button on the Terrors tab.
 
 ## [1.0.2] - 2026-06-09
 

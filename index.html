@@ -453,6 +453,20 @@
             <button class="btn ghost" id="tonMgrUpdate" style="font-size:.74rem">↻ Update</button>
             <label class="switch" style="font-size:.74rem;margin-left:auto"><input type="checkbox" id="tonMgrAuto"> Auto-launch on app start</label>
           </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--line,#2a2a3a)">
+            <label class="switch" style="font-size:.74rem"><input type="checkbox" id="tonNotify"> 🔔 Alert on achievements</label>
+            <label class="switch" style="font-size:.74rem"><input type="checkbox" id="tonNotifyTerrors"> + new terrors</label>
+            <span class="muted" style="font-size:.74rem">via</span>
+            <select id="tonNotifyMode" style="font-size:.74rem;width:auto">
+              <option value="auto">Auto (VR ↔ desktop)</option>
+              <option value="xsoverlay">XSOverlay</option>
+              <option value="ovrtoolkit">OVR Toolkit</option>
+              <option value="windows">Windows toast</option>
+              <option value="off">Off</option>
+            </select>
+            <button class="btn ghost" id="tonNotifyTest" style="font-size:.74rem">Test</button>
+            <span class="muted" id="tonNotifyDetect" style="font-size:.72rem;margin-left:auto"></span>
+          </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0;align-items:center">
             <button class="btn ghost tonCat active" data-toncat="achievements">🏆 Achievements</button>
             <button class="btn ghost tonCat" data-toncat="terrors">👹 Terrors</button>
