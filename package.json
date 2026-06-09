@@ -1,0 +1,102 @@
+{
+  "name": "nekochatbox",
+  "version": "1.0.0",
+  "main": "main.js",
+  "bin": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "build": {
+    "copyright": "Copyright © 2024-2025 NekoSuneVR",
+    "appId": "com.nekosunevr.nekochatbox",
+    "productName": "NekoChatbox",
+    "appx": {
+      "backgroundColor": "#0b0b14",
+      "displayName": "NekoChatbox",
+      "publisher": "CN=NekoSuneVR",
+      "publisherDisplayName": "NekoSuneVR",
+      "identityName": "com.nekosunevr.nekochatbox"
+    },
+    "directories": {
+      "output": "dist",
+      "buildResources": "assets"
+    },
+    "files": [
+      "**/*",
+      "!node_modules/.cache"
+    ],
+    "win": {
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "target": [
+        "nsis",
+        "msi"
+      ],
+      "icon": "assets/icon.ico",
+      "files": [
+        "main.js",
+        "preload.js",
+        "renderer.js",
+        "index.html",
+        "settings.js",
+        "LICENSE",
+        "README.md",
+        "CHANGELOG.md",
+        "assets/**/*",
+        "modules/**/*",
+        "package.json",
+        "node_modules/**/*"
+      ]
+    },
+    "nsis": {
+      "allowToChangeInstallationDirectory": true,
+      "oneClick": false
+    },
+    "linux": {
+      "category": "AudioVideo",
+      "icon": "assets/icon.ico",
+      "target": [
+        "AppImage",
+        "deb"
+      ]
+    },
+    "mac": {
+      "category": "public.app-category.utilities",
+      "icon": "assets/icon.ico",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    }
+  },
+  "keywords": [
+    "vrchat",
+    "osc",
+    "chatbox",
+    "tiktok",
+    "twitch"
+  ],
+  "author": "NekoSuneVR",
+  "license": "MIT",
+  "description": "NekoChatbox - a VRChat OSC companion: chatbox, status, component stats, heart rate, TikTok & Twitch follower counters, AudioLink and Now Playing with KAT support.",
+  "dependencies": {
+    "axios": "^1.7.7",
+    "dgram": "^1.0.1",
+    "discord-rpc": "^4.0.1",
+    "electron-store": "^8.2.0",
+    "express": "^4.21.1",
+    "fft-js": "^0.0.12",
+    "mathjs": "^13.2.1",
+    "node-fetch": "^3.3.2",
+    "node-window-manager": "^2.2.4",
+    "systeminformation": "^5.23.5",
+    "tiktok-live-connector": "^2.1.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "electron": "^31.3.1",
+    "electron-builder": "^25.1.8"
+  }
+}

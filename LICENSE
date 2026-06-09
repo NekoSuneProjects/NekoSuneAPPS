@@ -1,0 +1,56 @@
+NekoSuneOSC Proprietary License
+Copyright (c) 2024-2026 NekoSuneVR. All Rights Reserved.
+
+This software and its source code ("the Software") are the exclusive property of
+NekoSuneVR. By downloading, installing, or using the Software you agree to the
+terms below.
+
+1. GRANT OF USE
+   You are granted a personal, non-exclusive, non-transferable, revocable license
+   to download and run the official, unmodified releases of the Software for your
+   own personal use only.
+
+2. PROHIBITED ACTS
+   You may NOT, in whole or in part:
+   a. modify, edit, adapt, translate, or create derivative works of the Software
+      or its source code;
+   b. copy, reproduce, redistribute, sublicense, sell, rent, lease, or otherwise
+      make the Software or its source code available to any third party;
+   c. steal, plagiarize, or claim authorship of the source code or any portion of
+      it;
+   d. use the Software, its source code, comments, assets, or documentation as
+      input, training data, fine-tuning data, embeddings, or for any other purpose
+      related to the development or training of machine learning or artificial
+      intelligence systems;
+   e. reverse engineer, decompile, or disassemble the Software except to the
+      limited extent expressly permitted by applicable law;
+   f. remove, alter, or obscure any copyright, trademark, or other proprietary
+      notices;
+   g. use the Software for any unlawful, infringing, malicious, or otherwise
+      illegal purpose, or in violation of the terms of service of any third-party
+      platform (including but not limited to VRChat, Discord, Twitch, TikTok,
+      Kick, Pulsoid, or any AI provider).
+
+3. NO TRANSFER OF OWNERSHIP
+   No title to or ownership of the Software or its intellectual property is
+   transferred to you. All rights not expressly granted are reserved by NekoSuneVR.
+
+4. THIRD-PARTY COMPONENTS
+   The Software depends on third-party open-source packages, each licensed under
+   its own terms. Those terms apply only to those respective components, not to
+   the NekoSuneOSC source code, which remains governed by this License.
+
+5. TERMINATION
+   This License terminates automatically if you breach any term. Upon termination
+   you must cease all use and destroy all copies of the Software in your possession.
+
+6. NO WARRANTY
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+   FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. SEE DISCLAIMER.md.
+
+7. LIMITATION OF LIABILITY
+   IN NO EVENT SHALL NEKOSUNEVR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+   LIABILITY ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR ITS USE.
+
+For permissions beyond the scope of this License, contact NekoSuneVR.

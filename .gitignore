@@ -1,0 +1,30 @@
+# Dependencies & build output
+node_modules/
+dist/
+out/
+build/
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.cache/
+.vs/
+.idea/
+.vscode/
+
+# Secrets & local config — NEVER commit credentials/tokens/keys
+.env
+.env.*
+*.pem
+*.key
+secrets.json
+config.local.json
+settings.local.json
+**/credentials*.json
+*.token
+
+# Local runtime / persisted data (electron-store lives in AppData, but just in case)
+config.json
+user-settings.json
+nekosuneosc-config.json
