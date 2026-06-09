@@ -43,9 +43,22 @@ const REQ = { validateStatus: () => true, timeout: 15000 }
 // friends panel, friend-diff logger and status poller share one request.
 const _cache = new Map()
 const _inflight = new Map()
+// Global 429 backoff — if VRChat rate-limits us, stop hitting the API for a while
+// and serve stale cache instead (prevents request storms / crashes).
+let rateLimitedUntil = 0
+axios.interceptors.response.use(r => {
+  if (r && r.status === 429) {
+    const ra = parseInt(r.headers && r.headers['retry-after'], 10)
+    rateLimitedUntil = Date.now() + (ra ? ra * 1000 : 60000)
+    console.warn('[vrchat] 429 rate limited — backing off ' + Math.round((rateLimitedUntil - Date.now()) / 1000) + 's')
+  }
+  return r
+}, e => Promise.reject(e))
+function isRateLimited () { return Date.now() < rateLimitedUntil }
 function _memo (key, ttl, fn) {
   const hit = _cache.get(key)
-  if (hit && Date.now() - hit.ts < ttl) return Promise.resolve(hit.val)
+  // Serve cache within TTL, or any stale cache while rate-limited.
+  if (hit && (Date.now() - hit.ts < ttl || isRateLimited())) return Promise.resolve(hit.val)
   if (_inflight.has(key)) return _inflight.get(key)
   const p = Promise.resolve().then(fn)
     .then(v => { if (v && v.ok) _cache.set(key, { ts: Date.now(), val: v }); _inflight.delete(key); return v })
@@ -429,6 +442,19 @@ async function createInstance (worldId, access, region) {
   }
   return { ok: false, error: errOf(res, 'Create instance failed') }
 }
+// Create a GROUP instance for a world. access: public | plus | members
+async function createGroupInstance (worldId, groupId, access, region) {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  const body = { worldId, type: 'group', region: region || 'us', ownerId: groupId, groupAccessType: access || 'members', roleIds: [] }
+  const res = await axios.post(`${BASE}/instances`, body, Object.assign({ headers: baseHeaders({ 'Content-Type': 'application/json' }) }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && res.data) {
+    const instanceId = res.data.instanceId || (res.data.id || '').split(':')[1]
+    return { ok: true, instanceId, location: res.data.location || `${worldId}:${instanceId}`, worldId }
+  }
+  return { ok: false, error: errOf(res, 'Create group instance failed') }
+}
 async function inviteSelf (location) {
   loadCookies()
   const res = await axios.post(`${BASE}/invite/myself/to/${location}`, {}, Object.assign({ headers: baseHeaders({ 'Content-Type': 'application/json' }) }, REQ))
@@ -625,7 +651,7 @@ module.exports = {
   getFriends, getUser, sendFriendRequest, requestInvite, unfriend, inviteUser, getUserGroups, getUserWorlds,
   getMutualFriends, getFavoriteWorlds, getFavoriteGroups, sendBoop, getMyAvatars, getMyWorlds, addFavorite, removeFavorite,
   searchUsers, searchWorlds, searchGroups, getWorld, getGroup,
-  updateProfile, selectAvatar, deleteAvatar, createInstance, inviteSelf, groupInvite,
+  updateProfile, selectAvatar, deleteAvatar, createInstance, createGroupInstance, inviteSelf, groupInvite, isRateLimited,
   setNote, moderate, unmoderate, getFavoriteFriendIds, getOnlineCount, getGroupPosts,
   getMessages, updateMessage, getGroupGalleries, getGroupGalleryImages,
   getAvatar, getGroupMembers, getGroupRoles, getModerations,

@@ -101,6 +101,7 @@ window.electronAPI = {
   vrchatDeleteAvatar: id => ipcRenderer.invoke('vrchat:deleteAvatar', id),
   vrchatCreateInstance: (worldId, access, region) => ipcRenderer.invoke('vrchat:createInstance', { worldId, access, region }),
   vrchatInviteSelf: location => ipcRenderer.invoke('vrchat:inviteSelf', location),
+  vrchatCreateGroupInstance: (worldId, groupId, access, region) => ipcRenderer.invoke('vrchat:createGroupInstance', { worldId, groupId, access, region }),
   vrchatGroupInvite: (groupId, userId) => ipcRenderer.invoke('vrchat:groupInvite', { groupId, userId }),
   vrchatSetNote: (userId, note) => ipcRenderer.invoke('vrchat:setNote', { userId, note }),
   vrchatModerate: (userId, type) => ipcRenderer.invoke('vrchat:moderate', { userId, type }),
@@ -173,6 +174,10 @@ window.electronAPI = {
   vrcToolsCacheSize: () => ipcRenderer.invoke('vrctools:cacheSize'),
   vrcToolsClearCache: () => ipcRenderer.invoke('vrctools:clearCache'),
   vrcToolsOpenFolder: which => ipcRenderer.invoke('vrctools:openFolder', which),
+  vvcInstall: () => ipcRenderer.invoke('vrctools:vvcInstall'),
+  vvcStart: () => ipcRenderer.invoke('vrctools:vvcStart'),
+  vvcStop: () => ipcRenderer.invoke('vrctools:vvcStop'),
+  vvcStatus: () => ipcRenderer.invoke('vrctools:vvcStatus'),
 
   // startup / auto-launch
   setLaunchOnLogin: enabled => ipcRenderer.invoke('app:setLaunchOnLogin', enabled),

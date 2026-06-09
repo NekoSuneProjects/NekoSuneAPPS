@@ -551,6 +551,9 @@
           <label style="margin-top:8px">Bio</label>
           <textarea id="peBio" rows="3" placeholder="your bio"></textarea>
           <div class="row" style="margin-top:8px"><button class="btn" id="peSave">Save profile</button><button class="btn ghost" id="peLoad">Reload</button></div>
+          <label style="margin-top:10px">Bio prefabs</label>
+          <div class="muted" style="font-size:.72rem;margin-bottom:4px">Save the bio above as a reusable prefab; load one to drop it into the editor, then Save profile to apply.</div>
+          <div class="row"><select id="peBioPreset" style="flex:1"><option value="">— bio prefabs —</option></select><button class="btn ghost" id="peBioLoad">Load</button><button class="btn ghost" id="peBioSave">Save bio as prefab</button><button class="btn ghost danger" id="peBioDel">×</button></div>
           <label style="margin-top:10px">Status presets</label>
           <div class="row"><select id="pePreset" style="flex:1"><option value="">— saved presets —</option></select><button class="btn ghost" id="pePresetApply">Apply</button><button class="btn ghost" id="pePresetSave">Save current</button><button class="btn ghost danger" id="pePresetDel">×</button></div>
           <div class="muted" id="peOut" style="margin-top:6px;font-size:.78rem"></div>
@@ -613,6 +616,16 @@
             <button class="btn ghost" data-folder="tools">Tools</button>
             <button class="btn ghost" data-folder="photos">Photos</button>
           </div>
+        </div>
+        <div class="card">
+          <h3>🎞️ VRCVideoCacher</h3>
+          <div class="muted" style="font-size:.75rem;margin-bottom:8px">Runs the standalone VRCVideoCacher proxy that caches world video URLs. External helper process — it does not modify VRChat. Install once, then Start before playing; Stop when done.</div>
+          <div class="row" style="flex-wrap:wrap;gap:8px">
+            <button class="btn" id="vvcInstall">⬇️ Install / Update</button>
+            <button class="btn ghost" id="vvcStart">▶️ Start</button>
+            <button class="btn danger" id="vvcStop">⏹️ Stop</button>
+          </div>
+          <div class="muted" id="vvcOut" style="margin-top:6px;font-size:.78rem">—</div>
         </div>
       </section>
 

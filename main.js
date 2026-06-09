@@ -140,9 +140,10 @@ app.whenReady().then(async () => {
   })
   crashGuard.start({ enabled: settings.get('autoRejoin', false), getLocation: () => { const w = getVrcWorld(); return (w.inWorld && w.worldId && w.instanceId) ? `${w.worldId}:${w.instanceId}` : '' } })
   setInterval(() => pawprints.tickCommit(), 60000) // persist ongoing world time
-  startFriendDiff()
-  startGroupAlerts()
-  startNotifPoll()
+  // Stagger the pollers so they don't all hit the API at once on launch.
+  setTimeout(startFriendDiff, 8000)
+  setTimeout(startNotifPoll, 14000)
+  setTimeout(startGroupAlerts, 22000)
 })
 
 app.on('window-all-closed', () => {
@@ -156,7 +157,7 @@ app.on('activate', () => {
 app.on('before-quit', () => {
   stopComponentStats(); stopNetworkStats(); stopPulsoid(); stopHyperate(); stopWindowActivity()
   disconnectTikTok(); stopTwitch(); stopKick(); stopDiscord(); stopVrBattery(); stopVrcWorld(); stopAfk()
-  stopWeather(); stopVrcStatusPoll(); stopBot(); pawprints.tickCommit(); stopFriendDiff(); stopGreeter(); gamelog.close(); photoRelay.stop(); stopGroupAlerts(); stopNotifPoll(); crashGuard.stop()
+  stopWeather(); stopVrcStatusPoll(); stopBot(); pawprints.tickCommit(); stopFriendDiff(); stopGreeter(); gamelog.close(); photoRelay.stop(); stopGroupAlerts(); stopNotifPoll(); crashGuard.stop(); vrcTools.stopVideoCacher()
 })
 
 /* ------------------------------------------------------------------ */
@@ -313,6 +314,7 @@ ipcMain.handle('vrc:get', () => getVrcWorld())
 /* ------------------------------------------------------------------ */
 let vrcStatusTimer = null
 async function applyVrcStatus () {
+  if (vrchatApi.isRateLimited()) return
   const r = await vrchatApi.fetchUser()
   if (r.ok && r.user) {
     push('vrchat:account', { ok: true, displayName: r.user.displayName, status: r.user.status, statusDescription: r.user.statusDescription })
@@ -362,6 +364,7 @@ ipcMain.handle('vrchat:selectAvatar', (e, id) => vrchatApi.selectAvatar(id))
 ipcMain.handle('vrchat:deleteAvatar', (e, id) => vrchatApi.deleteAvatar(id))
 ipcMain.handle('vrchat:createInstance', (e, { worldId, access, region } = {}) => vrchatApi.createInstance(worldId, access, region))
 ipcMain.handle('vrchat:inviteSelf', (e, location) => vrchatApi.inviteSelf(location))
+ipcMain.handle('vrchat:createGroupInstance', (e, { worldId, groupId, access, region } = {}) => vrchatApi.createGroupInstance(worldId, groupId, access, region))
 ipcMain.handle('vrchat:groupInvite', (e, { groupId, userId } = {}) => vrchatApi.groupInvite(groupId, userId))
 ipcMain.handle('vrchat:setNote', (e, { userId, note } = {}) => vrchatApi.setNote(userId, note))
 ipcMain.handle('vrchat:moderate', (e, { userId, type } = {}) => vrchatApi.moderate(userId, type))
@@ -415,7 +418,7 @@ function logWorldDiff (w) {
 let lastFriends = null // Map(id -> displayName)
 let friendDiffTimer = null
 async function pollFriendDiff () {
-  if (!vrchatApi.isLoggedIn()) return
+  if (!vrchatApi.isLoggedIn() || vrchatApi.isRateLimited()) return
   const [on, off] = await Promise.all([vrchatApi.getFriends(false), vrchatApi.getFriends(true)])
   if (!on.ok && !off.ok) return
   const map = new Map()
@@ -513,7 +516,7 @@ let alertTimer = null
 const lastPostByGroup = {}
 const lastEventByGroup = {}
 async function pollGroupAlerts () {
-  if (!vrchatApi.isLoggedIn()) return
+  if (!vrchatApi.isLoggedIn() || vrchatApi.isRateLimited()) return
   const groups = settings.get('eventGroups', [])
   for (const gid of groups) {
     const r = await vrchatApi.getGroupPosts(gid)
@@ -562,7 +565,7 @@ function notifText (p) {
   }
 }
 async function pollNotifications () {
-  if (!vrchatApi.isLoggedIn()) return
+  if (!vrchatApi.isLoggedIn() || vrchatApi.isRateLimited()) return
   const r = await vrchatApi.getNotifications()
   if (!r.ok) return
   for (const n of r.notifications) {
@@ -634,6 +637,10 @@ ipcMain.handle('vrctools:openFolder', (e, which) => {
   if (p) shell.openPath(p)
   return p
 })
+ipcMain.handle('vrctools:vvcInstall', () => vrcTools.installVideoCacher(settings.get('vvcUrl', '')))
+ipcMain.handle('vrctools:vvcStart', () => vrcTools.startVideoCacher())
+ipcMain.handle('vrctools:vvcStop', () => vrcTools.stopVideoCacher())
+ipcMain.handle('vrctools:vvcStatus', () => vrcTools.videoCacherStatus())
 
 /* ------------------------------------------------------------------ */
 /* Startup / auto-launch                                               */

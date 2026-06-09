@@ -825,6 +825,26 @@ $('cacheClear').addEventListener('click', async () => {
 })
 document.querySelectorAll('[data-folder]').forEach(b => b.addEventListener('click', () => api.vrcToolsOpenFolder(b.dataset.folder)))
 
+async function refreshVvcStatus () {
+  const s = await api.vvcStatus()
+  if (s && s.ok) setText('vvcOut', `${s.installed ? 'Installed' : 'Not installed'} · ${s.running ? '🟢 running' : '⚪ stopped'}`)
+}
+$('vvcInstall').addEventListener('click', async () => {
+  setText('vvcOut', 'Downloading VRCVideoCacher…'); $('vvcInstall').disabled = true
+  const r = await api.vvcInstall()
+  $('vvcInstall').disabled = false
+  setText('vvcOut', r.ok ? `✅ Installed (${fmtBytes(r.bytes)}).` : ('Error: ' + (r.error || 'failed') + ' — set a custom URL with the vvcUrl setting if the release asset changed.'))
+})
+$('vvcStart').addEventListener('click', async () => {
+  const r = await api.vvcStart()
+  setText('vvcOut', r.ok ? (r.already ? 'Already running.' : '🟢 Started.') : ('Error: ' + (r.error || 'failed')))
+})
+$('vvcStop').addEventListener('click', async () => {
+  const r = await api.vvcStop()
+  setText('vvcOut', r.ok ? '⏹️ Stopped.' : ('Error: ' + (r.error || 'failed')))
+})
+document.querySelector('[data-tab="vrctools"]').addEventListener('click', refreshVvcStatus)
+
 /* ---------------- reusable client-side pager (less lag on big lists) ---------------- */
 const _pageState = {}
 function renderPaged (el, items, pageSize, itemHtml, key, wrapClass, afterRender) {
@@ -1184,7 +1204,7 @@ async function openGroupModal (id) {
   setText('dmSub', (g.shortCode ? '@' + g.shortCode + ' · ' : '') + (g.memberCount || 0) + ' members')
   $('dmImage').src = g.iconUrl || 'assets/logo.png'
   $('dmBanner').style.backgroundImage = g.bannerUrl ? `url("${g.bannerUrl}")` : ''
-  $('dmActions').innerHTML = `<a class="btn" href="https://vrchat.com/home/group/${g.id}" target="_blank">Open on VRChat</a><button class="btn ghost" id="grpInvite">Invite people…</button>`
+  $('dmActions').innerHTML = `<a class="btn" href="https://vrchat.com/home/group/${g.id}" target="_blank">Open on VRChat</a><button class="btn ghost" id="grpInvite">Invite people…</button><button class="btn ghost" id="grpMakeInst">Create instance…</button>`
   $('grpInvite').addEventListener('click', async () => {
     const ids = await pickFriends('Invite to ' + (g.name || 'group'))
     if (!ids.length) return
@@ -1192,6 +1212,7 @@ async function openGroupModal (id) {
     for (const id of ids) { const r = await api.vrchatGroupInvite(g.id, id); if (r.ok) ok++ }
     setText('dmSub', `Invited ${ok}/${ids.length} to the group`)
   })
+  $('grpMakeInst').addEventListener('click', () => makeGroupInstance(g))
   $('dmBody').innerHTML = (g.description ? `<div class="um-bio">${esc(g.description)}</div>` : '') + dmInfo([
     ['Members', g.memberCount || 0], ['Code', g.shortCode ? '@' + g.shortCode : ''],
     ['Privacy', g.privacy || ''], ['Created', g.createdAt ? new Date(g.createdAt).toLocaleDateString() : '']
@@ -1201,6 +1222,67 @@ async function openGroupModal (id) {
     '<div class="um-sec">Roles</div><div id="grpRoles" class="muted">Loading…</div>' +
     '<div class="um-sec">Posts</div><div id="grpPosts" class="muted">Loading…</div><div class="um-sec">Gallery</div><div id="grpGallery" class="muted">Loading…</div>'
   loadGroupExtras(g.id)
+}
+// Build a quick world picker + access/region selectors and POST a group instance.
+async function makeGroupInstance (g) {
+  let ov = $('giOverlay')
+  if (!ov) {
+    ov = document.createElement('div')
+    ov.id = 'giOverlay'; ov.className = 'modal'; ov.style.display = 'none'
+    ov.innerHTML = `<div class="modal-box" style="max-width:520px">
+      <div class="modal-head"><h3 style="margin:0">Create group instance</h3><button class="btn ghost" id="giClose">✕</button></div>
+      <div style="padding:12px">
+        <label>World</label>
+        <input type="text" id="giWorld" placeholder="search your worlds / favourites, or paste wrld_… / a world URL" />
+        <div id="giWorldList" class="card-grid" style="max-height:220px;overflow:auto;margin:6px 0"></div>
+        <div class="grid cols-2">
+          <div><label>Access</label><select id="giAccess"><option value="members">Group members</option><option value="plus">Group + (friends of members)</option><option value="public">Public</option></select></div>
+          <div><label>Region</label><select id="giRegion"><option value="us">US West</option><option value="use">US East</option><option value="eu">Europe</option><option value="jp">Japan</option></select></div>
+        </div>
+        <div class="row" style="margin-top:10px"><button class="btn" id="giCreate">Create instance</button></div>
+        <div class="muted" id="giOut" style="margin-top:6px;font-size:.8rem"></div>
+      </div></div>`
+    document.body.appendChild(ov)
+    ov.addEventListener('click', e => { if (e.target === ov) ov.style.display = 'none' })
+    $('giClose').addEventListener('click', () => { ov.style.display = 'none' })
+  }
+  ov.dataset.group = g.id
+  $('giWorld').value = ''; setText('giOut', ''); $('giWorldList').innerHTML = '<div class="muted">Loading your worlds…</div>'
+  let selectedWorld = ''
+  ov.style.display = 'flex'
+
+  const renderWorlds = list => {
+    $('giWorldList').innerHTML = list.length
+      ? list.map(w => `<div class="rb-friend gi-w" data-id="${w.id}" style="cursor:pointer"><img class="ava" src="${w.thumbnailImageUrl || w.imageUrl || 'assets/logo.png'}" referrerpolicy="no-referrer" /><div class="meta grow"><div class="nm">${esc(w.name || w.id)}</div></div></div>`).join('')
+      : '<div class="muted">No worlds — paste a world id/URL above.</div>'
+    $('giWorldList').querySelectorAll('.gi-w').forEach(row => row.addEventListener('click', () => {
+      selectedWorld = row.dataset.id; $('giWorld').value = row.querySelector('.nm').textContent
+      $('giWorldList').querySelectorAll('.gi-w').forEach(r => (r.style.outline = ''))
+      row.style.outline = '2px solid var(--accent)'
+    }))
+  }
+  const [mine, favs] = await Promise.all([api.vrchatMyWorlds().catch(() => ({})), api.vrchatFavWorlds().catch(() => ({}))])
+  const all = []
+  if (mine && mine.ok) all.push(...mine.worlds)
+  if (favs && favs.ok) for (const w of favs.worlds) if (!all.some(x => x.id === w.id)) all.push(w)
+  renderWorlds(all)
+  $('giWorld').oninput = () => {
+    const q = $('giWorld').value.trim()
+    const m = q.match(/wrld_[0-9a-fA-F-]+/)
+    if (m) selectedWorld = m[0]
+    renderWorlds(all.filter(w => (w.name || '').toLowerCase().includes(q.toLowerCase())))
+  }
+  $('giCreate').onclick = async () => {
+    const typed = $('giWorld').value.match(/wrld_[0-9a-fA-F-]+/)
+    const worldId = typed ? typed[0] : selectedWorld
+    if (!worldId) { setText('giOut', 'Pick or paste a world first.'); return }
+    setText('giOut', 'Creating…')
+    const r = await api.vrchatCreateGroupInstance(worldId, ov.dataset.group, $('giAccess').value, $('giRegion').value)
+    if (r && r.ok) {
+      setText('giOut', '✅ Instance created.')
+      if (r.location) { const m = r.location.match(/^(wrld_[^:]+):(.+)$/); if (m) api.vrchatInviteSelf(r.location) }
+    } else setText('giOut', 'Error: ' + ((r && r.error) || 'failed (need group-instance permission)'))
+  }
 }
 async function loadGroupExtras (gid) {
   const mr = await api.vrchatGroupMembers(gid)
@@ -1287,10 +1369,15 @@ function rbFriendRow (f) {
   const ava = f.image ? `<img class="ava" src="${f.image}" referrerpolicy="no-referrer" />` : '<div class="ava"></div>'
   return `<div class="rb-friend" data-id="${f.id}">${ava}<span class="dot" style="background:${color}"></span><div class="meta grow"><div class="nm">${name}</div><div class="lo">${loc}</div></div></div>`
 }
+const RB_CAP = 150
 function rbSection (key, title, friends) {
   if (!friends.length && key !== 'offline') return ''
   const collapsed = rbCollapsed[key]
-  const rows = collapsed ? '' : (friends.map(rbFriendRow).join('') || '<div class="muted" style="padding:4px 6px;font-size:.78rem">None</div>')
+  let rows = ''
+  if (!collapsed) {
+    rows = friends.slice(0, RB_CAP).map(rbFriendRow).join('') || '<div class="muted" style="padding:4px 6px;font-size:.78rem">None</div>'
+    if (friends.length > RB_CAP) rows += `<div class="muted" style="padding:4px 6px;font-size:.72rem">+${friends.length - RB_CAP} more — use search to filter</div>`
+  }
   return `<div class="rb-group rb-toggle" data-grp="${key}">${collapsed ? '▸' : '▾'} ${title} — ${friends.length}</div>${rows}`
 }
 function renderRightbar () {
@@ -1612,6 +1699,32 @@ $('peSave').addEventListener('click', async () => {
   setText('peOut', r.ok ? '✅ Profile updated' : 'Error: ' + (r.error || 'failed'))
 })
 
+/* ---------------- bio prefabs ---------------- */
+async function loadBioPresets () {
+  const ps = await api.getSetting('bioPresets', [])
+  $('peBioPreset').innerHTML = '<option value="">— bio prefabs —</option>' + ps.map((p, i) => `<option value="${i}">${esc(p.name)}</option>`).join('')
+}
+$('peBioSave').addEventListener('click', async () => {
+  const name = prompt('Bio prefab name:')
+  if (!name) return
+  const ps = await api.getSetting('bioPresets', [])
+  ps.push({ name, bio: $('peBio').value })
+  await api.saveSetting('bioPresets', ps)
+  loadBioPresets()
+  setText('peOut', `💾 Saved bio prefab "${name}"`)
+})
+$('peBioLoad').addEventListener('click', async () => {
+  const i = $('peBioPreset').value; if (i === '') return
+  const p = (await api.getSetting('bioPresets', []))[i]; if (!p) return
+  $('peBio').value = p.bio || ''
+  setText('peOut', `📋 Loaded "${p.name}" into the editor — Save profile to apply.`)
+})
+$('peBioDel').addEventListener('click', async () => {
+  const i = $('peBioPreset').value; if (i === '') return
+  const ps = await api.getSetting('bioPresets', [])
+  ps.splice(i, 1); await api.saveSetting('bioPresets', ps); loadBioPresets()
+})
+
 /* ---------------- status presets ---------------- */
 async function loadStatusPresets () {
   const presets = await api.getSetting('statusPresets', [])
@@ -1813,6 +1926,7 @@ async function init () {
   $('startWithVrc').checked = await api.getSetting('startWithVrc', false)
   $('autoRejoin').checked = await api.getSetting('autoRejoin', false)
   loadStatusPresets()
+  loadBioPresets()
   loadOnlineCount()
 
   // VRChat account restore

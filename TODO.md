@@ -6,13 +6,13 @@ Feature-parity checklist toward **VRCX** + **VRCNext**, our own version. Sources
 Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 
 ## 🚨 ALWAYS: Optimise the app (it's laggy)
-- [ ] **Performance pass — top priority.** App feels laggy. Investigate:
-  - Virtualise long lists (friends rail 600+, history, search) — don't render all rows
-  - Throttle/debounce re-renders; avoid full innerHTML rebuilds on every update
-  - Audit all `setInterval` pollers (rightbar/friendDiff/status/greeter/weather/stats/world) — stagger + back off
-  - Lazy-load tab content only when visible; pause canvas (spectrum/OSC graph) off-tab
-  - Reuse the API cache everywhere; add request backoff on 429
-  - Profile with DevTools; check GPU/CPU (hardware accel already off)
+- [~] **Performance pass — top priority.** App feels laggy. Investigate:
+  - [x] Virtualise long lists — rail sections now capped at 150 rows (+N more note); paged tabs
+  - [x] Throttle/debounce re-renders; avoid full innerHTML rebuilds on every update
+  - [x] Audit all `setInterval` pollers — staggered on launch (friendDiff 8s/notif 14s/groups 22s) + 429 backoff guard on every poller
+  - [ ] Lazy-load tab content only when visible; pause canvas (spectrum/OSC graph) off-tab
+  - [x] Reuse the API cache everywhere; add request backoff on 429 (interceptor + isRateLimited + stale-cache fallback)
+  - [ ] Profile with DevTools; check GPU/CPU (hardware accel already off)
 - [~] **Full friends scan** — paginated online+active+offline; verify none missing
 - [x] **Name-change tracking** — logged in History (friend-diff)
 - [x] **VRCX import** — best-effort import button (verify vs real VRCX.sqlite3)
@@ -105,16 +105,16 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 
 ## 🟣 VRCNext-specific (next session)
 Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gaps not already listed above.
-- [~] **Profile editor (your own)** — status/status-text/bio done; pronouns, bio links, pfp & banner todo
+- [~] **Profile editor (your own)** — status/status-text/bio + **bio prefabs** (load/edit/save/delete reusable bios) done; pronouns, bio links, pfp & banner todo
 - [x] **Messenger / message-slot editor** — edit invite & response message slots (Messenger tab)
 - [x] **Multi-Invite** — friend-picker multi-select invite to instance/group
 - [x] **Inventory** — icons / emoji / stickers / prints (with image proxy for auth-gated images)
 - [x] **Avatar browse** — configurable providers (avtrdb + **custom VRCX-style endpoints**) → wear/favourite
 - [x] **Group posts** + **group image gallery** — shown in the group detail modal
-- [ ] **Create group instances** — POST /instances type=group + groupAccessType (needs world picker)
+- [x] **Create group instances** — POST /instances type=group + groupAccessType, with world picker (my worlds + favourites) + access/region selectors in the group modal, auto self-invite
 - [x] **Media Library** — local screenshot gallery (folders/metadata filters todo)
 - [x] **Configured Start** — launch companion apps (SlimeVR, VRCFaceTracking, …) + optional VRChat
-- [ ] **VRCVideoCacher** — install/update + start/stop the local proxy (beyond our yt-dlp fix)
+- [x] **VRCVideoCacher** — install/update (official release download) + start/stop the local proxy from the VRChat Tools tab (custom URL via `vvcUrl` setting)
 - [ ] **Design customization** — dashboard welcome-screen background + launcher accent colour
   (note: we intentionally ship fixed green + seasonal; make this opt-in)
 - [x] **Fast-Fetch cache** — TTL cache + in-flight dedupe for user/world/group/friends
@@ -136,7 +136,7 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
 - [ ] Discord RP **buttons** can't show over IPC (GameSDK only) — text only; revisit if Discord changes.
 - [ ] **Favorites page** (dedicated sidebar) listing worlds/avatars/friends with inline remove (currently add/remove via modals + Favs tab).
 - [ ] Friends panel: avatars for **offline** friends, group-by-favorite, online count badge.
-- [~] Rate-limit guard — caching/dedupe added; still add explicit 429 backoff.
+- [x] Rate-limit guard — 429 backoff interceptor + isRateLimited(); every poller skips while rate-limited; stale-cache fallback.
 - [x] Cache profile/world/group lookups (VRCX "Fast Fetch") to cut API calls.
 - [ ] Verify all VRChat write-actions live (favorite tags, requestInvite slots, invite instanceId format).
 
