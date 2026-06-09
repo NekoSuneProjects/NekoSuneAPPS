@@ -33,6 +33,8 @@ playing, Discord, world radar & more, in one polished themed app.
 | 💜 **Discord Rich Presence** | World + ❤️ BPM + 🎵 song, with a **Join World** button | Discord App ID |
 | 🤖 **Discord Voice Bot** | Read voice state + server mute/deafen via OSC (no allowlist) | your own bot token |
 | 🦊 **VRChat auto-status** | Detect 🟢/🔵/🟠/🔴 from your account | VRChat login (2FA ok) |
+| 🫂 **Social suite** | Friends, groups, search, profiles, favourites, notifications, **create group instances**, **bio prefabs** | VRChat login |
+| 🧰 **VRChat tools** | YouTube fix (yt-dlp), **VRCVideoCacher** install/run, cache tools | Windows |
 | 📡 **Radar** | Live list of players in your instance | reads VRChat log |
 | 🌦 **Weather** | Current conditions as `{weather}` | a city (Open-Meteo, no key) |
 | 🎵 **SpotiOSC** | Control Spotify from VRChat avatar params | OSC receive on |
@@ -140,7 +142,9 @@ npx electron-builder --mac     # dmg + zip (run on macOS)
 
 CI builds all three OSes on every push via
 [`.github/workflows/build.yml`](.github/workflows/build.yml). Pushing a `vX.Y.Z` tag also
-publishes a GitHub Release with the installers attached.
+publishes a GitHub Release with the installers attached. The app ships **no native
+node-gyp modules**, so Windows/macOS/Linux all build without a C++/Python toolchain
+(window-activity uses the OS's own CLI: PowerShell / `osascript` / `xdotool`).
 
 ---
 

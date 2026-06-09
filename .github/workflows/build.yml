@@ -1,4 +1,4 @@
-name: Build NekoSuneOSC
+name: Build NekoSuneAPPS
 
 on:
   push:
@@ -50,7 +50,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: NekoSuneOSC-${{ matrix.artifact }}
+          name: NekoSuneAPPS-${{ matrix.artifact }}
           retention-days: 14
           path: |
             dist/*.exe

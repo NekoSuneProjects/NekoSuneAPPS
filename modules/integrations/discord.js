@@ -44,8 +44,13 @@ let client = null
 let onUpdate = null
 let currentChannelId = null
 let selfId = null
-let buttonsSupported = true // dropped automatically if Discord rejects RP buttons over IPC
-let richSupported = true // dropped to text-only if art assets/buttons cause "Unknown Error"
+// Presence richness ladder — we keep buttons working even if art assets fail.
+//   0 = art assets + buttons   1 = buttons only   2 = art only   3 = text only
+// Buttons DO work over the local IPC RPC (no Game SDK needed); you just can't
+// see your OWN buttons — only other people viewing your profile do. So if a push
+// errors we step DOWN one rung (buttons survive at rung 1) instead of nuking
+// everything to text. We remember the first rung that succeeds for the session.
+let rpLevel = 0
 let rpLogged = false // log the first successful presence push once
 
 const config = {
@@ -154,30 +159,36 @@ function _pushActivity ({ details, state: st } = {}) {
   const profileUrl = effectiveProfileUrl()
   if (profileUrl) buttons.push({ label: '👤 VRChat Profile', url: profileUrl })
 
-  // Minimal, always-valid presence (text only).
+  // Minimal, always-valid presence (text only) + the optional extras.
   const minimal = { details: detailsLine.slice(0, 128), state: stateLine.slice(0, 128), startTimestamp, instance: false }
-  // Full presence adds art assets + buttons — but those FAIL over the local RPC/IPC
-  // if the Discord app has no uploaded 'logo'/'vrchat' art assets, or for buttons
-  // (GameSDK-only). On the first "Unknown Error" we drop to text-only permanently.
-  let activity = minimal
-  if (richSupported) {
-    activity = Object.assign({}, minimal, { largeImageKey: 'logo', largeImageText: 'NekoSuneAPPS', smallImageKey: 'vrchat', smallImageText: 'VRChat' })
-    if (buttonsSupported && buttons.length) activity.buttons = buttons.slice(0, 2)
+  const art = { largeImageKey: 'logo', largeImageText: 'NekoSuneAPPS', smallImageKey: 'vrchat', smallImageText: 'VRChat' }
+
+  // Compose the presence for a given rung of the ladder.
+  const build = level => {
+    const a = Object.assign({}, minimal)
+    if (level === 0 || level === 2) Object.assign(a, art) // art on rungs 0 & 2
+    if ((level === 0 || level === 1) && buttons.length) a.buttons = buttons.slice(0, 2) // buttons on rungs 0 & 1
+    return a
   }
 
-  client.setActivity(activity)
-    .then(() => { if (!rpLogged) { rpLogged = true; console.log('[discord] Rich Presence active:', activity.details, '·', activity.state) } })
-    .catch(err => {
-      if (richSupported) {
-        // Strip art assets + buttons and retry once with text only.
-        richSupported = false; buttonsSupported = false
-        client.setActivity(minimal)
-          .then(() => { if (!rpLogged) { rpLogged = true; console.log('[discord] Rich Presence active (text only — no art assets on this app).') } })
-          .catch(e2 => console.warn('Discord setActivity:', e2.message))
-      } else {
-        console.warn('Discord setActivity:', err.message)
-      }
-    })
+  // Try a rung; on failure step DOWN (richer→leaner) until text-only works.
+  const attempt = level => {
+    const activity = build(level)
+    client.setActivity(activity)
+      .then(() => {
+        rpLevel = level
+        if (!rpLogged) {
+          rpLogged = true
+          const what = level === 0 ? 'art + buttons' : level === 1 ? 'buttons only (no art assets)' : level === 2 ? 'art only' : 'text only'
+          console.log(`[discord] Rich Presence active (${what}):`, activity.details, '·', activity.state)
+        }
+      })
+      .catch(err => {
+        if (level < 3) attempt(level + 1)
+        else console.warn('Discord setActivity:', err.message)
+      })
+  }
+  attempt(rpLevel) // start from the last rung that worked this session
 }
 
 // Called by main when the VRChat world tracker (or the UI status dropdown)
@@ -261,6 +272,7 @@ async function startDiscord (opts = {}, listener) {
 
   await stopDiscord()
   startTimestamp = null // set after ready (Date.now not allowed at module top)
+  rpLevel = 0; rpLogged = false // retry the full art+buttons ladder on (re)connect
 
   const makeClient = () => {
     const c = new RPC.Client({ transport: 'ipc' })

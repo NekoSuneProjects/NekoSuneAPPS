@@ -3,6 +3,29 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **Create group instances** — pick a world (your worlds + favourites) with
+  access (members / group+ / public) and region, created from the group modal.
+- **VRCVideoCacher** — install/update + start/stop the local video-cache proxy
+  from the VRChat Tools tab.
+- **Bio prefabs** — save/load/edit/delete reusable bios in the Profile Editor.
+- **Discord RP buttons without the Game SDK** — buttons now survive over the local
+  IPC RPC via a richness ladder (art+buttons → buttons only → art only → text),
+  instead of being permanently dropped on a single error.
+
+### Changed
+- **No native node-gyp modules** — replaced `node-window-manager` (which broke
+  Windows/macOS CI builds via `extract-file-icon`) with the OS's own CLI for
+  window activity (PowerShell / `osascript` / `xdotool`). Builds now need no
+  C++/Python toolchain.
+
+### Performance
+- 429 rate-limit backoff is now honoured by every poller; pollers are staggered
+  on launch; right-rail sections cap at 150 rows; all dynamic images are
+  `loading="lazy" decoding="async"` to cut memory and prevent crashes.
+
 ## [1.0.0] - 2026-06-09
 
 🎉 First release of **NekoSuneAPPS** — a standalone VRChat OSC companion by NekoSuneVR,
