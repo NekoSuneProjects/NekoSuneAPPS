@@ -1203,6 +1203,7 @@ async function loadRightbar () {
   else $('rbFriends').textContent = (frOn && frOn.error) || 'Could not load friends.'
 }
 $('rbSearch').addEventListener('input', renderRightbar)
+setInterval(loadRightbar, 120000)
 $('rbFriends').addEventListener('click', e => {
   const toggle = e.target.closest('.rb-toggle')
   if (toggle) { const k = toggle.dataset.grp; rbCollapsed[k] = !rbCollapsed[k]; renderRightbar(); return }
@@ -1212,7 +1213,6 @@ $('rbFriends').addEventListener('click', e => {
 // Click your own profile header to open your full profile.
 const rbProfileEl = document.querySelector('.rb-profile')
 if (rbProfileEl) { rbProfileEl.style.cursor = 'pointer'; rbProfileEl.addEventListener('click', () => { if (myUserId) openUserModal(myUserId) }) }
-setInterval(loadRightbar, 90000)
 
 /* ---------------- user profile modal ---------------- */
 function trustRank (tags) {

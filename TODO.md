@@ -16,7 +16,9 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 - [~] **Full friends scan** — paginated online+active+offline; verify none missing
 - [x] **Name-change tracking** — logged in History (friend-diff)
 - [x] **VRCX import** — best-effort import button (verify vs real VRCX.sqlite3)
-- [~] **Perf** — friends panel/radar no longer rebuild every 3s; idle stopwatch fixed (list virtualisation still todo)
+- [~] **Perf** — friends panel/radar no longer rebuild every 3s; idle stopwatch fixed;
+  tiered friend cache (offline 5min/online 90s), self cache, world poll 5s, SQLite write
+  debounced 8s + events capped 8000, rightbar 120s. (list virtualisation still todo)
 
 ---
 

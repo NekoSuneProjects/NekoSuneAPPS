@@ -13,7 +13,7 @@ const os = require('os')
 const path = require('path')
 
 const LOG_DIR = path.join(os.homedir(), 'AppData', 'LocalLow', 'VRChat', 'VRChat')
-const POLL_MS = 3000
+const POLL_MS = 5000
 
 let timer = null
 let onUpdate = null

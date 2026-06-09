@@ -31,6 +31,8 @@ async function init (userDataDir) {
     world TEXT
   )`)
   db.run('CREATE INDEX IF NOT EXISTS idx_events_ts ON events(ts)')
+  // Cap the events table so db.export() stays fast (keep most recent 8000).
+  try { db.run('DELETE FROM events WHERE id NOT IN (SELECT id FROM events ORDER BY ts DESC LIMIT 8000)') } catch (_) {}
   db.run(`CREATE TABLE IF NOT EXISTS notifications (
     id TEXT PRIMARY KEY, ts INTEGER, type TEXT, sender TEXT, message TEXT, world TEXT, link TEXT
   )`)
@@ -63,9 +65,10 @@ function clearNotifs () { if (db) { db.run('DELETE FROM notifications'); persist
 function persist () {
   if (!db || !dbPath) return
   clearTimeout(saveTimer)
+  // Debounced + coalesced — db.export() serialises the whole DB, so write rarely.
   saveTimer = setTimeout(() => {
     try { fs.writeFileSync(dbPath, Buffer.from(db.export())) } catch (e) { console.warn('history save failed:', e.message) }
-  }, 1500)
+  }, 8000)
 }
 
 // type: 'join' | 'leave' | 'friend_add' | 'friend_remove' | 'world' | 'alert' | 'group'

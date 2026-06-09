@@ -96,7 +96,8 @@ async function verify2fa (code, method) {
   return { ok: false, error: errOf(res, 'Invalid 2FA code') }
 }
 
-async function fetchUser () {
+function fetchUser () { return _memo('self', 20000, _fetchUser) }
+async function _fetchUser () {
   loadCookies()
   if (!cookies.auth) return { ok: false, error: 'Not logged in' }
   const res = await axios.get(`${BASE}/auth/user`, Object.assign({ headers: baseHeaders() }, REQ))
@@ -130,7 +131,8 @@ function pickFriend (f) {
     image: f.userIcon || f.profilePicOverride || f.currentAvatarThumbnailImageUrl || ''
   }
 }
-function getFriends (offline = false) { return _memo(`friends:${!!offline}`, 60000, () => _getFriends(offline)) }
+// Online list refreshes often; the heavy paginated offline list rarely changes.
+function getFriends (offline = false) { return _memo(`friends:${!!offline}`, offline ? 300000 : 90000, () => _getFriends(offline)) }
 async function _getFriends (offline = false) {
   loadCookies()
   if (!cookies.auth) return { ok: false, error: 'Not logged in' }
@@ -279,7 +281,7 @@ async function updateProfile (fields) {
   if (!cookies.auth) return { ok: false, error: 'Not logged in' }
   if (!currentUserId) { const u = await fetchUser(); if (!u.ok) return u }
   const res = await axios.put(`${BASE}/users/${currentUserId}`, fields, Object.assign({ headers: baseHeaders({ 'Content-Type': 'application/json' }) }, REQ))
-  storeSetCookie(res)
+  storeSetCookie(res); invalidate('self')
   return res.status === 200 ? { ok: true, user: pickUser(res.data) } : { ok: false, error: errOf(res, 'Profile update failed') }
 }
 async function selectAvatar (id) {
