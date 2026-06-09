@@ -1,5 +1,5 @@
 // modules/integrations/vrNotify.js
-// Alert system for ToN achievements / unlocks via the `vrnotications` package.
+// Alert system for ToN achievements / unlocks via @nekosuneprojects/vrnotications.
 // Auto-detects whether you're in VR and routes the notification to the right place:
 //   • XSOverlay running        -> XSOverlay overlay toast
 //   • OVR Toolkit running      -> OVR Toolkit overlay toast
@@ -15,7 +15,7 @@ let loaded = false
 function load () {
   if (loaded) return lib
   loaded = true
-  try { lib = require('vrnotications') } catch (err) { console.warn('vrnotications unavailable:', err.message); lib = null }
+  try { lib = require('@nekosuneprojects/vrnotications') } catch (err) { console.warn('vrnotications unavailable:', err.message); lib = null }
   return lib
 }
 

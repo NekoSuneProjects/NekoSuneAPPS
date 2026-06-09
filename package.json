@@ -87,6 +87,7 @@
   "license": "SEE LICENSE IN LICENSE",
   "description": "NekoSuneAPPS - a VRChat OSC companion: chatbox, status, social suite, component stats, heart rate, TikTok & Twitch follower counters, AudioLink and Now Playing with KAT support.",
   "dependencies": {
+    "@nekosuneprojects/vrnotications": "^1.0.2",
     "axios": "^1.7.7",
     "discord-rpc": "^4.0.1",
     "discord.js": "^14.16.3",
@@ -98,7 +99,6 @@
     "sql.js": "^1.12.0",
     "systeminformation": "^5.23.5",
     "tiktok-live-connector": "^2.1.0",
-    "vrnotications": "^1.2.0",
     "ws": "^8.18.0"
   },
   "devDependencies": {
