@@ -347,6 +347,12 @@ ipcMain.handle('vrchat:searchWorlds', (e, q) => vrchatApi.searchWorlds(q))
 ipcMain.handle('vrchat:searchGroups', (e, q) => vrchatApi.searchGroups(q))
 ipcMain.handle('vrchat:world', (e, id) => vrchatApi.getWorld(id))
 ipcMain.handle('vrchat:group', (e, id) => vrchatApi.getGroup(id))
+ipcMain.handle('vrchat:updateProfile', (e, fields) => vrchatApi.updateProfile(fields || {}))
+ipcMain.handle('vrchat:selectAvatar', (e, id) => vrchatApi.selectAvatar(id))
+ipcMain.handle('vrchat:deleteAvatar', (e, id) => vrchatApi.deleteAvatar(id))
+ipcMain.handle('vrchat:createInstance', (e, { worldId, access, region } = {}) => vrchatApi.createInstance(worldId, access, region))
+ipcMain.handle('vrchat:inviteSelf', (e, location) => vrchatApi.inviteSelf(location))
+ipcMain.handle('vrchat:groupInvite', (e, { groupId, userId } = {}) => vrchatApi.groupInvite(groupId, userId))
 ipcMain.handle('pawprints:list', () => pawprints.list())
 ipcMain.handle('pawprints:clear', () => { pawprints.clear(); return true })
 
@@ -376,7 +382,10 @@ async function pollFriendDiff () {
   const map = new Map()
   for (const f of [...(on.friends || []), ...(off.friends || [])]) map.set(f.id, f.displayName)
   if (lastFriends === null) { lastFriends = map; return } // baseline
-  for (const [id, name] of map) if (!lastFriends.has(id)) gamelog.log('friend_add', name, 'New friend', '')
+  for (const [id, name] of map) {
+    if (!lastFriends.has(id)) gamelog.log('friend_add', name, 'New friend', '')
+    else if (lastFriends.get(id) !== name) gamelog.log('name_change', name, `was "${lastFriends.get(id)}"`, '')
+  }
   for (const [id, name] of lastFriends) if (!map.has(id)) gamelog.log('friend_remove', name, 'No longer friends', '')
   lastFriends = map
 }
@@ -386,6 +395,10 @@ function stopFriendDiff () { if (friendDiffTimer) { clearInterval(friendDiffTime
 ipcMain.handle('history:list', (e, opts) => gamelog.list(opts || {}))
 ipcMain.handle('history:clear', () => { gamelog.clear(); return true })
 ipcMain.handle('history:log', (e, { type, name, detail, world } = {}) => { gamelog.log(type, name, detail, world); return true })
+ipcMain.handle('history:importVrcx', (e, customPath) => {
+  const p = customPath || path.join(app.getPath('appData'), 'VRCX', 'VRCX.sqlite3')
+  return gamelog.importVrcx(p)
+})
 
 /* ------------------------------------------------------------------ */
 /* Auto-Greeter — auto-accept friend requests                          */

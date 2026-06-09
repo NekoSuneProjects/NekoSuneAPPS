@@ -679,7 +679,7 @@ $('vrcLogin').addEventListener('click', async () => {
     setAcctState(true, `Logged in as ${r.user.displayName} · status: ${r.user.status}`)
     await api.saveSetting('vrcUser', u)
     if ($('vrcAutoStatus').checked) api.vrchatAutoStatus(true)
-    loadRightbar(); loadNotifications()
+    loadRightbar(); loadNotifications(); loadProfileEditor()
   } else setText('vrcAcctOut', 'Error: ' + (r.error || 'login failed'))
 })
 $('vrc2faVerify').addEventListener('click', async () => {
@@ -691,7 +691,7 @@ $('vrc2faVerify').addEventListener('click', async () => {
     setAcctState(true, `Logged in as ${r.user.displayName} · status: ${r.user.status}`)
     await api.saveSetting('vrcUser', $('vrcUser').value.trim())
     if ($('vrcAutoStatus').checked) api.vrchatAutoStatus(true)
-    loadRightbar(); loadNotifications()
+    loadRightbar(); loadNotifications(); loadProfileEditor()
   } else setText('vrcAcctOut', 'Error: ' + (r.error || '2FA failed'))
 })
 $('vrcLogout').addEventListener('click', async () => { await api.vrchatLogout(); setAcctState(false, 'Logged out'); $('vrcAutoStatus').checked = false; api.saveSetting('vrcAutoStatus', false) })
@@ -897,7 +897,7 @@ async function loadMyContent (kind) {
   if (kind === 'avatars') {
     const r = await api.vrchatMyAvatars()
     if (!r.ok) { el.textContent = (r.error || 'Could not load') + ' — log in on the VRChat tab.'; return }
-    el.innerHTML = r.avatars.length ? `<div class="card-grid">${r.avatars.map(a => `<div class="mini-card"><img src="${a.image || 'assets/logo.png'}" referrerpolicy="no-referrer" /><div style="min-width:0"><div class="nm">${esc(a.name)}</div><div class="muted" style="font-size:.72rem">${esc(a.releaseStatus || '')}</div></div></div>`).join('')}</div>` : 'No avatars.'
+    el.innerHTML = r.avatars.length ? `<div class="card-grid">${r.avatars.map(a => `<div class="mini-card" style="flex-direction:column;align-items:stretch"><div style="display:flex;gap:9px;align-items:center"><img src="${a.image || 'assets/logo.png'}" referrerpolicy="no-referrer" /><div style="min-width:0"><div class="nm">${esc(a.name)}</div><div class="muted" style="font-size:.72rem">${esc(a.releaseStatus || '')}</div></div></div><div class="row" style="margin-top:6px;gap:6px"><button class="btn av-switch" data-id="${a.id}" style="padding:3px 10px;font-size:.72rem">Wear</button><button class="btn danger av-del" data-id="${a.id}" data-name="${esc(a.name)}" style="padding:3px 10px;font-size:.72rem">Delete</button></div></div>`).join('')}</div>` : 'No avatars.'
   } else {
     if (!myUserId) { const me = await api.vrchatStatus(); if (me && me.ok) myUserId = me.user.id }
     const r = myUserId ? await api.vrchatUserWorlds(myUserId) : { ok: false, error: 'Log in first' }
@@ -910,6 +910,17 @@ document.querySelectorAll('[data-ctab]').forEach(b => b.addEventListener('click'
   loadMyContent(b.dataset.ctab)
 }))
 document.querySelector('[data-tab="content"]').addEventListener('click', () => loadMyContent('worlds'))
+// Avatar Wear / Delete actions
+$('myContentBody').addEventListener('click', async e => {
+  const sw = e.target.closest('.av-switch'); const del = e.target.closest('.av-del')
+  if (sw) { sw.textContent = '…'; const r = await api.vrchatSelectAvatar(sw.dataset.id); sw.textContent = r.ok ? '✓ Worn' : '✗'; if (!r.ok) console.warn(r.error) }
+  if (del) {
+    const ok = await confirmDialog(`Delete avatar “${del.dataset.name}”? This cannot be undone.`)
+    if (!ok) return
+    del.textContent = '…'; const r = await api.vrchatDeleteAvatar(del.dataset.id)
+    if (r.ok) loadMyContent('avatars'); else { del.textContent = 'Delete'; alert('Delete failed: ' + (r.error || '')) }
+  }
+})
 
 /* ---------------- Search + ID/URL loader + detail modals ---------------- */
 async function doSearch () {
@@ -936,7 +947,7 @@ $('searchQuery').addEventListener('keydown', e => { if (e.key === 'Enter') doSea
 $('searchResults').addEventListener('click', e => { const c = e.target.closest('.mini-card[data-kind="user"]'); if (c) openUserModal(c.dataset.id) })
 
 /* ---------------- History page ---------------- */
-const HIST_ICON = { join: '➡️', leave: '⬅️', friend_add: '➕', friend_remove: '➖', world: '🌐', alert: '🔔', group: '👥' }
+const HIST_ICON = { join: '➡️', leave: '⬅️', friend_add: '➕', friend_remove: '➖', name_change: '✏️', world: '🌐', alert: '🔔', group: '👥' }
 async function loadHistory () {
   const el = $('histList'); el.textContent = 'Loading…'
   const rows = await api.historyList({ type: $('histType').value || undefined, limit: 300 })
@@ -949,6 +960,11 @@ async function loadHistory () {
 $('histRefresh').addEventListener('click', loadHistory)
 $('histType').addEventListener('change', loadHistory)
 $('histClear').addEventListener('click', async () => { await api.historyClear(); loadHistory() })
+$('histImport').addEventListener('click', async () => {
+  $('histList').textContent = 'Importing from VRCX…'
+  const r = await api.historyImportVrcx()
+  if (r.ok) { setText('histList', `✅ Imported ${r.imported} VRCX events.`); loadHistory() } else setText('histList', 'Import failed: ' + (r.error || ''))
+})
 document.querySelector('[data-tab="history"]').addEventListener('click', loadHistory)
 
 /* ---------------- Auto-Greeter ---------------- */
@@ -1004,7 +1020,37 @@ async function openWorldModal (id) {
     ['Players', w.occupants || 0], ['Capacity', w.capacity || '?'], ['Visits', w.visits || 0],
     ['Favorites', w.favorites || 0], ['Status', w.releaseStatus || ''],
     ['Updated', w.updated_at ? new Date(w.updated_at).toLocaleDateString() : '']
-  ])
+  ]) +
+    `<div class="um-sec">Create instance</div>
+     <div class="row" style="flex-wrap:wrap;gap:8px">
+       <select id="instAccess" style="max-width:150px"><option value="public">Public</option><option value="friends+">Friends+</option><option value="friends">Friends</option><option value="invite+">Invite+</option><option value="invite">Invite</option></select>
+       <button class="btn" id="instCreate">Create + Self-invite</button>
+       <button class="btn ghost" id="instInvite">Invite friends…</button>
+     </div>
+     <div class="muted" id="instOut" style="margin-top:6px;font-size:.78rem;word-break:break-all"></div>`
+  bindWorldInstance(w.id)
+}
+let lastInstance = null
+function bindWorldInstance (worldId) {
+  lastInstance = null
+  $('instCreate').addEventListener('click', async () => {
+    setText('instOut', 'Creating instance…')
+    const r = await api.vrchatCreateInstance(worldId, $('instAccess').value)
+    if (!r.ok) { setText('instOut', 'Error: ' + (r.error || 'failed')); return }
+    lastInstance = r
+    await api.vrchatInviteSelf(r.location)
+    setText('instOut', `✅ Created + self-invited. Link: https://vrchat.com/home/launch?worldId=${worldId}&instanceId=${encodeURIComponent(r.instanceId)}`)
+  })
+  $('instInvite').addEventListener('click', async () => {
+    let loc = lastInstance && lastInstance.location
+    if (!loc) { const r = await api.vrchatCreateInstance(worldId, $('instAccess').value); if (!r.ok) { setText('instOut', 'Error: ' + (r.error || 'failed')); return } lastInstance = r; loc = r.location }
+    const ids = await pickFriends('Invite to instance')
+    if (!ids.length) return
+    setText('instOut', `Inviting ${ids.length}…`)
+    let ok = 0
+    for (const id of ids) { const res = await api.vrchatInvite(id, loc); if (res.ok) ok++ }
+    setText('instOut', `✅ Invited ${ok}/${ids.length}`)
+  })
 }
 async function openGroupModal (id) {
   $('detailModal').style.display = 'flex'
@@ -1016,7 +1062,14 @@ async function openGroupModal (id) {
   setText('dmSub', (g.shortCode ? '@' + g.shortCode + ' · ' : '') + (g.memberCount || 0) + ' members')
   $('dmImage').src = g.iconUrl || 'assets/logo.png'
   $('dmBanner').style.backgroundImage = g.bannerUrl ? `url("${g.bannerUrl}")` : ''
-  $('dmActions').innerHTML = `<a class="btn" href="https://vrchat.com/home/group/${g.id}" target="_blank">Open on VRChat</a>`
+  $('dmActions').innerHTML = `<a class="btn" href="https://vrchat.com/home/group/${g.id}" target="_blank">Open on VRChat</a><button class="btn ghost" id="grpInvite">Invite people…</button>`
+  $('grpInvite').addEventListener('click', async () => {
+    const ids = await pickFriends('Invite to ' + (g.name || 'group'))
+    if (!ids.length) return
+    let ok = 0
+    for (const id of ids) { const r = await api.vrchatGroupInvite(g.id, id); if (r.ok) ok++ }
+    setText('dmSub', `Invited ${ok}/${ids.length} to the group`)
+  })
   $('dmBody').innerHTML = (g.description ? `<div class="um-bio">${esc(g.description)}</div>` : '') + dmInfo([
     ['Members', g.memberCount || 0], ['Code', g.shortCode ? '@' + g.shortCode : ''],
     ['Privacy', g.privacy || ''], ['Created', g.createdAt ? new Date(g.createdAt).toLocaleDateString() : '']
@@ -1287,6 +1340,56 @@ $('umFav').addEventListener('click', async () => {
   setText('umActionOut', 'Favoriting…')
   const r = await api.vrchatAddFav('friend', umCurrentId)
   setText('umActionOut', r.ok ? '⭐ Added to favorites' : 'Error: ' + (r.error || 'failed'))
+})
+
+/* ---------------- shared: confirm + friend picker ---------------- */
+let _confirmResolve = null
+function confirmDialog (text) {
+  $('confirmText').textContent = text || 'Are you sure?'
+  $('confirmModal').style.display = 'flex'
+  return new Promise(res => { _confirmResolve = res })
+}
+function _confirmEnd (v) { $('confirmModal').style.display = 'none'; if (_confirmResolve) _confirmResolve(v); _confirmResolve = null }
+$('confirmYes').addEventListener('click', () => _confirmEnd(true))
+$('confirmNo').addEventListener('click', () => _confirmEnd(false))
+$('confirmModal').addEventListener('click', e => { if (e.target === $('confirmModal')) _confirmEnd(false) })
+
+let _pickerResolve = null
+let _pickerSel = new Set()
+async function pickFriends (title) {
+  $('pickerTitle').textContent = title || 'Invite friends'
+  $('pickerModal').style.display = 'flex'; _pickerSel = new Set(); $('pickerSearch').value = ''
+  $('pickerList').textContent = 'Loading…'
+  const r = await api.vrchatFriends(false)
+  const friends = r.ok ? r.friends.slice().sort((a, b) => String(a.displayName).localeCompare(String(b.displayName))) : []
+  const render = () => {
+    const q = $('pickerSearch').value.toLowerCase()
+    $('pickerList').innerHTML = friends.filter(f => !q || String(f.displayName).toLowerCase().includes(q)).map(f => `<label class="rb-friend" style="cursor:pointer"><input type="checkbox" class="pk" data-id="${f.id}" ${_pickerSel.has(f.id) ? 'checked' : ''} style="width:auto" /> <span class="nm">${esc(f.displayName)}</span></label>`).join('') || '<div class="muted">No online friends.</div>'
+    $('pickerList').querySelectorAll('.pk').forEach(c => c.addEventListener('change', () => { c.checked ? _pickerSel.add(c.dataset.id) : _pickerSel.delete(c.dataset.id) }))
+  }
+  render(); $('pickerSearch').oninput = render
+  return new Promise(res => { _pickerResolve = res })
+}
+function _pickerEnd (arr) { $('pickerModal').style.display = 'none'; if (_pickerResolve) _pickerResolve(arr); _pickerResolve = null }
+$('pickerConfirm').addEventListener('click', () => _pickerEnd(Array.from(_pickerSel)))
+$('pickerCancel').addEventListener('click', () => _pickerEnd([]))
+$('pickerClose').addEventListener('click', () => _pickerEnd([]))
+$('pickerModal').addEventListener('click', e => { if (e.target === $('pickerModal')) _pickerEnd([]) })
+
+/* ---------------- profile editor (own) ---------------- */
+async function loadProfileEditor () {
+  const me = await api.vrchatStatus()
+  if (!me.ok) { setText('peOut', me.error || 'Log in on the VRChat tab.'); return }
+  $('peStatus').value = me.user.status || 'active'
+  $('peStatusDesc').value = me.user.statusDescription || ''
+  if (me.user.bio != null) $('peBio').value = me.user.bio
+  setText('peOut', '')
+}
+$('peLoad').addEventListener('click', loadProfileEditor)
+$('peSave').addEventListener('click', async () => {
+  setText('peOut', 'Saving…')
+  const r = await api.vrchatUpdateProfile({ status: $('peStatus').value, statusDescription: $('peStatusDesc').value, bio: $('peBio').value })
+  setText('peOut', r.ok ? '✅ Profile updated' : 'Error: ' + (r.error || 'failed'))
 })
 
 api.on('discord:update', s => {

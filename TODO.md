@@ -5,6 +5,18 @@ Feature-parity checklist toward **VRCX** + **VRCNext**, our own version. Sources
 
 Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 
+## 🚨 ALWAYS: Optimise the app (it's laggy)
+- [ ] **Performance pass — top priority.** App feels laggy. Investigate:
+  - Virtualise long lists (friends rail 600+, history, search) — don't render all rows
+  - Throttle/debounce re-renders; avoid full innerHTML rebuilds on every update
+  - Audit all `setInterval` pollers (rightbar/friendDiff/status/greeter/weather/stats/world) — stagger + back off
+  - Lazy-load tab content only when visible; pause canvas (spectrum/OSC graph) off-tab
+  - Reuse the API cache everywhere; add request backoff on 429
+  - Profile with DevTools; check GPU/CPU (hardware accel already off)
+- [ ] **Full friends scan** — ensure we page through ALL friends (online+active+offline); some still missing
+- [ ] **Name-change tracking** — done in History; verify it catches renames reliably
+- [ ] **VRCX import** — done (best-effort); verify against real VRCX.sqlite3 schema
+
 ---
 
 ## ✅ Already done (for reference)

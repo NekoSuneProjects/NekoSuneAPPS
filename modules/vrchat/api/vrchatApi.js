@@ -38,6 +38,25 @@ function baseHeaders (extra) {
 }
 const REQ = { validateStatus: () => true, timeout: 15000 }
 
+// ---- Lightweight cache to keep VRChat API rate-limit minimal ----
+// Caches successful GETs for a TTL and de-dupes concurrent identical calls so the
+// friends panel, friend-diff logger and status poller share one request.
+const _cache = new Map()
+const _inflight = new Map()
+function _memo (key, ttl, fn) {
+  const hit = _cache.get(key)
+  if (hit && Date.now() - hit.ts < ttl) return Promise.resolve(hit.val)
+  if (_inflight.has(key)) return _inflight.get(key)
+  const p = Promise.resolve().then(fn)
+    .then(v => { if (v && v.ok) _cache.set(key, { ts: Date.now(), val: v }); _inflight.delete(key); return v })
+    .catch(e => { _inflight.delete(key); throw e })
+  _inflight.set(key, p)
+  return p
+}
+function invalidate (prefix) {
+  for (const k of _cache.keys()) if (!prefix || k.startsWith(prefix)) _cache.delete(k)
+}
+
 let currentUserId = '' // captured on login so group/profile calls can use it
 
 function pickUser (d) {
@@ -111,7 +130,8 @@ function pickFriend (f) {
     image: f.userIcon || f.profilePicOverride || f.currentAvatarThumbnailImageUrl || ''
   }
 }
-async function getFriends (offline = false) {
+function getFriends (offline = false) { return _memo(`friends:${!!offline}`, 60000, () => _getFriends(offline)) }
+async function _getFriends (offline = false) {
   loadCookies()
   if (!cookies.auth) return { ok: false, error: 'Not logged in' }
   // The endpoint returns max 100 per call — paginate to get the WHOLE list.
@@ -130,7 +150,8 @@ async function getFriends (offline = false) {
 }
 
 // ---- User profile (clicked from the friends panel) ----
-async function getUser (id) {
+function getUser (id) { return _memo('user:' + id, 45000, () => _getUser(id)) }
+async function _getUser (id) {
   loadCookies()
   if (!cookies.auth) return { ok: false, error: 'Not logged in' }
   const res = await axios.get(`${BASE}/users/${id}`, Object.assign({ headers: baseHeaders() }, REQ))
@@ -199,6 +220,59 @@ async function sendBoop (userId, emojiId) {
   return res.status === 200 ? { ok: true } : { ok: false, error: errOf(res, 'Boop failed') }
 }
 
+// ---- Self profile editor / avatars / instances / group invite ----
+async function updateProfile (fields) {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  if (!currentUserId) { const u = await fetchUser(); if (!u.ok) return u }
+  const res = await axios.put(`${BASE}/users/${currentUserId}`, fields, Object.assign({ headers: baseHeaders({ 'Content-Type': 'application/json' }) }, REQ))
+  storeSetCookie(res)
+  return res.status === 200 ? { ok: true, user: pickUser(res.data) } : { ok: false, error: errOf(res, 'Profile update failed') }
+}
+async function selectAvatar (id) {
+  loadCookies()
+  const res = await axios.put(`${BASE}/avatars/${id}/select`, {}, Object.assign({ headers: baseHeaders({ 'Content-Type': 'application/json' }) }, REQ))
+  storeSetCookie(res)
+  return res.status === 200 ? { ok: true } : { ok: false, error: errOf(res, 'Select avatar failed') }
+}
+async function deleteAvatar (id) {
+  loadCookies()
+  const res = await axios.delete(`${BASE}/avatars/${id}`, Object.assign({ headers: baseHeaders() }, REQ))
+  storeSetCookie(res)
+  return res.status === 200 ? { ok: true } : { ok: false, error: errOf(res, 'Delete avatar failed') }
+}
+// Create an instance for a world. access: public|friends+|friends|invite+|invite
+async function createInstance (worldId, access, region) {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  if (!currentUserId) { const u = await fetchUser(); if (!u.ok) return u }
+  const body = { worldId, region: region || 'us' }
+  if (access === 'public') body.type = 'public'
+  else if (access === 'friends+') { body.type = 'hidden'; body.ownerId = currentUserId }
+  else if (access === 'friends') { body.type = 'friends'; body.ownerId = currentUserId }
+  else if (access === 'invite+') { body.type = 'private'; body.ownerId = currentUserId; body.canRequestInvite = true }
+  else { body.type = 'private'; body.ownerId = currentUserId }
+  const res = await axios.post(`${BASE}/instances`, body, Object.assign({ headers: baseHeaders({ 'Content-Type': 'application/json' }) }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && res.data) {
+    const instanceId = res.data.instanceId || (res.data.id || '').split(':')[1]
+    return { ok: true, instanceId, location: res.data.location || `${worldId}:${instanceId}`, worldId }
+  }
+  return { ok: false, error: errOf(res, 'Create instance failed') }
+}
+async function inviteSelf (location) {
+  loadCookies()
+  const res = await axios.post(`${BASE}/invite/myself/to/${location}`, {}, Object.assign({ headers: baseHeaders({ 'Content-Type': 'application/json' }) }, REQ))
+  storeSetCookie(res)
+  return res.status === 200 ? { ok: true } : { ok: false, error: errOf(res, 'Self-invite failed') }
+}
+async function groupInvite (groupId, userId) {
+  loadCookies()
+  const res = await axios.post(`${BASE}/groups/${groupId}/invites`, { userId }, Object.assign({ headers: baseHeaders({ 'Content-Type': 'application/json' }) }, REQ))
+  storeSetCookie(res)
+  return res.status === 200 ? { ok: true } : { ok: false, error: errOf(res, 'Group invite failed') }
+}
+
 // ---- Search + detail (users / worlds / groups) ----
 async function searchUsers (q) {
   loadCookies()
@@ -224,7 +298,8 @@ async function searchGroups (q) {
   if (res.status === 200 && Array.isArray(res.data)) return { ok: true, groups: res.data.map(g => ({ id: g.id, name: g.name, shortCode: g.shortCode, icon: g.iconUrl || '', members: g.memberCount })) }
   return { ok: false, error: errOf(res, 'Group search failed') }
 }
-async function getWorld (id) {
+function getWorld (id) { return _memo('world:' + id, 300000, () => _getWorld(id)) }
+async function _getWorld (id) {
   loadCookies()
   if (!cookies.auth) return { ok: false, error: 'Not logged in' }
   const res = await axios.get(`${BASE}/worlds/${id}`, Object.assign({ headers: baseHeaders() }, REQ))
@@ -232,7 +307,8 @@ async function getWorld (id) {
   if (res.status === 200 && res.data && res.data.id) return { ok: true, world: res.data }
   return { ok: false, error: errOf(res, 'Could not load world') }
 }
-async function getGroup (id) {
+function getGroup (id) { return _memo('group:' + id, 300000, () => _getGroup(id)) }
+async function _getGroup (id) {
   loadCookies()
   if (!cookies.auth) return { ok: false, error: 'Not logged in' }
   const res = await axios.get(`${BASE}/groups/${id}`, Object.assign({ headers: baseHeaders() }, REQ))
@@ -355,12 +431,13 @@ function mapStatus (s) {
 }
 
 function isLoggedIn () { loadCookies(); return !!cookies.auth }
-function logout () { cookies = {}; currentUserId = ''; saveCookies() }
+function logout () { cookies = {}; currentUserId = ''; saveCookies(); invalidate() }
 
 module.exports = {
   login, verify2fa, fetchUser, mapStatus, isLoggedIn, logout,
   getFriends, getUser, sendFriendRequest, requestInvite, unfriend, inviteUser, getUserGroups, getUserWorlds,
   getMutualFriends, getFavoriteWorlds, getFavoriteGroups, sendBoop, getMyAvatars, addFavorite, removeFavorite,
   searchUsers, searchWorlds, searchGroups, getWorld, getGroup,
+  updateProfile, selectAvatar, deleteAvatar, createInstance, inviteSelf, groupInvite,
   getMyGroups, getGroupEvents, getNotifications, acceptFriendRequest
 }

@@ -95,6 +95,12 @@ window.electronAPI = {
   vrchatSearchGroups: q => ipcRenderer.invoke('vrchat:searchGroups', q),
   vrchatWorld: id => ipcRenderer.invoke('vrchat:world', id),
   vrchatGroup: id => ipcRenderer.invoke('vrchat:group', id),
+  vrchatUpdateProfile: fields => ipcRenderer.invoke('vrchat:updateProfile', fields),
+  vrchatSelectAvatar: id => ipcRenderer.invoke('vrchat:selectAvatar', id),
+  vrchatDeleteAvatar: id => ipcRenderer.invoke('vrchat:deleteAvatar', id),
+  vrchatCreateInstance: (worldId, access, region) => ipcRenderer.invoke('vrchat:createInstance', { worldId, access, region }),
+  vrchatInviteSelf: location => ipcRenderer.invoke('vrchat:inviteSelf', location),
+  vrchatGroupInvite: (groupId, userId) => ipcRenderer.invoke('vrchat:groupInvite', { groupId, userId }),
   pawprintsList: () => ipcRenderer.invoke('pawprints:list'),
   pawprintsClear: () => ipcRenderer.invoke('pawprints:clear'),
 
@@ -102,6 +108,7 @@ window.electronAPI = {
   historyList: opts => ipcRenderer.invoke('history:list', opts),
   historyClear: () => ipcRenderer.invoke('history:clear'),
   historyLog: ev => ipcRenderer.invoke('history:log', ev),
+  historyImportVrcx: p => ipcRenderer.invoke('history:importVrcx', p),
 
   // auto-greeter
   greeterSet: cfg => ipcRenderer.invoke('greeter:set', cfg),

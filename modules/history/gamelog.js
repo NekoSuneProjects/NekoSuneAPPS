@@ -68,6 +68,30 @@ function clear () {
   persist()
 }
 
+// Import history from an existing VRCX SQLite DB (best-effort — VRCX schema varies).
+async function importVrcx (filePath) {
+  if (!SQL || !db) return { ok: false, error: 'History not initialised' }
+  let bytes
+  try { bytes = fs.readFileSync(filePath) } catch (_) { return { ok: false, error: 'VRCX database not found at ' + filePath } }
+  let src
+  try { src = new SQL.Database(bytes) } catch (e) { return { ok: false, error: 'Could not open VRCX DB: ' + e.message } }
+  const toTs = v => { const n = typeof v === 'number' ? v : Date.parse(v); return Number.isFinite(n) ? n : Date.now() }
+  let imported = 0
+  const tryTable = (sql, mapfn) => {
+    try {
+      const st = src.prepare(sql)
+      while (st.step()) { const ev = mapfn(st.getAsObject()); if (ev) { db.run('INSERT INTO events (ts,type,name,detail,world) VALUES (?,?,?,?,?)', [ev.ts, ev.type, ev.name || '', ev.detail || '', ev.world || '']); imported++ } }
+      st.free()
+    } catch (_) { /* table not present in this VRCX version */ }
+  }
+  tryTable('SELECT created_at,type,display_name,location FROM gamelog_join_leave', r => ({ ts: toTs(r.created_at), type: /left/i.test(r.type || '') ? 'leave' : 'join', name: r.display_name, detail: '(VRCX import)', world: r.location }))
+  tryTable('SELECT created_at,world_name,location FROM gamelog_location', r => ({ ts: toTs(r.created_at), type: 'world', name: r.world_name, detail: '(VRCX import)', world: r.location }))
+  tryTable('SELECT created_at,type,display_name FROM gamelog_friend', r => ({ ts: toTs(r.created_at), type: /unfriend|remove|delete/i.test(r.type || '') ? 'friend_remove' : 'friend_add', name: r.display_name, detail: '(VRCX import)' }))
+  try { src.close() } catch (_) {}
+  persist()
+  return { ok: true, imported }
+}
+
 function close () { try { if (db) { fs.writeFileSync(dbPath, Buffer.from(db.export())) } } catch (_) {} }
 
-module.exports = { init, log, list, clear, close }
+module.exports = { init, log, list, clear, close, importVrcx }
