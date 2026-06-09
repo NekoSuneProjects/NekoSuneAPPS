@@ -1056,7 +1056,7 @@ $('searchQuery').addEventListener('keydown', e => { if (e.key === 'Enter') doSea
 $('searchResults').addEventListener('click', e => { const c = e.target.closest('.mini-card[data-kind="user"]'); if (c) openUserModal(c.dataset.id) })
 
 /* ---------------- History page ---------------- */
-const HIST_ICON = { join: '➡️', leave: '⬅️', friend_add: '➕', friend_remove: '➖', name_change: '✏️', world: '🌐', video: '🎬', alert: '🔔', group: '👥' }
+const HIST_ICON = { join: '➡️', leave: '⬅️', friend_add: '➕', friend_remove: '➖', name_change: '✏️', world: '🌐', video: '🎬', portal: '🌀', alert: '🔔', group: '👥' }
 function renderHeatmap (rows) {
   const el = $('histHeatmap'); if (!el) return
   const grid = Array.from({ length: 7 }, () => Array(24).fill(0))

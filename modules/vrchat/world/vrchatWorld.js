@@ -31,7 +31,9 @@ const state = {
   worldUrl: '', // the world's public page
   profileUrl: '', // your VRChat profile
   players: [], // RADAR: display names currently in your instance (from the log)
-  lastVideo: '' // last video URL played in the instance (from the log)
+  lastVideo: '', // last video URL played in the instance (from the log)
+  lastPortal: '', // who dropped the last portal
+  portalSeq: 0 // increments each portal drop (so repeats are logged)
 }
 
 // Radar player set, kept in sync with state.players.
@@ -96,6 +98,12 @@ function processLine (line) {
   // Video player URLs (for media-link history).
   m = line.match(/\[Video Playback\][^']*resolve URL '([^']+)'/) || line.match(/added URL '([^']+)'/)
   if (m) { state.lastVideo = m[1]; return true }
+  // Portal drops (best-effort — log wording varies between VRChat builds).
+  if (/dropped a portal/i.test(line)) {
+    const nm = (line.match(/([\w .\-]{2,40}?) (?:has )?dropped a portal/i) || [])[1]
+    state.lastPortal = (nm ? nm.trim() : 'Someone'); state.portalSeq++
+    return true
+  }
   // "User Authenticated: DisplayName (usr_xxxx-...)"
   m = line.match(/User Authenticated:.*\((usr_[^)]+)\)/)
   if (m) {

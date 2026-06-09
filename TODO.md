@@ -45,10 +45,10 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 
 ### Activity & logging
 - [x] **Video/media link tracking** — video URLs parsed from the log → History
-- [ ] **Name-change tracking** — detect & log when a friend renames (store last known name)
+- [x] **Name-change tracking** — friend renames logged to History (name_change)
 - [x] **Activity heatmap** — day×hour event heatmap on the History page
-- [ ] **Instance join/leave history** for yourself (which instances you joined, duration)
-- [~] **GameLog** — have join/leave/world/friend; add: invites received, portals dropped, events
+- [x] **Instance join/leave history** — enter + leave-with-duration logged to History
+- [x] **GameLog** — join/leave/world (w/ duration)/friend/name-change/video/**portals**/invites/group events
 
 ### Friends & social
 - [x] **VRC Notes editor** — read + write your note on a user (profile Info tab)

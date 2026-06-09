@@ -136,6 +136,7 @@ app.whenReady().then(async () => {
     pawprints.setWorld(w.inWorld ? w.worldName : '')
     logWorldDiff(w)
     if (w.lastVideo && w.lastVideo !== lastVideoLogged) { lastVideoLogged = w.lastVideo; gamelog.log('video', '🎬 Video', w.lastVideo, w.worldName) }
+    if (w.portalSeq && w.portalSeq !== lastPortalSeq) { lastPortalSeq = w.portalSeq; gamelog.log('portal', w.lastPortal || 'Someone', 'dropped a portal', w.worldName) }
   })
   crashGuard.start({ enabled: settings.get('autoRejoin', false), getLocation: () => { const w = getVrcWorld(); return (w.inWorld && w.worldId && w.instanceId) ? `${w.worldId}:${w.instanceId}` : '' } })
   setInterval(() => pawprints.tickCommit(), 60000) // persist ongoing world time
@@ -391,10 +392,19 @@ let lastPlayers = new Set()
 let playersPrimed = false
 let lastWorldLogged = ''
 let lastVideoLogged = ''
+let lastPortalSeq = 0
+let worldEnteredAt = 0
 function logWorldDiff (w) {
   if (!w) return
-  if (!w.inWorld) { lastPlayers = new Set(); playersPrimed = false; lastWorldLogged = ''; return }
-  if (w.worldName && w.worldName !== lastWorldLogged) { lastWorldLogged = w.worldName; gamelog.log('world', w.worldName, 'Entered world', w.worldName) }
+  if (!w.inWorld) {
+    if (lastWorldLogged && worldEnteredAt) { gamelog.log('world', lastWorldLogged, `Left after ${Math.round((Date.now() - worldEnteredAt) / 60000)}m`, lastWorldLogged) }
+    lastPlayers = new Set(); playersPrimed = false; lastWorldLogged = ''; worldEnteredAt = 0; return
+  }
+  if (w.worldName && w.worldName !== lastWorldLogged) {
+    if (lastWorldLogged && worldEnteredAt) gamelog.log('world', lastWorldLogged, `Left after ${Math.round((Date.now() - worldEnteredAt) / 60000)}m`, lastWorldLogged)
+    lastWorldLogged = w.worldName; worldEnteredAt = Date.now()
+    gamelog.log('world', w.worldName, 'Entered instance', w.worldName)
+  }
   const cur = new Set(w.players || [])
   if (!playersPrimed) { lastPlayers = cur; playersPrimed = true; return }
   for (const p of cur) if (!lastPlayers.has(p)) gamelog.log('join', p, 'joined', w.worldName)
