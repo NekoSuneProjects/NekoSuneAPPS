@@ -192,6 +192,7 @@
       <button class="navbtn" data-tab="pawprints"><span class="ico">🐾</span><span class="lbl">Pawprints</span></button>
       <button class="navbtn" data-tab="groups"><span class="ico">👥</span><span class="lbl">Groups</span></button>
       <button class="navbtn" data-tab="content"><span class="ico">🌐</span><span class="lbl">Content</span></button>
+      <button class="navbtn" data-tab="messenger"><span class="ico">✉️</span><span class="lbl">Messenger</span></button>
       <button class="navbtn" data-tab="search"><span class="ico">🔍</span><span class="lbl">Search</span></button>
       <button class="navbtn" data-tab="media"><span class="ico">🖼</span><span class="lbl">Media</span></button>
       <button class="navbtn" data-tab="notify"><span class="ico">🔔</span><span class="lbl">Notify</span></button>
@@ -632,6 +633,20 @@
           <div id="eventGroups" class="muted" style="margin-top:10px;font-size:.82rem">No groups loaded.</div>
           <hr style="border:none;border-top:1px solid var(--border);margin:12px 0" />
           <div id="eventList" class="muted" style="max-height:360px;overflow:auto;font-size:.84rem">No events.</div>
+        </div>
+      </section>
+
+      <!-- MESSENGER -->
+      <section id="messenger" class="tabpanel">
+        <div class="card">
+          <h3>✉️ Messenger <span class="muted" style="font-size:.72rem">(your invite / response message slots)</span></h3>
+          <select id="msgType">
+            <option value="message">Invite messages</option>
+            <option value="response">Invite responses</option>
+            <option value="request">Request invite</option>
+            <option value="requestResponse">Request responses</option>
+          </select>
+          <div id="msgList" class="muted" style="margin-top:10px">Log in on the VRChat tab.</div>
         </div>
       </section>
 

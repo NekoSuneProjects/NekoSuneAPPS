@@ -938,6 +938,23 @@ $('myContentBody').addEventListener('click', async e => {
   }
 })
 
+/* ---------------- Messenger (message slots) ---------------- */
+async function loadMessages () {
+  const el = $('msgList'); el.textContent = 'Loading…'
+  const type = $('msgType').value
+  const r = await api.vrchatMessages(type)
+  if (!r.ok) { el.textContent = (r.error || 'failed') + ' — log in on the VRChat tab.'; return }
+  el.innerHTML = r.messages.map(m => `<div class="row" style="margin:6px 0"><input type="text" class="msg-in" data-slot="${m.slot}" value="${String(m.message || '').replace(/"/g, '&quot;').replace(/</g, '&lt;')}" style="flex:1" /><button class="btn ghost msg-save" data-slot="${m.slot}" style="padding:4px 10px;font-size:.74rem">Save</button></div>`).join('') || 'No message slots.'
+  el.querySelectorAll('.msg-save').forEach(b => b.addEventListener('click', async () => {
+    const inp = el.querySelector(`.msg-in[data-slot="${b.dataset.slot}"]`)
+    b.textContent = '…'
+    const res = await api.vrchatUpdateMessage(type, b.dataset.slot, inp.value)
+    b.textContent = res.ok ? '✓' : '✗'; setTimeout(() => { b.textContent = 'Save' }, 1500)
+  }))
+}
+$('msgType').addEventListener('change', loadMessages)
+document.querySelector('[data-tab="messenger"]').addEventListener('click', loadMessages)
+
 /* ---------------- Search + ID/URL loader + detail modals ---------------- */
 async function doSearch () {
   const q = $('searchQuery').value.trim(); if (!q) return
@@ -1089,7 +1106,17 @@ async function openGroupModal (id) {
   $('dmBody').innerHTML = (g.description ? `<div class="um-bio">${esc(g.description)}</div>` : '') + dmInfo([
     ['Members', g.memberCount || 0], ['Code', g.shortCode ? '@' + g.shortCode : ''],
     ['Privacy', g.privacy || ''], ['Created', g.createdAt ? new Date(g.createdAt).toLocaleDateString() : '']
-  ])
+  ]) + '<div class="um-sec">Posts</div><div id="grpPosts" class="muted">Loading…</div><div class="um-sec">Gallery</div><div id="grpGallery" class="muted">Loading…</div>'
+  loadGroupExtras(g.id)
+}
+async function loadGroupExtras (gid) {
+  const pr = await api.vrchatGroupPosts(gid)
+  if ($('grpPosts')) $('grpPosts').innerHTML = (pr.ok && pr.posts.length) ? pr.posts.map(p => `<div style="padding:5px 0;border-top:1px solid var(--border)"><b>${esc(p.title || 'Post')}</b><div class="muted" style="font-size:.78rem">${esc(p.text || '')}</div></div>`).join('') : 'No posts.'
+  const gal = await api.vrchatGroupGalleries(gid)
+  if (gal.ok && gal.galleries.length) {
+    const imgs = await api.vrchatGroupGalleryImages(gid, gal.galleries[0].id)
+    if ($('grpGallery')) $('grpGallery').innerHTML = (imgs.ok && imgs.images.length) ? `<div class="card-grid">${imgs.images.map(u => `<img src="${u}" referrerpolicy="no-referrer" style="width:100%;height:110px;object-fit:cover;border-radius:8px" />`).join('')}</div>` : 'No images.'
+  } else if ($('grpGallery')) $('grpGallery').textContent = 'No galleries.'
 }
 
 /* ---------------- rail clock + launch ---------------- */

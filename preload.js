@@ -106,6 +106,11 @@ window.electronAPI = {
   vrchatModerate: (userId, type) => ipcRenderer.invoke('vrchat:moderate', { userId, type }),
   vrchatUnmoderate: (userId, type) => ipcRenderer.invoke('vrchat:unmoderate', { userId, type }),
   vrchatFavFriendIds: () => ipcRenderer.invoke('vrchat:favFriendIds'),
+  vrchatMessages: type => ipcRenderer.invoke('vrchat:messages', type),
+  vrchatUpdateMessage: (type, slot, message) => ipcRenderer.invoke('vrchat:updateMessage', { type, slot, message }),
+  vrchatGroupGalleries: id => ipcRenderer.invoke('vrchat:groupGalleries', id),
+  vrchatGroupGalleryImages: (groupId, galleryId) => ipcRenderer.invoke('vrchat:groupGalleryImages', { groupId, galleryId }),
+  vrchatGroupPosts: id => ipcRenderer.invoke('vrchat:groupPosts', id),
   pawprintsList: () => ipcRenderer.invoke('pawprints:list'),
   pawprintsClear: () => ipcRenderer.invoke('pawprints:clear'),
 

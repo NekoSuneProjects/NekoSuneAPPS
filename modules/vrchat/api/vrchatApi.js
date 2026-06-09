@@ -243,6 +243,42 @@ async function getGroupPosts (groupId) {
   return { ok: false, error: errOf(res, 'Could not load posts') }
 }
 
+// ---- Messenger (invite/response message slots) ----
+// type: message (invite) | response | request (request invite) | requestResponse
+async function getMessages (type) {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  if (!currentUserId) { const u = await fetchUser(); if (!u.ok) return u }
+  const res = await axios.get(`${BASE}/message/${currentUserId}/${type}`, Object.assign({ headers: baseHeaders() }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && Array.isArray(res.data)) return { ok: true, messages: res.data.map(m => ({ slot: m.slot, message: m.message })) }
+  return { ok: false, error: errOf(res, 'Could not load messages') }
+}
+async function updateMessage (type, slot, message) {
+  loadCookies()
+  if (!currentUserId) { const u = await fetchUser(); if (!u.ok) return u }
+  const res = await axios.put(`${BASE}/message/${currentUserId}/${type}/${slot}`, { message }, Object.assign({ headers: baseHeaders({ 'Content-Type': 'application/json' }) }, REQ))
+  storeSetCookie(res)
+  return res.status === 200 ? { ok: true } : { ok: false, error: errOf(res, 'Update message failed') }
+}
+
+// ---- Group posts + galleries ----
+async function getGroupGalleries (groupId) {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  const res = await axios.get(`${BASE}/groups/${groupId}/galleries`, Object.assign({ headers: baseHeaders() }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && Array.isArray(res.data)) return { ok: true, galleries: res.data.map(g => ({ id: g.id, name: g.name })) }
+  return { ok: false, error: errOf(res, 'Could not load galleries') }
+}
+async function getGroupGalleryImages (groupId, galleryId) {
+  loadCookies()
+  const res = await axios.get(`${BASE}/groups/${groupId}/galleries/${galleryId}`, Object.assign({ headers: baseHeaders(), params: { n: 30 } }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && Array.isArray(res.data)) return { ok: true, images: res.data.map(i => i.imageUrl).filter(Boolean) }
+  return { ok: false, error: errOf(res, 'Could not load images') }
+}
+
 // ---- Notes, moderation (block/mute), favorite-friend ids ----
 async function setNote (userId, note) {
   loadCookies()
@@ -513,5 +549,6 @@ module.exports = {
   searchUsers, searchWorlds, searchGroups, getWorld, getGroup,
   updateProfile, selectAvatar, deleteAvatar, createInstance, inviteSelf, groupInvite,
   setNote, moderate, unmoderate, getFavoriteFriendIds, getOnlineCount, getGroupPosts,
+  getMessages, updateMessage, getGroupGalleries, getGroupGalleryImages,
   getMyGroups, getGroupEvents, getNotifications, acceptFriendRequest, hideNotification
 }

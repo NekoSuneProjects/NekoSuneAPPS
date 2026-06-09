@@ -362,6 +362,11 @@ ipcMain.handle('vrchat:setNote', (e, { userId, note } = {}) => vrchatApi.setNote
 ipcMain.handle('vrchat:moderate', (e, { userId, type } = {}) => vrchatApi.moderate(userId, type))
 ipcMain.handle('vrchat:unmoderate', (e, { userId, type } = {}) => vrchatApi.unmoderate(userId, type))
 ipcMain.handle('vrchat:favFriendIds', () => vrchatApi.getFavoriteFriendIds())
+ipcMain.handle('vrchat:messages', (e, type) => vrchatApi.getMessages(type))
+ipcMain.handle('vrchat:updateMessage', (e, { type, slot, message } = {}) => vrchatApi.updateMessage(type, slot, message))
+ipcMain.handle('vrchat:groupGalleries', (e, id) => vrchatApi.getGroupGalleries(id))
+ipcMain.handle('vrchat:groupGalleryImages', (e, { groupId, galleryId } = {}) => vrchatApi.getGroupGalleryImages(groupId, galleryId))
+ipcMain.handle('vrchat:groupPosts', (e, id) => vrchatApi.getGroupPosts(id))
 ipcMain.handle('pawprints:list', () => pawprints.list())
 ipcMain.handle('pawprints:clear', () => { pawprints.clear(); return true })
 

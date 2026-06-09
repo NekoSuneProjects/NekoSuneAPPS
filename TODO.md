@@ -105,12 +105,12 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 ## 🟣 VRCNext-specific (next session)
 Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gaps not already listed above.
 - [~] **Profile editor (your own)** — status/status-text/bio done; pronouns, bio links, pfp & banner todo
-- [ ] **Messenger / message-slot editor** — edit the 12 invite & response message slots
-  (`GET/PUT /message/{userId}/{messageType}/{slot}`) and send them
+- [x] **Messenger / message-slot editor** — edit invite & response message slots (Messenger tab)
 - [x] **Multi-Invite** — friend-picker multi-select invite to instance/group
-- [ ] **Inventory** — view/manage Photos, Gallery, custom **icons / emojis / stickers / prints**
+- [ ] **Inventory** — view/manage Photos, Gallery, custom **icons / emojis / stickers / prints** (endpoints need verifying)
 - [ ] **Avatar browse via avtrdb.com** (paginated public avatar search) → switch/favourite
-- [ ] **Create group instances** (covered above) + **group posts** + **group image gallery**
+- [x] **Group posts** + **group image gallery** — shown in the group detail modal
+- [ ] **Create group instances** — POST /instances type=group + groupAccessType (needs world picker)
 - [x] **Media Library** — local screenshot gallery (folders/metadata filters todo)
 - [x] **Configured Start** — launch companion apps (SlimeVR, VRCFaceTracking, …) + optional VRChat
 - [ ] **VRCVideoCacher** — install/update + start/stop the local proxy (beyond our yt-dlp fix)
