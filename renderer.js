@@ -825,6 +825,26 @@ $('cacheClear').addEventListener('click', async () => {
 })
 document.querySelectorAll('[data-folder]').forEach(b => b.addEventListener('click', () => api.vrcToolsOpenFolder(b.dataset.folder)))
 
+/* ---------------- reusable client-side pager (less lag on big lists) ---------------- */
+const _pageState = {}
+function renderPaged (el, items, pageSize, itemHtml, key, wrapClass, afterRender) {
+  const total = items.length
+  const pages = Math.max(1, Math.ceil(total / pageSize))
+  let page = _pageState[key] || 0
+  if (page >= pages) page = pages - 1
+  if (page < 0) page = 0
+  _pageState[key] = page
+  const slice = items.slice(page * pageSize, page * pageSize + pageSize)
+  const body = slice.map(itemHtml).join('')
+  const inner = wrapClass ? `<div class="${wrapClass}">${body}</div>` : body
+  const nav = pages > 1 ? `<div class="row" style="justify-content:center;gap:10px;margin-top:10px"><button class="btn ghost pg-prev" ${page === 0 ? 'disabled' : ''}>‹ Prev</button><span class="muted" style="font-size:.78rem">${page + 1}/${pages} · ${total}</span><button class="btn ghost pg-next" ${page >= pages - 1 ? 'disabled' : ''}>Next ›</button></div>` : `<div class="muted" style="text-align:center;font-size:.72rem;margin-top:6px">${total}</div>`
+  el.innerHTML = inner + nav
+  const prev = el.querySelector('.pg-prev'); const next = el.querySelector('.pg-next')
+  if (prev) prev.addEventListener('click', () => { _pageState[key]--; renderPaged(el, items, pageSize, itemHtml, key, wrapClass, afterRender) })
+  if (next) next.addEventListener('click', () => { _pageState[key]++; renderPaged(el, items, pageSize, itemHtml, key, wrapClass, afterRender) })
+  if (afterRender) afterRender(el)
+}
+
 /* ---------------- Friend Den ---------------- */
 const STATUS_DOT = { 'join me': '🔵', active: '🟢', 'ask me': '🟠', busy: '🔴', offline: '⚫' }
 function fmtLocation (loc) {
@@ -840,12 +860,14 @@ async function loadFriends () {
   if (!r.ok) { el.textContent = 'Error: ' + (r.error || 'failed') + ' — log in on the VRChat tab.'; setText('friendCount', '0'); return }
   const fr = r.friends.sort((a, b) => String(a.displayName || '').localeCompare(String(b.displayName || '')))
   setText('friendCount', String(fr.length))
-  el.innerHTML = fr.map(f => {
+  if (!fr.length) { el.textContent = 'No online friends.'; return }
+  _pageState.friendden = 0
+  renderPaged(el, fr, 60, f => {
     const dot = STATUS_DOT[String(f.status || '').toLowerCase()] || '⚫'
     const name = String(f.displayName || '?').replace(/</g, '&lt;')
     const desc = f.statusDescription ? ' · ' + String(f.statusDescription).replace(/</g, '&lt;') : ''
     return `<div class="fd-friend" data-id="${f.id}" style="padding:3px 0;cursor:pointer">${dot} <b>${name}</b> — ${fmtLocation(f.location)}${desc}</div>`
-  }).join('') || 'No online friends.'
+  }, 'friendden')
 }
 $('friendList').addEventListener('click', e => { const row = e.target.closest('.fd-friend'); if (row && row.dataset.id) openUserModal(row.dataset.id) })
 let friendTimer = null
@@ -904,7 +926,9 @@ async function loadMyGroups () {
   const el = $('myGroupsList'); el.textContent = 'Loading…'
   const r = await api.vrchatGroups()
   if (!r.ok) { el.textContent = (r.error || 'Could not load') + ' — log in on the VRChat tab.'; return }
-  el.innerHTML = r.groups.length ? `<div class="card-grid">${r.groups.map(groupCard).join('')}</div>` : 'You are in no groups.'
+  if (!r.groups.length) { el.textContent = 'You are in no groups.'; return }
+  _pageState.mygroups = 0
+  renderPaged(el, r.groups, 24, groupCard, 'mygroups', 'card-grid')
 }
 $('myGroupsRefresh').addEventListener('click', loadMyGroups)
 document.querySelector('[data-tab="groups"]').addEventListener('click', loadMyGroups)
@@ -1428,19 +1452,11 @@ async function renderMTab (tab) {
   } else if (tab === 'favs') {
     if (umUser.id !== myUserId) { body.innerHTML = '<div class="muted">No public favorite worlds. (A user’s favorites are only visible if they’ve made them public.)</div>'; return }
     body.innerHTML = '<div class="muted">Loading favorites…</div>'
-    const [r, gr] = await Promise.all([api.vrchatFavWorlds(), api.vrchatFavGroups('world')])
+    const r = await api.vrchatFavWorlds()
     if (!r.ok) { body.innerHTML = `<div class="muted">${esc(r.error)}</div>`; return }
     if (!r.worlds.length) { body.innerHTML = '<div class="muted">No favorite worlds.</div>'; return }
-    const names = {}; if (gr.ok) gr.groups.forEach(g => { names[g.name] = g.displayName || g.name })
-    const byGroup = {}
-    for (const w of r.worlds) { const k = w.group || 'worlds1'; (byGroup[k] = byGroup[k] || []).push(w) }
-    body.innerHTML = Object.keys(byGroup).map(k => `<div class="mgroup mfav-toggle" data-grp="${k}">▾ ${esc(names[k] || k)} — ${byGroup[k].length}</div><div class="card-grid" data-grpbody="${k}">${byGroup[k].map(worldCard).join('')}</div>`).join('')
-    body.querySelectorAll('.mfav-toggle').forEach(t => t.addEventListener('click', () => {
-      const gb = body.querySelector(`[data-grpbody="${t.dataset.grp}"]`)
-      const hidden = gb.style.display === 'none'
-      gb.style.display = hidden ? '' : 'none'
-      t.textContent = (hidden ? '▾' : '▸') + t.textContent.slice(1)
-    }))
+    _pageState.favtab = 0
+    renderPaged(body, r.worlds, 24, worldCard, 'favtab', 'card-grid')
   }
 }
 function worldCard (w) {
@@ -1482,14 +1498,17 @@ async function renderMutSub (sub) {
     const r = await api.vrchatMutuals(umUser.id)
     if (r.off) { el.innerHTML = '<div class="muted">This user has Shared Connections turned off.</div>'; return }
     if (!r.ok) { el.innerHTML = `<div class="muted">${esc(r.error)}</div>`; return }
-    el.innerHTML = r.friends.length ? r.friends.map(f => `<div class="rb-friend" data-id="${f.id}"><img class="ava" src="${f.image || 'assets/logo.png'}" referrerpolicy="no-referrer" /><div class="meta grow"><div class="nm">${esc(f.displayName)}</div></div></div>`).join('') : '<div class="muted">No mutual friends.</div>'
-    el.querySelectorAll('.rb-friend').forEach(row => row.addEventListener('click', () => openUserModal(row.dataset.id)))
+    if (!r.friends.length) { el.innerHTML = '<div class="muted">No mutual friends.</div>'; return }
+    _pageState.mutf = 0
+    renderPaged(el, r.friends, 40, f => `<div class="rb-friend" data-id="${f.id}" style="cursor:pointer"><img class="ava" src="${f.image || 'assets/logo.png'}" referrerpolicy="no-referrer" /><div class="meta grow"><div class="nm">${esc(f.displayName)}</div></div></div>`, 'mutf', '', c => c.querySelectorAll('.rb-friend').forEach(row => { row.onclick = () => openUserModal(row.dataset.id) }))
   } else {
     const [tg, mg] = await Promise.all([api.vrchatUserGroups(umUser.id), api.vrchatGroups()])
     if (!tg.ok) { el.innerHTML = `<div class="muted">${esc(tg.error)}</div>`; return }
     const mine = new Set((mg.ok ? mg.groups : []).map(g => g.id))
     const shared = tg.groups.filter(g => mine.has(g.id))
-    el.innerHTML = shared.length ? `<div class="card-grid">${shared.map(groupCard).join('')}</div>` : '<div class="muted">No mutual groups.</div>'
+    if (!shared.length) { el.innerHTML = '<div class="muted">No mutual groups.</div>'; return }
+    _pageState.mutg = 0
+    renderPaged(el, shared, 24, groupCard, 'mutg', 'card-grid')
   }
 }
 document.querySelectorAll('.mtab[data-mtab]').forEach(t => t.addEventListener('click', () => renderMTab(t.dataset.mtab)))
@@ -1654,8 +1673,8 @@ async function loadModerations () {
   const r = await api.vrchatModerations()
   if (!r.ok) { el.textContent = (r.error || 'failed') + ' — log in on the VRChat tab.'; return }
   if (!r.moderations.length) { el.textContent = 'No blocked or muted users.'; return }
-  el.innerHTML = r.moderations.map(m => `<div class="row" style="justify-content:space-between;padding:3px 0"><span>${m.type === 'block' ? '🚫' : '🔇'} ${esc(m.targetName || m.targetUserId)}</span><button class="btn ghost mod-un" data-id="${m.targetUserId}" data-type="${m.type}" style="padding:3px 9px;font-size:.72rem">Remove</button></div>`).join('')
-  el.querySelectorAll('.mod-un').forEach(b => b.addEventListener('click', async () => { b.textContent = '…'; await api.vrchatUnmoderate(b.dataset.id, b.dataset.type); loadModerations() }))
+  _pageState.mod = 0
+  renderPaged(el, r.moderations, 50, m => `<div class="row" style="justify-content:space-between;padding:3px 0"><span>${m.type === 'block' ? '🚫' : '🔇'} ${esc(m.targetName || m.targetUserId)}</span><button class="btn ghost mod-un" data-id="${m.targetUserId}" data-type="${m.type}" style="padding:3px 9px;font-size:.72rem">Remove</button></div>`, 'mod', '', c => c.querySelectorAll('.mod-un').forEach(b => { b.onclick = async () => { b.textContent = '…'; await api.vrchatUnmoderate(b.dataset.id, b.dataset.type); loadModerations() } }))
 }
 $('modRefresh').addEventListener('click', loadModerations)
 

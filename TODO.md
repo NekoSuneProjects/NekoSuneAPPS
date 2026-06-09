@@ -18,7 +18,8 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 - [x] **VRCX import** — best-effort import button (verify vs real VRCX.sqlite3)
 - [~] **Perf** — friends panel/radar no longer rebuild every 3s; idle stopwatch fixed;
   tiered friend cache (offline 5min/online 90s), self cache, world poll 5s, SQLite write
-  debounced 8s + events capped 8000, rightbar 120s. (list virtualisation still todo)
+  debounced 8s + events capped 8000, rightbar 120s; **paged lists** (Friend Den, My Groups,
+  Mutuals, Blocked, Favs). (rail offline virtualisation still todo)
 
 ---
 
