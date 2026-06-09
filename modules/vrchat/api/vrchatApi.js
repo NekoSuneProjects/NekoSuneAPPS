@@ -131,14 +131,49 @@ function mapStatus (s) {
   }
 }
 
+// Parse a VRChat location string into world/instance + access type.
+// type: public | friends+ | friends | invite+ | invite | group | group+ | groupMembers
+// `private` = invite-only / members-only (can't self-invite); `joinable` = you can
+// see it and self-invite (public / friends / friends+ / group / group+).
+function parseInstance (location) {
+  if (!location || location === 'offline' || location === 'traveling') return { type: location || 'offline', private: false, joinable: false }
+  if (location === 'private') return { type: 'private', private: true, joinable: false }
+  const m = String(location).match(/^(wrld_[^:]+):([^~]+)(~.*)?$/)
+  if (!m) return { type: 'unknown', private: false, joinable: false }
+  const worldId = m[1]
+  const tags = m[3] || ''
+  let type = 'public'
+  if (/~group\(/.test(tags)) {
+    const ga = (tags.match(/~groupAccessType\((\w+)\)/) || [])[1] || 'members'
+    type = ga === 'public' ? 'group' : (ga === 'plus' ? 'group+' : 'groupMembers')
+  } else if (/~private\(/.test(tags)) type = /~canRequestInvite/.test(tags) ? 'invite+' : 'invite'
+  else if (/~friends\(/.test(tags)) type = 'friends'
+  else if (/~hidden\(/.test(tags)) type = 'friends+'
+  const isPrivate = type === 'invite' || type === 'invite+' || type === 'groupMembers'
+  return {
+    worldId,
+    instanceId: m[2] + tags, // full instance id (with access tags) for URLs / self-invite
+    type,
+    private: isPrivate,
+    joinable: !isPrivate && type !== 'unknown',
+    region: (tags.match(/~region\((\w+)\)/) || [])[1] || ''
+  }
+}
+
 // ---- Friend Den: online friends + their location ----
 function pickFriend (f) {
+  const inst = parseInstance(f.location)
   return {
     id: f.id,
     displayName: f.displayName,
     status: f.status,
     statusDescription: f.statusDescription,
     location: f.location, // "offline" | "private" | "traveling" | "wrld_..:inst"
+    worldId: inst.worldId || '',
+    instanceId: inst.instanceId || '',
+    instanceType: inst.type, // public | friends+ | friends | invite(+) | group(+) | groupMembers
+    private: inst.private,
+    joinable: inst.joinable,
     state: f.state, // "online" (in-game) | "active" (on website) | "offline"
     platform: f.platform,
     image: f.userIcon || f.profilePicOverride || f.currentAvatarThumbnailImageUrl || ''
@@ -494,6 +529,14 @@ async function searchGroups (q) {
   return { ok: false, error: errOf(res, 'Group search failed') }
 }
 function getWorld (id) { return _memo('world:' + id, 300000, () => _getWorld(id)) }
+// Just the world name (memoized 30 min) — for labelling friends' instances cheaply.
+async function getWorldName (id) {
+  if (!id || !/^wrld_/.test(id)) return { ok: false, error: 'bad id' }
+  return _memo('worldName:' + id, 1800000, async () => {
+    const r = await _getWorld(id)
+    return r && r.ok && r.world ? { ok: true, name: r.world.name || '' } : { ok: false, error: (r && r.error) || 'failed' }
+  })
+}
 async function _getWorld (id) {
   loadCookies()
   if (!cookies.auth) return { ok: false, error: 'Not logged in' }
@@ -650,7 +693,7 @@ module.exports = {
   login, verify2fa, fetchUser, mapStatus, isLoggedIn, logout,
   getFriends, getUser, sendFriendRequest, requestInvite, unfriend, inviteUser, getUserGroups, getUserWorlds,
   getMutualFriends, getFavoriteWorlds, getFavoriteGroups, sendBoop, getMyAvatars, getMyWorlds, addFavorite, removeFavorite,
-  searchUsers, searchWorlds, searchGroups, getWorld, getGroup,
+  searchUsers, searchWorlds, searchGroups, getWorld, getWorldName, getGroup, parseInstance,
   updateProfile, selectAvatar, deleteAvatar, createInstance, createGroupInstance, inviteSelf, groupInvite, isRateLimited,
   setNote, moderate, unmoderate, getFavoriteFriendIds, getOnlineCount, getGroupPosts,
   getMessages, updateMessage, getGroupGalleries, getGroupGalleryImages,

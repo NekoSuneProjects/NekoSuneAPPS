@@ -128,6 +128,7 @@ window.electronAPI = {
   vrchatSearchWorlds: q => ipcRenderer.invoke('vrchat:searchWorlds', q),
   vrchatSearchGroups: q => ipcRenderer.invoke('vrchat:searchGroups', q),
   vrchatWorld: id => ipcRenderer.invoke('vrchat:world', id),
+  vrchatWorldName: id => ipcRenderer.invoke('vrchat:worldName', id),
   vrchatGroup: id => ipcRenderer.invoke('vrchat:group', id),
   vrchatUpdateProfile: fields => ipcRenderer.invoke('vrchat:updateProfile', fields),
   vrchatSelectAvatar: id => ipcRenderer.invoke('vrchat:selectAvatar', id),

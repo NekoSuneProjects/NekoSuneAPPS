@@ -3,6 +3,19 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.4] - 2026-06-10
+
+### Added
+- **Friends' worlds with privacy** — the Friend Den, right-rail and user popup now
+  show the **world name** a friend is in for joinable instances
+  (Public / Friends / Friends+ / Group / Group+), the instance type, and their
+  status message. **Invite-only, Invite+ and Group-members instances show
+  "🔒 In private world"** and never leak the world name.
+- **Self-invite & copy world URL** — for a friend in a joinable instance, the user
+  popup has **➡️ Invite me here** (self-invite to their instance) and **📋 Copy
+  world URL** (a `vrchat.com/home/launch?...` link). Private instances point to
+  Request Invite instead. World names are cached to stay light on the API.
+
 ## [1.0.3] - 2026-06-09
 
 ### Added

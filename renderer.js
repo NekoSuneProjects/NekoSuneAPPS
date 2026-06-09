@@ -1188,12 +1188,49 @@ function renderPaged (el, items, pageSize, itemHtml, key, wrapClass, afterRender
 
 /* ---------------- Friend Den ---------------- */
 const STATUS_DOT = { 'join me': '🔵', active: '🟢', 'ask me': '🟠', busy: '🔴', offline: '⚫' }
+// Parse a VRChat location string -> world/instance + access type (mirror of the
+// API helper, for places that only have the raw location string).
+function parseLoc (loc) {
+  if (!loc || loc === 'offline' || loc === 'traveling') return { type: loc || 'offline', private: false, joinable: false }
+  if (loc === 'private') return { type: 'private', private: true, joinable: false }
+  const m = String(loc).match(/^(wrld_[^:]+):([^~]+)(~.*)?$/)
+  if (!m) return { type: 'unknown', private: false, joinable: false }
+  const tags = m[3] || ''
+  let type = 'public'
+  if (/~group\(/.test(tags)) { const ga = (tags.match(/~groupAccessType\((\w+)\)/) || [])[1] || 'members'; type = ga === 'public' ? 'group' : (ga === 'plus' ? 'group+' : 'groupMembers') } else if (/~private\(/.test(tags)) type = /~canRequestInvite/.test(tags) ? 'invite+' : 'invite'
+  else if (/~friends\(/.test(tags)) type = 'friends'
+  else if (/~hidden\(/.test(tags)) type = 'friends+'
+  const isPriv = type === 'invite' || type === 'invite+' || type === 'groupMembers'
+  return { worldId: m[1], instanceId: m[2] + tags, type, private: isPriv, joinable: !isPriv && type !== 'unknown' }
+}
+const INSTANCE_LABEL = { public: 'Public', 'friends+': 'Friends+', friends: 'Friends', group: 'Group', 'group+': 'Group+', invite: 'Invite', 'invite+': 'Invite+', groupMembers: 'Group (members)' }
+
+// Privacy-aware location label. Private/invite-only instances show "In private
+// world" (never the world name); joinable ones show the world name (resolved
+// lazily into the .wn span) + the instance type.
+const worldNameCache = {}
 function fmtLocation (loc) {
   if (!loc || loc === 'offline') return 'Offline'
-  if (loc === 'private') return '🔒 Private'
   if (loc === 'traveling') return '✈️ Traveling'
+  const i = parseLoc(loc)
+  if (i.private || loc === 'private') return '🔒 In private world'
+  if (i.joinable && i.worldId) {
+    const tl = INSTANCE_LABEL[i.type] || ''
+    const cached = worldNameCache[i.worldId]
+    return `🌐 <span class="wn"${cached ? '' : ` data-world="${i.worldId}"`}>${cached ? esc(cached) : '…'}</span>${tl ? ` <span class="muted" style="font-size:.72rem">(${tl})</span>` : ''}`
+  }
   if (String(loc).startsWith('wrld_')) return '🌐 In a world'
-  return loc
+  return esc(loc)
+}
+// Fill in world names for any .wn[data-world] spans (memoised; sequential to stay
+// gentle on the API).
+async function resolveWorldNames (root) {
+  const ids = [...new Set([...(root || document).querySelectorAll('.wn[data-world]')].map(s => s.dataset.world))]
+  for (const id of ids) {
+    let name = worldNameCache[id]
+    if (!name) { try { const r = await api.vrchatWorldName(id); name = (r && r.ok && r.name) ? r.name : 'In a world' } catch (_) { name = 'In a world' } worldNameCache[id] = name }
+    document.querySelectorAll(`.wn[data-world="${id}"]`).forEach(s => { s.textContent = name; s.removeAttribute('data-world') })
+  }
 }
 async function loadFriends () {
   const el = $('friendList'); el.textContent = 'Loading…'
@@ -1208,7 +1245,7 @@ async function loadFriends () {
     const name = String(f.displayName || '?').replace(/</g, '&lt;')
     const desc = f.statusDescription ? ' · ' + String(f.statusDescription).replace(/</g, '&lt;') : ''
     return `<div class="fd-friend" data-id="${f.id}" style="padding:3px 0;cursor:pointer">${dot} <b>${name}</b> — ${fmtLocation(f.location)}${desc}</div>`
-  }, 'friendden')
+  }, 'friendden', null, resolveWorldNames)
 }
 $('friendList').addEventListener('click', e => { const row = e.target.closest('.fd-friend'); if (row && row.dataset.id) openUserModal(row.dataset.id) })
 let friendTimer = null
@@ -1722,6 +1759,7 @@ function renderRightbar () {
   html += rbSection('web', '🌐 On Web', web)
   html += rbSection('offline', '⚫ Offline', offline)
   $('rbFriends').innerHTML = html
+  resolveWorldNames($('rbFriends'))
 }
 async function loadRightbar () {
   if (!await api.vrchatIsLoggedIn()) { $('rbFriends').textContent = 'Log in on the VRChat tab.'; return }
@@ -1769,6 +1807,18 @@ $('userModal').addEventListener('click', e => { if (e.target === $('userModal'))
 function umLocationLine (u) {
   if (u.location && u.location !== 'offline') return `📍 ${fmtLocation(u.location)}`
   return u.state === 'online' ? '🟢 Active on the website' : '⚫ Offline'
+}
+// Self-invite / copy-URL for a user's instance — only when it's a joinable
+// (non-private) instance. Private instances just point to Request Invite.
+function umJoinActions (u) {
+  const i = parseLoc(u.location)
+  if (!i.worldId) return ''
+  if (i.private) return '<div class="muted" style="font-size:.74rem;margin-top:6px">🔒 In a private world — use Request Invite below.</div>'
+  const url = `https://vrchat.com/home/launch?worldId=${i.worldId}&instanceId=${encodeURIComponent(i.instanceId)}`
+  return `<div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap">
+    <button class="btn ghost" id="umSelfInvite" data-loc="${esc(u.location)}" style="padding:4px 10px;font-size:.75rem">➡️ Invite me here</button>
+    <button class="btn ghost" id="umCopyUrl" data-url="${esc(url)}" style="padding:4px 10px;font-size:.75rem">📋 Copy world URL</button>
+  </div>`
 }
 async function openUserModal (id) {
   umCurrentId = id; umUser = null
@@ -1818,14 +1868,19 @@ async function renderMTab (tab) {
       ? `<div class="um-sec">Your note</div><textarea id="umNote" rows="2" placeholder="Private note about this user">${esc(u.note || '')}</textarea><div class="row" style="margin-top:6px"><button class="btn ghost" id="umNoteSave" style="padding:4px 10px;font-size:.75rem">Save note</button><span class="muted" id="umNoteOut" style="font-size:.74rem"></span></div>`
       : ''
     body.innerHTML =
-      `<div class="rb-card">${umLocationLine(u)}</div>` +
+      `<div class="rb-card">${umLocationLine(u)}${umJoinActions(u)}</div>` +
       (u.bio ? `<div class="um-bio">${esc(u.bio)}</div>` : '') +
       (links ? `<div class="row" style="flex-wrap:wrap;gap:8px">${links}</div>` : '') +
       (badges ? `<div class="um-sec">Badges</div><div class="badge-grid">${badges}</div>` : '') +
       `<div class="um-sec">Info</div><div class="um-info">${rows.map(r => `<div><span>${esc(r[0])}</span><b>${esc(r[1])}</b></div>`).join('')}</div>` +
       noteBlock
+    resolveWorldNames(body) // fill in the world name for a joinable instance
     const ns = $('umNoteSave')
     if (ns) ns.addEventListener('click', async () => { setText('umNoteOut', 'Saving…'); const r = await api.vrchatSetNote(u.id, $('umNote').value); setText('umNoteOut', r.ok ? '✅ Saved' : 'Error: ' + (r.error || 'failed')) })
+    const si = $('umSelfInvite')
+    if (si) si.addEventListener('click', async () => { setText('umActionOut', 'Inviting…'); const r = await api.vrchatInviteSelf(si.dataset.loc); setText('umActionOut', r && r.ok ? '✅ Invited yourself — accept it in VRChat' : 'Error: ' + ((r && r.error) || 'failed')) })
+    const cu = $('umCopyUrl')
+    if (cu) cu.addEventListener('click', async () => { await api.clipboardWrite(cu.dataset.url); cu.textContent = 'Copied ✓'; setTimeout(() => { cu.textContent = '📋 Copy world URL' }, 1500) })
     // Time-together / last-seen from local History (matched by display name).
     if (u.id !== myUserId) {
       api.historyList({ limit: 3000 }).then(rows => {
