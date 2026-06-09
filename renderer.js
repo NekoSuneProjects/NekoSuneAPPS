@@ -908,10 +908,9 @@ async function loadMyContent (kind) {
     if (!r.ok) { el.textContent = (r.error || 'Could not load') + ' — log in on the VRChat tab.'; return }
     el.innerHTML = r.avatars.length ? `<div class="card-grid">${r.avatars.map(a => `<div class="mini-card" style="flex-direction:column;align-items:stretch"><div style="display:flex;gap:9px;align-items:center"><img src="${a.image || 'assets/logo.png'}" referrerpolicy="no-referrer" /><div style="min-width:0"><div class="nm">${esc(a.name)}</div><div class="muted" style="font-size:.72rem">${esc(a.releaseStatus || '')}</div></div></div><div class="row" style="margin-top:6px;gap:6px"><button class="btn av-switch" data-id="${a.id}" style="padding:3px 10px;font-size:.72rem">Wear</button><button class="btn danger av-del" data-id="${a.id}" data-name="${esc(a.name)}" style="padding:3px 10px;font-size:.72rem">Delete</button></div></div>`).join('')}</div>` : 'No avatars.'
   } else {
-    if (!myUserId) { const me = await api.vrchatStatus(); if (me && me.ok) myUserId = me.user.id }
-    const r = myUserId ? await api.vrchatUserWorlds(myUserId) : { ok: false, error: 'Log in first' }
+    const r = await api.vrchatMyWorlds()
     if (!r.ok) { el.textContent = (r.error || 'Could not load') + ' — log in on the VRChat tab.'; return }
-    el.innerHTML = r.worlds.length ? `<div class="card-grid">${r.worlds.map(worldCard).join('')}</div>` : 'No public worlds.'
+    el.innerHTML = r.worlds.length ? `<div class="card-grid">${r.worlds.map(worldCard).join('')}</div>` : 'No worlds uploaded.'
   }
 }
 document.querySelectorAll('[data-ctab]').forEach(b => b.addEventListener('click', () => {
@@ -1229,6 +1228,10 @@ async function openUserModal (id) {
   $('umTags').innerHTML = chips.join('')
   $('umAddFriend').textContent = u.isFriend ? '➖ Unfriend' : '➕ Add Friend'
   $('umAddFriend').classList.toggle('danger', !!u.isFriend)
+  // On your OWN profile, hide friend/invite/boop actions (they don't apply to you).
+  if (!myUserId) { try { const me = await api.vrchatStatus(); if (me && me.ok) myUserId = me.user.id } catch (_) {} }
+  const isMe = u.id === myUserId
+  ;['umAddFriend', 'umInvite', 'umRequestInvite', 'umFav', 'umBoop'].forEach(k => { $(k).style.display = isMe ? 'none' : '' })
   renderMTab('info')
 }
 async function renderMTab (tab) {

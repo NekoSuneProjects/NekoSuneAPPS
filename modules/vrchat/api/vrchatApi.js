@@ -337,6 +337,16 @@ async function removeFavorite (favoriteId) {
   return res.status === 200 ? { ok: true } : { ok: false, error: errOf(res, 'Remove favorite failed') }
 }
 
+// Your own worlds (all release statuses) for the Content page.
+async function getMyWorlds () {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  const res = await axios.get(`${BASE}/worlds`, Object.assign({ headers: baseHeaders(), params: { user: 'me', releaseStatus: 'all', n: 100, sort: 'updated', order: 'descending' } }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && Array.isArray(res.data)) return { ok: true, worlds: res.data.map(w => ({ id: w.id, name: w.name, image: w.thumbnailImageUrl || w.imageUrl, visits: w.visits, favorites: w.favorites, releaseStatus: w.releaseStatus })) }
+  return { ok: false, error: errOf(res, 'Could not load worlds') }
+}
+
 // Your own avatars (for the Content page).
 async function getMyAvatars () {
   loadCookies()
@@ -436,7 +446,7 @@ function logout () { cookies = {}; currentUserId = ''; saveCookies(); invalidate
 module.exports = {
   login, verify2fa, fetchUser, mapStatus, isLoggedIn, logout,
   getFriends, getUser, sendFriendRequest, requestInvite, unfriend, inviteUser, getUserGroups, getUserWorlds,
-  getMutualFriends, getFavoriteWorlds, getFavoriteGroups, sendBoop, getMyAvatars, addFavorite, removeFavorite,
+  getMutualFriends, getFavoriteWorlds, getFavoriteGroups, sendBoop, getMyAvatars, getMyWorlds, addFavorite, removeFavorite,
   searchUsers, searchWorlds, searchGroups, getWorld, getGroup,
   updateProfile, selectAvatar, deleteAvatar, createInstance, inviteSelf, groupInvite,
   getMyGroups, getGroupEvents, getNotifications, acceptFriendRequest

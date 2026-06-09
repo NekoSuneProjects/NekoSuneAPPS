@@ -88,6 +88,7 @@ window.electronAPI = {
   vrchatFavGroups: type => ipcRenderer.invoke('vrchat:favGroups', type),
   vrchatBoop: (id, emojiId) => ipcRenderer.invoke('vrchat:boop', { id, emojiId }),
   vrchatMyAvatars: () => ipcRenderer.invoke('vrchat:myAvatars'),
+  vrchatMyWorlds: () => ipcRenderer.invoke('vrchat:myWorlds'),
   vrchatAddFav: (type, id) => ipcRenderer.invoke('vrchat:addFav', { type, id }),
   vrchatRemoveFav: id => ipcRenderer.invoke('vrchat:removeFav', id),
   vrchatSearchUsers: q => ipcRenderer.invoke('vrchat:searchUsers', q),
