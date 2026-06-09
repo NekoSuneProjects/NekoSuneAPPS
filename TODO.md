@@ -13,9 +13,10 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
   - Lazy-load tab content only when visible; pause canvas (spectrum/OSC graph) off-tab
   - Reuse the API cache everywhere; add request backoff on 429
   - Profile with DevTools; check GPU/CPU (hardware accel already off)
-- [ ] **Full friends scan** — ensure we page through ALL friends (online+active+offline); some still missing
-- [ ] **Name-change tracking** — done in History; verify it catches renames reliably
-- [ ] **VRCX import** — done (best-effort); verify against real VRCX.sqlite3 schema
+- [~] **Full friends scan** — paginated online+active+offline; verify none missing
+- [x] **Name-change tracking** — logged in History (friend-diff)
+- [x] **VRCX import** — best-effort import button (verify vs real VRCX.sqlite3)
+- [~] **Perf** — friends panel/radar no longer rebuild every 3s; idle stopwatch fixed (list virtualisation still todo)
 
 ---
 
@@ -47,10 +48,10 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 - [~] **GameLog** — have join/leave/world/friend; add: invites received, portals dropped, events
 
 ### Friends & social
-- [ ] **VRC Notes editor** — read + write VRChat notes/memos on a user (`PUT /user/{id}` note)
+- [x] **VRC Notes editor** — read + write your note on a user (profile Info tab)
 - [ ] **Social status presets** — save status + statusDescription combos, apply with one click
 - [ ] **Last-seen / time-together** per friend on the profile (we have some via History)
-- [ ] **Block / mute tracking** — list & log blocked/muted users
+- [~] **Block / mute** — Block/Mute toggle buttons on profiles (list/log of moderations still todo)
 - [ ] **Trust/feedback view** beyond the trust chip
 
 ### Search & data
@@ -80,30 +81,28 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 ## 🥽 Requested big features (next session)
 
 ### Avatars (own + others)
-- [ ] **Avatar detail** view (info/image) from Content/search
-- [ ] **Switch avatar** — `PUT /avatars/{id}/select` (wear it before launching)
-- [ ] **Delete personal avatar** — `DELETE /avatars/{id}` with a **Yes/No confirm dialog**
+- [~] **Avatar detail** view — Content shows all avatars; full detail modal still todo
+- [x] **Switch avatar** — Wear button (`PUT /avatars/{id}/select`)
+- [x] **Delete personal avatar** — Delete with Yes/No confirm
 
 ### Worlds — create instance + invites
-- [ ] **Create instance** with access type: **Public / Friends+ / Friends / Invite+ / Invite / Group** (build instanceId region+nonce → launch link or `POST /instances`)
-- [ ] **Shared invite link** (copy launch URL); **Invite yourself** (`POST /invite/myself/to/{worldId}:{instanceId}`); **Invite someone** via friend picker
-- [ ] Join / self-invite buttons in the world detail modal
+- [x] **Create instance** (Public / Friends+ / Friends / Invite+ / Invite) via `POST /instances`
+- [x] **Self-invite** + **Invite friends** (picker) + shareable launch link in world modal
 
 ### Groups
-- [ ] **Invite people to a group** (`POST /groups/{id}/invites`) via friend picker, if you have permission
+- [x] **Invite people to a group** via friend picker
 - [ ] Group detail: members, roles, posts, your permissions
 
-### Shared UI to build first
-- [ ] **Friend-picker modal** (searchable, multi-select) — reused by instance + group invite
-- [ ] **Confirm (Yes/No) modal** — reused by avatar delete + destructive actions
+### Shared UI
+- [x] **Friend-picker modal** (searchable, multi-select)
+- [x] **Confirm (Yes/No) modal**
 
 ## 🟣 VRCNext-specific (next session)
 Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gaps not already listed above.
-- [ ] **Profile editor (your own)** — change status colour (join/active/ask/busy), status text,
-  bio, pronouns, bio/social links, profile picture & banner (`PUT /users/{id}`)
+- [~] **Profile editor (your own)** — status/status-text/bio done; pronouns, bio links, pfp & banner todo
 - [ ] **Messenger / message-slot editor** — edit the 12 invite & response message slots
   (`GET/PUT /message/{userId}/{messageType}/{slot}`) and send them
-- [ ] **Multi-Invite** — invite many friends to your instance at once (friend-picker multi-select)
+- [x] **Multi-Invite** — friend-picker multi-select invite to instance/group
 - [ ] **Inventory** — view/manage Photos, Gallery, custom **icons / emojis / stickers / prints**
 - [ ] **Avatar browse via avtrdb.com** (paginated public avatar search) → switch/favourite
 - [ ] **Create group instances** (covered above) + **group posts** + **group image gallery**
@@ -112,9 +111,8 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
 - [ ] **VRCVideoCacher** — install/update + start/stop the local proxy (beyond our yt-dlp fix)
 - [ ] **Design customization** — dashboard welcome-screen background + launcher accent colour
   (note: we intentionally ship fixed green + seasonal; make this opt-in)
-- [ ] **Fast-Fetch cache** — cache profiles/worlds/groups locally for instant reopen
-- [ ] **Right panel: Favorites section** — add a Favorites group to the friends rail (we have
-  Same World / In-Game / On Web / Offline)
+- [x] **Fast-Fetch cache** — TTL cache + in-flight dedupe for user/world/group/friends
+- [x] **Right panel: Favorites section** — favorited friends shown at top of the rail
 - [ ] **Crash detect + auto-rejoin** (also a VRCX feature) — relaunch VRChat into last instance
 
 ## Our pending clusters (from the build plan)
@@ -132,8 +130,8 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
 - [ ] Discord RP **buttons** can't show over IPC (GameSDK only) — text only; revisit if Discord changes.
 - [ ] **Favorites page** (dedicated sidebar) listing worlds/avatars/friends with inline remove (currently add/remove via modals + Favs tab).
 - [ ] Friends panel: avatars for **offline** friends, group-by-favorite, online count badge.
-- [ ] Rate-limit guard / backoff on the VRChat API pollers (friends diff, status, rightbar).
-- [ ] Cache profile/world/group lookups (VRCX "Fast Fetch") to cut API calls.
+- [~] Rate-limit guard — caching/dedupe added; still add explicit 429 backoff.
+- [x] Cache profile/world/group lookups (VRCX "Fast Fetch") to cut API calls.
 - [ ] Verify all VRChat write-actions live (favorite tags, requestInvite slots, invite instanceId format).
 
 ---

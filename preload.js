@@ -102,6 +102,10 @@ window.electronAPI = {
   vrchatCreateInstance: (worldId, access, region) => ipcRenderer.invoke('vrchat:createInstance', { worldId, access, region }),
   vrchatInviteSelf: location => ipcRenderer.invoke('vrchat:inviteSelf', location),
   vrchatGroupInvite: (groupId, userId) => ipcRenderer.invoke('vrchat:groupInvite', { groupId, userId }),
+  vrchatSetNote: (userId, note) => ipcRenderer.invoke('vrchat:setNote', { userId, note }),
+  vrchatModerate: (userId, type) => ipcRenderer.invoke('vrchat:moderate', { userId, type }),
+  vrchatUnmoderate: (userId, type) => ipcRenderer.invoke('vrchat:unmoderate', { userId, type }),
+  vrchatFavFriendIds: () => ipcRenderer.invoke('vrchat:favFriendIds'),
   pawprintsList: () => ipcRenderer.invoke('pawprints:list'),
   pawprintsClear: () => ipcRenderer.invoke('pawprints:clear'),
 

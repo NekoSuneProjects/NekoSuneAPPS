@@ -220,6 +220,34 @@ async function sendBoop (userId, emojiId) {
   return res.status === 200 ? { ok: true } : { ok: false, error: errOf(res, 'Boop failed') }
 }
 
+// ---- Notes, moderation (block/mute), favorite-friend ids ----
+async function setNote (userId, note) {
+  loadCookies()
+  const res = await axios.post(`${BASE}/userNotes`, { targetUserId: userId, note }, Object.assign({ headers: baseHeaders({ 'Content-Type': 'application/json' }) }, REQ))
+  storeSetCookie(res)
+  return res.status === 200 ? { ok: true } : { ok: false, error: errOf(res, 'Save note failed') }
+}
+async function moderate (userId, type) { // type: 'block' | 'mute'
+  loadCookies()
+  const res = await axios.post(`${BASE}/auth/user/playermoderations`, { moderated: userId, type }, Object.assign({ headers: baseHeaders({ 'Content-Type': 'application/json' }) }, REQ))
+  storeSetCookie(res)
+  return res.status === 200 ? { ok: true } : { ok: false, error: errOf(res, 'Moderation failed') }
+}
+async function unmoderate (userId, type) {
+  loadCookies()
+  const res = await axios.put(`${BASE}/auth/user/unplayermoderate`, { moderated: userId, type }, Object.assign({ headers: baseHeaders({ 'Content-Type': 'application/json' }) }, REQ))
+  storeSetCookie(res)
+  return res.status === 200 ? { ok: true } : { ok: false, error: errOf(res, 'Un-moderation failed') }
+}
+async function getFavoriteFriendIds () {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  const res = await axios.get(`${BASE}/favorites`, Object.assign({ headers: baseHeaders(), params: { type: 'friend', n: 100 } }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && Array.isArray(res.data)) return { ok: true, ids: res.data.map(f => f.favoriteId) }
+  return { ok: false, error: errOf(res, 'Could not load favorite friends') }
+}
+
 // ---- Self profile editor / avatars / instances / group invite ----
 async function updateProfile (fields) {
   loadCookies()
@@ -449,5 +477,6 @@ module.exports = {
   getMutualFriends, getFavoriteWorlds, getFavoriteGroups, sendBoop, getMyAvatars, getMyWorlds, addFavorite, removeFavorite,
   searchUsers, searchWorlds, searchGroups, getWorld, getGroup,
   updateProfile, selectAvatar, deleteAvatar, createInstance, inviteSelf, groupInvite,
+  setNote, moderate, unmoderate, getFavoriteFriendIds,
   getMyGroups, getGroupEvents, getNotifications, acceptFriendRequest
 }

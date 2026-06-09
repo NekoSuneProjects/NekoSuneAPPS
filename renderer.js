@@ -1126,8 +1126,9 @@ async function loadNotifications () {
 /* ---------------- right friends panel ---------------- */
 const RB_COLOR = { 'join me': '#22c55e', active: '#3b82f6', 'ask me': '#f59e0b', busy: '#ef4444', offline: '#6b7280' }
 let rbFriendsCache = { online: [], offline: [] }
+let favFriendIds = new Set()
 let myUserId = ''
-const rbCollapsed = { same: false, online: false, web: false, offline: true } // offline collapsed by default
+const rbCollapsed = { fav: false, same: false, online: false, web: false, offline: true } // offline collapsed by default
 function rbFriendRow (f) {
   const onWeb = f.state === 'active' && (!f.location || f.location === 'offline')
   const color = onWeb ? '#f59e0b' : (RB_COLOR[String(f.status || '').toLowerCase()] || '#6b7280')
@@ -1149,10 +1150,12 @@ function renderRightbar () {
   const online = (rbFriendsCache.online || []).filter(match)
   const offline = (rbFriendsCache.offline || []).filter(match)
   const onWeb = f => f.state === 'active' && (!f.location || f.location === 'offline')
+  const favList = [...online, ...offline].filter(f => favFriendIds.has(f.id))
   const same = online.filter(f => myLoc && f.location === myLoc)
   const inGame = online.filter(f => !onWeb(f) && !(myLoc && f.location === myLoc))
   const web = online.filter(f => onWeb(f))
   $('rbFriends').innerHTML =
+    rbSection('fav', '⭐ Favorites', favList) +
     rbSection('same', '🏠 Same World', same) +
     rbSection('online', '🟢 In-Game', inGame) +
     rbSection('web', '🌐 On Web', web) +
@@ -1169,6 +1172,7 @@ async function loadRightbar () {
   }
   if (frOn && frOn.ok) rbFriendsCache.online = frOn.friends
   if (frOff && frOff.ok) rbFriendsCache.offline = frOff.friends
+  try { const fav = await api.vrchatFavFriendIds(); if (fav.ok) favFriendIds = new Set(fav.ids) } catch (_) {}
   if ((frOn && frOn.ok) || (frOff && frOff.ok)) renderRightbar()
   else $('rbFriends').textContent = (frOn && frOn.error) || 'Could not load friends.'
 }
@@ -1231,7 +1235,9 @@ async function openUserModal (id) {
   // On your OWN profile, hide friend/invite/boop actions (they don't apply to you).
   if (!myUserId) { try { const me = await api.vrchatStatus(); if (me && me.ok) myUserId = me.user.id } catch (_) {} }
   const isMe = u.id === myUserId
-  ;['umAddFriend', 'umInvite', 'umRequestInvite', 'umFav', 'umBoop'].forEach(k => { $(k).style.display = isMe ? 'none' : '' })
+  ;['umAddFriend', 'umInvite', 'umRequestInvite', 'umFav', 'umBoop', 'umMute', 'umBlock'].forEach(k => { $(k).style.display = isMe ? 'none' : '' })
+  _umBlocked = false; _umMuted = false
+  $('umBlock').textContent = '🚫 Block'; $('umMute').textContent = '🔇 Mute'
   renderMTab('info')
 }
 async function renderMTab (tab) {
@@ -1245,12 +1251,18 @@ async function renderMTab (tab) {
     if (u.last_login) { try { rows.push(['Last login', new Date(u.last_login).toLocaleDateString()]) } catch (_) {} }
     rows.push(['Age verified', u.ageVerified ? 'Yes' : 'No'])
     rows.push(['Avatar cloning', u.allowAvatarCopying ? 'On' : 'Off'])
+    const noteBlock = (u.id !== myUserId)
+      ? `<div class="um-sec">Your note</div><textarea id="umNote" rows="2" placeholder="Private note about this user">${esc(u.note || '')}</textarea><div class="row" style="margin-top:6px"><button class="btn ghost" id="umNoteSave" style="padding:4px 10px;font-size:.75rem">Save note</button><span class="muted" id="umNoteOut" style="font-size:.74rem"></span></div>`
+      : ''
     body.innerHTML =
       `<div class="rb-card">${umLocationLine(u)}</div>` +
       (u.bio ? `<div class="um-bio">${esc(u.bio)}</div>` : '') +
       (links ? `<div class="row" style="flex-wrap:wrap;gap:8px">${links}</div>` : '') +
       (badges ? `<div class="um-sec">Badges</div><div class="badge-grid">${badges}</div>` : '') +
-      `<div class="um-sec">Info</div><div class="um-info">${rows.map(r => `<div><span>${esc(r[0])}</span><b>${esc(r[1])}</b></div>`).join('')}</div>`
+      `<div class="um-sec">Info</div><div class="um-info">${rows.map(r => `<div><span>${esc(r[0])}</span><b>${esc(r[1])}</b></div>`).join('')}</div>` +
+      noteBlock
+    const ns = $('umNoteSave')
+    if (ns) ns.addEventListener('click', async () => { setText('umNoteOut', 'Saving…'); const r = await api.vrchatSetNote(u.id, $('umNote').value); setText('umNoteOut', r.ok ? '✅ Saved' : 'Error: ' + (r.error || 'failed')) })
   } else if (tab === 'groups') {
     body.innerHTML = '<div class="muted">Loading groups…</div>'
     const r = await api.vrchatUserGroups(u.id)
@@ -1352,6 +1364,21 @@ $('umFav').addEventListener('click', async () => {
   setText('umActionOut', 'Favoriting…')
   const r = await api.vrchatAddFav('friend', umCurrentId)
   setText('umActionOut', r.ok ? '⭐ Added to favorites' : 'Error: ' + (r.error || 'failed'))
+})
+let _umBlocked = false; let _umMuted = false
+$('umBlock').addEventListener('click', async () => {
+  if (!umCurrentId) return
+  setText('umActionOut', _umBlocked ? 'Unblocking…' : 'Blocking…')
+  const r = _umBlocked ? await api.vrchatUnmoderate(umCurrentId, 'block') : await api.vrchatModerate(umCurrentId, 'block')
+  if (r.ok) { _umBlocked = !_umBlocked; $('umBlock').textContent = _umBlocked ? '✅ Unblock' : '🚫 Block' }
+  setText('umActionOut', r.ok ? (_umBlocked ? '🚫 Blocked' : 'Unblocked') : 'Error: ' + (r.error || 'failed'))
+})
+$('umMute').addEventListener('click', async () => {
+  if (!umCurrentId) return
+  setText('umActionOut', _umMuted ? 'Unmuting…' : 'Muting…')
+  const r = _umMuted ? await api.vrchatUnmoderate(umCurrentId, 'mute') : await api.vrchatModerate(umCurrentId, 'mute')
+  if (r.ok) { _umMuted = !_umMuted; $('umMute').textContent = _umMuted ? '🔊 Unmute' : '🔇 Mute' }
+  setText('umActionOut', r.ok ? (_umMuted ? '🔇 Muted' : 'Unmuted') : 'Error: ' + (r.error || 'failed'))
 })
 
 /* ---------------- shared: confirm + friend picker ---------------- */
