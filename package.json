@@ -79,7 +79,8 @@
     "twitch"
   ],
   "author": "NekoSuneVR",
-  "license": "MIT",
+  "private": true,
+  "license": "SEE LICENSE IN LICENSE",
   "description": "NekoChatbox - a VRChat OSC companion: chatbox, status, component stats, heart rate, TikTok & Twitch follower counters, AudioLink and Now Playing with KAT support.",
   "dependencies": {
     "axios": "^1.7.7",

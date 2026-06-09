@@ -119,6 +119,10 @@ also publishes a GitHub Release with the installers attached.
 
 ---
 
-## 📜 License
+## 📜 License & policies
 
-MIT © 2024–2025 NekoSuneVR. See [CHANGELOG.md](CHANGELOG.md) for version history.
+**Proprietary — All Rights Reserved.** © 2024–2026 NekoSuneVR. You may run the
+official releases for personal use only; you may **not** modify, redistribute,
+reverse engineer, or use the code/assets to train AI. See [LICENSE](LICENSE),
+[TOS.md](TOS.md), [PRIVACY.md](PRIVACY.md), and [DISCLAIMER.md](DISCLAIMER.md).
+Version history is in [CHANGELOG.md](CHANGELOG.md).
