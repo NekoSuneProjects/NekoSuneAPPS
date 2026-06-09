@@ -49,7 +49,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 
 ### Friends & social
 - [x] **VRC Notes editor** — read + write your note on a user (profile Info tab)
-- [ ] **Social status presets** — save status + statusDescription combos, apply with one click
+- [x] **Social status presets** — save/apply status + statusDescription combos (Profile Editor)
 - [ ] **Last-seen / time-together** per friend on the profile (we have some via History)
 - [~] **Block / mute** — Block/Mute toggle buttons on profiles (list/log of moderations still todo)
 - [ ] **Trust/feedback view** beyond the trust chip
@@ -58,23 +58,25 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 - [ ] **Local fuzzy quick-search** across cached friends/worlds/groups (instant, offline)
 - [ ] **Avatar search** via avtrdb.com / public avatar DB (VRCNext uses avtrdb)
 - [ ] **Favorites backup** — export/restore favorite worlds/avatars/friends groups
-- [ ] **Data export/import** — friends, notes, history (JSON/CSV)
+- [x] **Data export/import** — settings + history to JSON
 
 ### Media
 - [ ] **Screenshot metadata** — embed world/instance/players into the PNG (VRChat picture metadata), and read it back in a gallery
-- [ ] **Media Library** — gallery of VRChat screenshots with date/world/people filters
+- [x] **Media Library** — VRChat screenshot gallery (open on click); date/world filters todo
 - [ ] **Avatar/world image upload** management (without Unity) — advanced, optional
 
 ### System
-- [ ] **VRChat server status** monitor + alert (api.vrchat.cloud `/system/...` / status page)
+- [x] **VRChat server status** — online-user count in the top bar (poll /visits)
+- [x] **Configured Start** — launch companion apps (+ optional VRChat)
+- [x] **Data export/import** — settings + history to JSON
 - [ ] **Crash recovery / auto-rejoin** last instance (detect VRChat crash, relaunch+join)
 - [ ] **Custom themes** (optional — currently fixed green + seasonal by design)
 - [ ] **Registry tools** — VRChat registry backup/restore (Windows registry under VRChat)
 - [ ] **Multiple dashboards / customizable widgets** (VRCX-style configurable panels)
 
 ### Group alerts (requested)
-- [ ] **Group alerts** — notify on group announcements/posts/events for watched groups
-- [ ] **Alerts** surfaced as toasts + logged to History as `alert` / `group`
+- [x] **Group alerts** — polls watched groups' posts → toast + History `group` entry
+- [~] **Alerts** — group posts done; world/event alerts still todo
 
 ---
 
@@ -106,8 +108,8 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
 - [ ] **Inventory** — view/manage Photos, Gallery, custom **icons / emojis / stickers / prints**
 - [ ] **Avatar browse via avtrdb.com** (paginated public avatar search) → switch/favourite
 - [ ] **Create group instances** (covered above) + **group posts** + **group image gallery**
-- [ ] **Media Library** — local screenshot gallery with folders + VRChat picture metadata
-- [ ] **Configured Start** — launch VRChat together with companion apps (SlimeVR, VRCFaceTracking, …)
+- [x] **Media Library** — local screenshot gallery (folders/metadata filters todo)
+- [x] **Configured Start** — launch companion apps (SlimeVR, VRCFaceTracking, …) + optional VRChat
 - [ ] **VRCVideoCacher** — install/update + start/stop the local proxy (beyond our yt-dlp fix)
 - [ ] **Design customization** — dashboard welcome-screen background + launcher accent colour
   (note: we intentionally ship fixed green + seasonal; make this opt-in)

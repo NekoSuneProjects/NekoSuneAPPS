@@ -1431,6 +1431,72 @@ $('peSave').addEventListener('click', async () => {
   setText('peOut', r.ok ? '✅ Profile updated' : 'Error: ' + (r.error || 'failed'))
 })
 
+/* ---------------- status presets ---------------- */
+async function loadStatusPresets () {
+  const presets = await api.getSetting('statusPresets', [])
+  $('pePreset').innerHTML = '<option value="">— saved presets —</option>' + presets.map((p, i) => `<option value="${i}">${esc(p.name)}</option>`).join('')
+}
+$('pePresetSave').addEventListener('click', async () => {
+  const name = prompt('Preset name:')
+  if (!name) return
+  const presets = await api.getSetting('statusPresets', [])
+  presets.push({ name, status: $('peStatus').value, desc: $('peStatusDesc').value })
+  await api.saveSetting('statusPresets', presets)
+  loadStatusPresets()
+})
+$('pePresetApply').addEventListener('click', async () => {
+  const i = $('pePreset').value; if (i === '') return
+  const p = (await api.getSetting('statusPresets', []))[i]; if (!p) return
+  $('peStatus').value = p.status; $('peStatusDesc').value = p.desc || ''
+  const r = await api.vrchatUpdateProfile({ status: p.status, statusDescription: p.desc || '' })
+  setText('peOut', r.ok ? `✅ Applied "${p.name}"` : 'Error: ' + (r.error || 'failed'))
+})
+$('pePresetDel').addEventListener('click', async () => {
+  const i = $('pePreset').value; if (i === '') return
+  const presets = await api.getSetting('statusPresets', [])
+  presets.splice(i, 1); await api.saveSetting('statusPresets', presets); loadStatusPresets()
+})
+
+/* ---------------- media library ---------------- */
+async function loadMedia () {
+  const el = $('mediaGrid'); el.textContent = 'Loading…'
+  const r = await api.mediaPhotos()
+  if (!r.ok) { el.textContent = 'Error: ' + (r.error || 'no photos'); return }
+  if (!r.photos.length) { el.textContent = 'No VRChat screenshots found.'; return }
+  el.innerHTML = r.photos.map(p => `<div class="mini-card" data-path="${esc(p.path)}" style="cursor:pointer;flex-direction:column;align-items:stretch;padding:0;overflow:hidden"><img src="file:///${esc(p.path.replace(/\\/g, '/'))}" referrerpolicy="no-referrer" style="width:100%;height:120px;object-fit:cover" /><div class="muted" style="font-size:.68rem;padding:4px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.name)}</div></div>`).join('')
+}
+$('mediaRefresh').addEventListener('click', loadMedia)
+$('mediaGrid').addEventListener('click', e => { const c = e.target.closest('[data-path]'); if (c) api.mediaOpen(c.dataset.path) })
+document.querySelector('[data-tab="media"]').addEventListener('click', loadMedia)
+
+/* ---------------- server status (online count) ---------------- */
+async function loadOnlineCount () {
+  try { const r = await api.vrchatOnline(); if (r.ok) setText('onlineCount', `🌐 ${r.count.toLocaleString()} online`) } catch (_) {}
+}
+setInterval(loadOnlineCount, 300000)
+
+/* ---------------- configured start ---------------- */
+$('startLaunch').addEventListener('click', async () => {
+  const paths = $('startApps').value.split('\n').map(s => s.trim()).filter(Boolean)
+  api.saveSetting('startApps', $('startApps').value)
+  api.saveSetting('startWithVrc', $('startWithVrc').checked)
+  setText('startOut', 'Launching…')
+  const r = await api.appsLaunch(paths, $('startWithVrc').checked)
+  setText('startOut', r.ok ? `✅ Launched ${r.launched} app(s)` : 'Error')
+})
+
+/* ---------------- data export / import ---------------- */
+$('dataExport').addEventListener('click', async () => { const r = await api.dataExport(); setText('dataOut', r.ok ? '✅ Saved to ' + r.path : (r.error === 'cancelled' ? 'Cancelled' : 'Error: ' + r.error)) })
+$('dataImport').addEventListener('click', async () => { const r = await api.dataImport(); setText('dataOut', r.ok ? '✅ Imported — restart to apply.' : (r.error === 'cancelled' ? 'Cancelled' : 'Error: ' + r.error)) })
+
+/* ---------------- toasts + group alerts ---------------- */
+function toast (html, ms = 6000) {
+  const t = document.createElement('div'); t.className = 'toast'; t.innerHTML = html
+  $('toastWrap').appendChild(t)
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300) }, ms)
+}
+api.on('alert:group', s => { toast(`<b>📣 Group post</b><br>${esc(s.title || '')}${s.text ? '<br>' + esc(String(s.text).slice(0, 120)) : ''}`); setNotifCount((parseInt($('notifCount').textContent, 10) || 0) + 1) })
+
 api.on('discord:update', s => {
   discordConnected = !!s.connected
   setPill('discordState', s.connected, s.voiceAuthorized ? 'voice' : 'on')
@@ -1540,6 +1606,12 @@ async function init () {
   $('photoWebhook').value = pr.webhook || ''
   $('photoRelayEnable').checked = !!pr.enabled
   if (pr.enabled && pr.webhook) api.photoRelaySet(pr)
+
+  // Configured Start + presets + server status
+  $('startApps').value = await api.getSetting('startApps', '')
+  $('startWithVrc').checked = await api.getSetting('startWithVrc', false)
+  loadStatusPresets()
+  loadOnlineCount()
 
   // VRChat account restore
   $('vrcUser').value = await api.getSetting('vrcUser', '')

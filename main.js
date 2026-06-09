@@ -1,5 +1,7 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, shell } = require('electron')
+const { app, BrowserWindow, ipcMain, Tray, Menu, shell, dialog } = require('electron')
 const path = require('path')
+const fs = require('fs')
+const { spawn } = require('child_process')
 const settings = require('./settings')
 
 const { getNowPlaying } = require('./modules/media/nowPlaying')
@@ -134,6 +136,7 @@ app.whenReady().then(async () => {
   })
   setInterval(() => pawprints.tickCommit(), 60000) // persist ongoing world time
   startFriendDiff()
+  startGroupAlerts()
 })
 
 app.on('window-all-closed', () => {
@@ -147,7 +150,7 @@ app.on('activate', () => {
 app.on('before-quit', () => {
   stopComponentStats(); stopNetworkStats(); stopPulsoid(); stopHyperate(); stopWindowActivity()
   disconnectTikTok(); stopTwitch(); stopKick(); stopDiscord(); stopVrBattery(); stopVrcWorld(); stopAfk()
-  stopWeather(); stopVrcStatusPoll(); stopBot(); pawprints.tickCommit(); stopFriendDiff(); stopGreeter(); gamelog.close(); photoRelay.stop()
+  stopWeather(); stopVrcStatusPoll(); stopBot(); pawprints.tickCommit(); stopFriendDiff(); stopGreeter(); gamelog.close(); photoRelay.stop(); stopGroupAlerts()
 })
 
 /* ------------------------------------------------------------------ */
@@ -435,6 +438,65 @@ ipcMain.handle('greeter:set', (e, cfg = {}) => {
   return true
 })
 ipcMain.handle('app:launchVRChat', () => { shell.openExternal('steam://rungameid/438100'); return true })
+
+/* ------------------------------------------------------------------ */
+/* Media library / server status / configured start / data + alerts    */
+/* ------------------------------------------------------------------ */
+ipcMain.handle('media:photos', () => { try { return { ok: true, photos: vrcTools.listPhotos(300) } } catch (e) { return { ok: false, error: e.message } } })
+ipcMain.handle('media:open', (e, p) => { shell.openPath(p); return true })
+
+ipcMain.handle('vrchat:online', () => vrchatApi.getOnlineCount())
+
+// Configured Start — launch companion apps (and optionally VRChat).
+ipcMain.handle('apps:launch', (e, { paths, withVrchat } = {}) => {
+  let launched = 0
+  for (const p of (paths || [])) {
+    if (!p) continue
+    try { spawn(p, [], { detached: true, stdio: 'ignore' }).unref(); launched++ } catch (err) { console.warn('launch failed:', p, err.message) }
+  }
+  if (withVrchat) shell.openExternal('steam://rungameid/438100')
+  return { ok: true, launched }
+})
+
+// Data export / import (settings + history) via file dialogs.
+ipcMain.handle('data:export', async () => {
+  const r = await dialog.showSaveDialog({ defaultPath: 'nekosuneapps-backup.json', filters: [{ name: 'JSON', extensions: ['json'] }] })
+  if (r.canceled || !r.filePath) return { ok: false, error: 'cancelled' }
+  try {
+    fs.writeFileSync(r.filePath, JSON.stringify({ settings: settings.all(), history: gamelog.list({ limit: 5000 }) }, null, 2))
+    return { ok: true, path: r.filePath }
+  } catch (err) { return { ok: false, error: err.message } }
+})
+ipcMain.handle('data:import', async () => {
+  const r = await dialog.showOpenDialog({ properties: ['openFile'], filters: [{ name: 'JSON', extensions: ['json'] }] })
+  if (r.canceled || !r.filePaths[0]) return { ok: false, error: 'cancelled' }
+  try {
+    const data = JSON.parse(fs.readFileSync(r.filePaths[0], 'utf8'))
+    if (data.settings) settings.importAll(data.settings)
+    return { ok: true }
+  } catch (err) { return { ok: false, error: err.message } }
+})
+
+// Group alerts — poll watched groups' posts, log new ones + toast.
+let alertTimer = null
+const lastPostByGroup = {}
+async function pollGroupAlerts () {
+  if (!vrchatApi.isLoggedIn()) return
+  const groups = settings.get('eventGroups', [])
+  for (const gid of groups) {
+    const r = await vrchatApi.getGroupPosts(gid)
+    if (!r.ok || !r.posts.length) continue
+    const newest = r.posts[0]
+    if (lastPostByGroup[gid] && lastPostByGroup[gid] !== newest.id) {
+      gamelog.log('group', newest.title || 'Group post', newest.text || '', gid)
+      push('alert:group', { groupId: gid, title: newest.title, text: newest.text })
+    }
+    lastPostByGroup[gid] = newest.id
+  }
+}
+function startGroupAlerts () { stopGroupAlerts(); pollGroupAlerts(); alertTimer = setInterval(pollGroupAlerts, 300000) }
+function stopGroupAlerts () { if (alertTimer) { clearInterval(alertTimer); alertTimer = null } }
+ipcMain.handle('alerts:groupsRefresh', () => { startGroupAlerts(); return true })
 
 /* ------------------------------------------------------------------ */
 /* Weather                                                             */

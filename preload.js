@@ -121,6 +121,12 @@ window.electronAPI = {
   // photo relay
   photoRelaySet: cfg => ipcRenderer.invoke('photoRelay:set', cfg),
   launchVRChat: () => ipcRenderer.invoke('app:launchVRChat'),
+  mediaPhotos: () => ipcRenderer.invoke('media:photos'),
+  mediaOpen: p => ipcRenderer.invoke('media:open', p),
+  vrchatOnline: () => ipcRenderer.invoke('vrchat:online'),
+  appsLaunch: (paths, withVrchat) => ipcRenderer.invoke('apps:launch', { paths, withVrchat }),
+  dataExport: () => ipcRenderer.invoke('data:export'),
+  dataImport: () => ipcRenderer.invoke('data:import'),
 
   // weather
   weatherStart: opts => ipcRenderer.invoke('weather:start', opts),

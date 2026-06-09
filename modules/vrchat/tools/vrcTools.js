@@ -74,4 +74,21 @@ function folderPath (which) {
   }
 }
 
-module.exports = { updateYtDlp, cacheSize, clearCache, folderPath, VRCHAT_DIR, TOOLS_DIR, CACHE_DIR, PHOTOS_DIR }
+// List VRChat screenshots (newest first) for the Media Library.
+function listPhotos (limit = 200) {
+  const out = []
+  const walk = dir => {
+    let entries
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }) } catch (_) { return }
+    for (const e of entries) {
+      const p = path.join(dir, e.name)
+      if (e.isDirectory()) walk(p)
+      else if (/\.(png|jpg|jpeg)$/i.test(e.name)) { try { out.push({ path: p, name: e.name, mtime: fs.statSync(p).mtimeMs }) } catch (_) {} }
+    }
+  }
+  walk(PHOTOS_DIR)
+  out.sort((a, b) => b.mtime - a.mtime)
+  return out.slice(0, limit)
+}
+
+module.exports = { updateYtDlp, cacheSize, clearCache, folderPath, listPhotos, VRCHAT_DIR, TOOLS_DIR, CACHE_DIR, PHOTOS_DIR }

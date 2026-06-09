@@ -8,5 +8,11 @@ module.exports = {
     },
     set(key, value) {
         store.set(key, value);
+    },
+    all() {
+        return store.store;
+    },
+    importAll(obj) {
+        if (obj && typeof obj === 'object') store.set(obj);
     }
 };

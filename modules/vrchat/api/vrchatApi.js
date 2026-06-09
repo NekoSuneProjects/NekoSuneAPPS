@@ -220,6 +220,27 @@ async function sendBoop (userId, emojiId) {
   return res.status === 200 ? { ok: true } : { ok: false, error: errOf(res, 'Boop failed') }
 }
 
+// Online user count (server activity).
+async function getOnlineCount () {
+  loadCookies()
+  const res = await axios.get(`${BASE}/visits`, Object.assign({ headers: baseHeaders() }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200) return { ok: true, count: Number(res.data) || 0 }
+  return { ok: false, error: errOf(res, 'Could not load online count') }
+}
+// Group posts/announcements (for group alerts).
+async function getGroupPosts (groupId) {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  const res = await axios.get(`${BASE}/groups/${groupId}/posts`, Object.assign({ headers: baseHeaders(), params: { n: 10 } }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200) {
+    const arr = Array.isArray(res.data) ? res.data : (res.data && res.data.posts) || []
+    return { ok: true, posts: arr.map(p => ({ id: p.id, title: p.title, text: p.text, createdAt: p.createdAt })) }
+  }
+  return { ok: false, error: errOf(res, 'Could not load posts') }
+}
+
 // ---- Notes, moderation (block/mute), favorite-friend ids ----
 async function setNote (userId, note) {
   loadCookies()
@@ -477,6 +498,6 @@ module.exports = {
   getMutualFriends, getFavoriteWorlds, getFavoriteGroups, sendBoop, getMyAvatars, getMyWorlds, addFavorite, removeFavorite,
   searchUsers, searchWorlds, searchGroups, getWorld, getGroup,
   updateProfile, selectAvatar, deleteAvatar, createInstance, inviteSelf, groupInvite,
-  setNote, moderate, unmoderate, getFavoriteFriendIds,
+  setNote, moderate, unmoderate, getFavoriteFriendIds, getOnlineCount, getGroupPosts,
   getMyGroups, getGroupEvents, getNotifications, acceptFriendRequest
 }
