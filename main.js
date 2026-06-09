@@ -251,11 +251,23 @@ const tonUnlockAch = new Set(settings.get('tonUnlockAch', []))
 const tonUnlockItems = new Set(settings.get('tonUnlockItems', []))
 const tonUnlockRounds = new Set(settings.get('tonUnlockRounds', []))
 let tonSeenSaveTimer = null
+// Resolve a notification icon for a ToN achievement/terror from the cached art
+// (local downloaded file if present, else the remote URL — the lib handles both).
+function tonArtIcon (cat, name) {
+  try {
+    const c = tonData.get()
+    const list = cat === 'terror' ? (c.terrors || []) : (c.achievements || [])
+    const e = list.find(x => x.name === name) || list.find(x => x.name && x.name.toLowerCase() === String(name).toLowerCase())
+    if (!e) return null
+    if (e.icon && c.iconDir) { const p = path.join(c.iconDir, e.icon); if (fs.existsSync(p)) return p }
+    return e.img || null
+  } catch (_) { return null }
+}
 function tonRecordSeen (s) {
   let changed = false
   if (s.roundActive && s.terror && s.terror !== '???' && !tonSeenTerrors.has(s.terror)) {
     tonSeenTerrors.add(s.terror); changed = true
-    if (settings.get('tonNotify', true) && settings.get('tonNotifyTerrors', false)) vrNotify.notify('👹 New Terror Encountered', s.terror, settings.get('tonNotifyMode', 'auto'))
+    if (settings.get('tonNotify', true) && settings.get('tonNotifyTerrors', false)) vrNotify.notify('👹 New Terror Encountered', s.terror, settings.get('tonNotifyMode', 'auto'), tonArtIcon('terror', s.terror))
   }
   if (s.map && !tonSeenMaps.has(s.map)) { tonSeenMaps.add(s.map); changed = true }
   if (changed) {
@@ -280,7 +292,7 @@ ipcMain.handle('ton:start', (e, opts) => {
     onAchievement: name => {
       if (!tonUnlockAch.has(name)) { tonUnlockAch.add(name); settings.set('tonUnlockAch', [...tonUnlockAch]) }
       push('ton:achievement', name)
-      if (settings.get('tonNotify', true)) vrNotify.notify('🏆 ToN Achievement Unlocked', name, settings.get('tonNotifyMode', 'auto'))
+      if (settings.get('tonNotify', true)) vrNotify.notify('🏆 ToN Achievement Unlocked', name, settings.get('tonNotifyMode', 'auto'), tonArtIcon('ach', name))
     },
     // The game's save code — keep a dated backup history.
     onSave: code => { const rec = tonAddSave(code); if (rec) push('ton:save', { ts: rec.ts, length: code.length }) }
@@ -357,7 +369,10 @@ ipcMain.handle('tonNotify:set', (e, cfg = {}) => {
   if ('terrors' in cfg) settings.set('tonNotifyTerrors', !!cfg.terrors)
   return true
 })
-ipcMain.handle('tonNotify:test', () => vrNotify.notify('🏆 NekoSuneAPPS', 'ToN alerts are working!', settings.get('tonNotifyMode', 'auto')))
+ipcMain.handle('tonNotify:test', () => {
+  const logo = path.join(__dirname, 'assets', 'logo.png')
+  return vrNotify.notify('🏆 NekoSuneAPPS', 'ToN alerts are working!', settings.get('tonNotifyMode', 'auto'), fs.existsSync(logo) ? logo : null)
+})
 ipcMain.handle('tonNotify:detect', () => vrNotify.detect())
 
 // Export / import the player's ToN data (stats + encounters + round history).

@@ -29,8 +29,11 @@ function procRunning (name) {
   })
 }
 
+// icon (optional): local file path, http(s) URL, Buffer, data URI, or Base64 —
+// the library converts it for each target. We pass the cached achievement art.
+
 // XSOverlay needs an explicit connect() then an open socket before sending.
-function sendXS (title, content) {
+function sendXS (title, content, icon) {
   const L = load(); if (!L) return Promise.resolve(false)
   return new Promise(resolve => {
     let done = false
@@ -38,39 +41,39 @@ function sendXS (title, content) {
     let xs
     try { xs = new L.XSOverlay(); xs.connect() } catch (_) { return finish(false) }
     if (!xs.ws) return finish(false)
-    xs.ws.on('open', () => {
-      try { xs.sendNotification({ title, content, timeout: 5 }) } catch (_) {}
-      setTimeout(() => { try { xs.ws.close() } catch (_) {} finish(true) }, 400)
+    xs.ws.on('open', async () => {
+      try { await xs.sendNotification({ title, content, timeout: 5, ...(icon ? { icon } : {}) }) } catch (_) {}
+      setTimeout(() => { try { xs.ws.close() } catch (_) {} finish(true) }, 500)
     })
     xs.ws.on('error', () => finish(false))
-    setTimeout(() => { try { xs.ws && xs.ws.close() } catch (_) {} finish(false) }, 3000)
+    setTimeout(() => { try { xs.ws && xs.ws.close() } catch (_) {} finish(false) }, 5000)
   })
 }
 
-function sendOVR (title, body) {
+async function sendOVR (title, body, icon) {
   const L = load(); if (!L) return false
   try {
     const o = new L.OVRToolkit() // connects + queues until open
     o.ws.on('error', () => {}) // swallow if OVR Toolkit isn't running
-    o.sendNotification(title, body)
-    setTimeout(() => { try { o.ws.close() } catch (_) {} }, 1500)
+    await o.sendNotification(title, body, icon || null)
+    setTimeout(() => { try { o.ws.close() } catch (_) {} }, 2000)
     return true
   } catch (_) { return false }
 }
 
-function sendWin (title, message) {
+async function sendWin (title, message, icon) {
   const L = load(); if (!L) return false
-  try { new L.WindowsNotifications().sendNotification(title, message, null); return true } catch (_) { return false }
+  try { await new L.WindowsNotifications().sendNotification(title, message, icon || null); return true } catch (_) { return false }
 }
 
 // mode: 'auto' | 'xsoverlay' | 'ovrtoolkit' | 'windows' | 'off'
-async function notify (title, content, mode = 'auto') {
+async function notify (title, content, mode = 'auto', icon = null) {
   if (mode === 'off') return { sent: [] }
   const sent = []
   try {
-    if (mode === 'windows') { sendWin(title, content); sent.push('windows') } else if (mode === 'xsoverlay') { await sendXS(title, content); sent.push('xsoverlay') } else if (mode === 'ovrtoolkit') { sendOVR(title, content); sent.push('ovrtoolkit') } else {
+    if (mode === 'windows') { await sendWin(title, content, icon); sent.push('windows') } else if (mode === 'xsoverlay') { await sendXS(title, content, icon); sent.push('xsoverlay') } else if (mode === 'ovrtoolkit') { await sendOVR(title, content, icon); sent.push('ovrtoolkit') } else {
       // auto — route to whatever's actually running
-      if (await procRunning('XSOverlay.exe')) { await sendXS(title, content); sent.push('xsoverlay') } else if (await procRunning('OVR Toolkit.exe')) { sendOVR(title, content); sent.push('ovrtoolkit') } else if (await procRunning('vrserver.exe') || await procRunning('vrmonitor.exe')) { sendOVR(title, content); await sendXS(title, content); sent.push('vr') } else { sendWin(title, content); sent.push('windows') }
+      if (await procRunning('XSOverlay.exe')) { await sendXS(title, content, icon); sent.push('xsoverlay') } else if (await procRunning('OVR Toolkit.exe')) { await sendOVR(title, content, icon); sent.push('ovrtoolkit') } else if (await procRunning('vrserver.exe') || await procRunning('vrmonitor.exe')) { await sendOVR(title, content, icon); await sendXS(title, content, icon); sent.push('vr') } else { await sendWin(title, content, icon); sent.push('windows') }
     }
   } catch (err) { console.warn('vrNotify:', err.message) }
   return { sent }
