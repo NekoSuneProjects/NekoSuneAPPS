@@ -1,7 +1,7 @@
 /* NekoSuneAPPS renderer - wires the themed UI to the OSC layer and all modules. */
 const { loadAudioDevices, setupAudioAnalysis, stopAudioAnalysis } = require('./modules/vrchat/audio/audioModule')
 const {
-  setOscPort, setOscReceiverPort, sendOsc, sendBeat, sendChatboxMessage,
+  setOscPort, setOscReceiverPort, sendOsc, sendParam, sendBeat, sendChatboxMessage,
   startOscReceiver, stopOscReceiver, addOscListener
 } = require('./modules/vrchat/osc/oscModule')
 const { KatOscText } = require('./modules/vrchat/osc/katOscText')
@@ -596,6 +596,33 @@ $('calcInput').addEventListener('keydown', e => { if (e.key === 'Enter') calcEva
 $('calcClear').addEventListener('click', () => { $('calcInput').value = ''; setText('calcResult', '0') })
 $('calcSend').addEventListener('click', () => { const v = `${$('calcInput').value} = ${$('calcResult').textContent}`; sendChatboxMessage(v, false); logLine(`OUT chatbox: ${v}`) })
 
+/* ---------------- tools: Param Lab ---------------- */
+$('paramSend').addEventListener('click', () => {
+  const addr = $('paramAddr').value.trim()
+  if (!addr) { setText('paramOut', 'Enter a parameter address.'); return }
+  const type = $('paramType').value
+  const raw = $('paramValue').value.trim()
+  let val = raw
+  if (type === 'bool') val = /^(1|true|on|yes|t)$/i.test(raw)
+  else if (type === 'int') val = parseInt(raw, 10) || 0
+  else val = Number(raw) || 0
+  try { sendParam(addr, val, type); setText('paramOut', `Sent ${type} ${addr} = ${val}`); logLine(`OUT ${addr} ${val}`) } catch (e) { setText('paramOut', 'Error: ' + e.message) }
+})
+
+/* ---------------- tools: Photo Relay ---------------- */
+function applyPhotoRelay () {
+  const cfg = { enabled: $('photoRelayEnable').checked, webhook: $('photoWebhook').value.trim() }
+  api.saveSetting('photoRelay', cfg)
+  api.photoRelaySet(cfg)
+  setText('photoRelayOut', cfg.enabled ? (cfg.webhook ? 'Watching for new VRChat photos…' : 'Enter a webhook URL.') : 'Off')
+}
+;['photoRelayEnable', 'photoWebhook'].forEach(id => $(id).addEventListener('change', applyPhotoRelay))
+api.on('photoRelay:event', s => {
+  if (s.sent) setText('photoRelayOut', '✅ Sent ' + s.sent)
+  else if (s.error) setText('photoRelayOut', 'Error: ' + s.error)
+  else if (s.watching) setText('photoRelayOut', 'Watching for new VRChat photos…')
+})
+
 /* ---------------- tools: auto-afk ---------------- */
 function afkCfg () {
   return {
@@ -908,6 +935,28 @@ $('searchQuery').addEventListener('keydown', e => { if (e.key === 'Enter') doSea
 // user result cards open the user modal
 $('searchResults').addEventListener('click', e => { const c = e.target.closest('.mini-card[data-kind="user"]'); if (c) openUserModal(c.dataset.id) })
 
+/* ---------------- History page ---------------- */
+const HIST_ICON = { join: '➡️', leave: '⬅️', friend_add: '➕', friend_remove: '➖', world: '🌐', alert: '🔔', group: '👥' }
+async function loadHistory () {
+  const el = $('histList'); el.textContent = 'Loading…'
+  const rows = await api.historyList({ type: $('histType').value || undefined, limit: 300 })
+  if (!rows || !rows.length) { el.textContent = 'No history yet — it fills as you use VRChat with the app open.'; return }
+  el.innerHTML = rows.map(r => {
+    const when = new Date(r.ts).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+    return `<div style="display:flex;gap:8px;padding:5px 0;border-top:1px solid var(--border)"><span>${HIST_ICON[r.type] || '•'}</span><div class="grow" style="min-width:0"><div><b>${esc(r.name || r.type)}</b> <span class="muted">${esc(r.detail || '')}</span></div><div class="muted" style="font-size:.72rem">${when}${r.world ? ' · ' + esc(r.world) : ''}</div></div></div>`
+  }).join('')
+}
+$('histRefresh').addEventListener('click', loadHistory)
+$('histType').addEventListener('change', loadHistory)
+$('histClear').addEventListener('click', async () => { await api.historyClear(); loadHistory() })
+document.querySelector('[data-tab="history"]').addEventListener('click', loadHistory)
+
+/* ---------------- Auto-Greeter ---------------- */
+function greeterCfg () { return { enabled: $('greeterEnable').checked, mode: $('greeterMode').value, allow: $('greeterAllow').value.split(',').map(s => s.trim()).filter(Boolean) } }
+function applyGreeter () { const c = greeterCfg(); api.saveSetting('greeter', c); api.greeterSet(c); setText('greeterOut', c.enabled ? 'On — watching for friend requests.' : 'Off') }
+;['greeterEnable', 'greeterMode', 'greeterAllow'].forEach(id => $(id).addEventListener('change', applyGreeter))
+api.on('greeter:accepted', s => setText('greeterOut', '✅ Auto-accepted ' + (s.name || 'a request')))
+
 function parseVrcId (s) {
   s = String(s || '').trim()
   let m
@@ -931,6 +980,14 @@ $('idLoadInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('id
 function closeDetailModal () { $('detailModal').style.display = 'none' }
 $('detailModalClose').addEventListener('click', closeDetailModal)
 $('detailModal').addEventListener('click', e => { if (e.target === $('detailModal')) closeDetailModal() })
+// Favorite / unfavorite buttons inside the detail modal
+$('dmActions').addEventListener('click', async e => {
+  const b = e.target.closest('[data-fav]'); if (!b) return
+  const orig = b.textContent; b.textContent = '…'; b.disabled = true
+  const r = b.dataset.fav === 'add' ? await api.vrchatAddFav(b.dataset.type || 'world', b.dataset.id) : await api.vrchatRemoveFav(b.dataset.id)
+  b.disabled = false; b.textContent = r.ok ? '✓ Done' : '✗ ' + (r.error || 'failed')
+  setTimeout(() => { b.textContent = orig }, 2500)
+})
 function dmInfo (rows) { return `<div class="um-sec">Info</div><div class="um-info">${rows.filter(r => r[1] !== '' && r[1] != null).map(r => `<div><span>${esc(r[0])}</span><b>${esc(r[1])}</b></div>`).join('')}</div>` }
 async function openWorldModal (id) {
   $('detailModal').style.display = 'flex'
@@ -942,7 +999,7 @@ async function openWorldModal (id) {
   setText('dmSub', 'World by ' + (w.authorName || '?'))
   $('dmImage').src = w.thumbnailImageUrl || w.imageUrl || 'assets/logo.png'
   $('dmBanner').style.backgroundImage = (w.imageUrl || w.thumbnailImageUrl) ? `url("${w.imageUrl || w.thumbnailImageUrl}")` : ''
-  $('dmActions').innerHTML = `<a class="btn" href="https://vrchat.com/home/world/${w.id}" target="_blank">Open on VRChat</a>`
+  $('dmActions').innerHTML = `<a class="btn" href="https://vrchat.com/home/world/${w.id}" target="_blank">Open on VRChat</a><button class="btn ghost" data-fav="add" data-type="world" data-id="${w.id}">⭐ Favorite</button><button class="btn ghost" data-fav="rm" data-id="${w.id}">✖ Unfavorite</button>`
   $('dmBody').innerHTML = (w.description ? `<div class="um-bio">${esc(w.description)}</div>` : '') + dmInfo([
     ['Players', w.occupants || 0], ['Capacity', w.capacity || '?'], ['Visits', w.visits || 0],
     ['Favorites', w.favorites || 0], ['Status', w.releaseStatus || ''],
@@ -1210,6 +1267,12 @@ $('umBoop').addEventListener('click', async () => {
   const r = await api.vrchatBoop(umCurrentId)
   setText('umActionOut', r.ok ? '👉 Booped!' : 'Error: ' + (r.error || 'failed'))
 })
+$('umFav').addEventListener('click', async () => {
+  if (!umCurrentId) return
+  setText('umActionOut', 'Favoriting…')
+  const r = await api.vrchatAddFav('friend', umCurrentId)
+  setText('umActionOut', r.ok ? '⭐ Added to favorites' : 'Error: ' + (r.error || 'failed'))
+})
 
 api.on('discord:update', s => {
   discordConnected = !!s.connected
@@ -1315,6 +1378,12 @@ async function init () {
   $('afkBackMessage').value = af.backMessage || '👋 Back!'
   if (af.enabled) api.afkStart({ thresholdSec: af.thresholdSec || 120 })
 
+  // Photo Relay restore
+  const pr = await api.getSetting('photoRelay', {})
+  $('photoWebhook').value = pr.webhook || ''
+  $('photoRelayEnable').checked = !!pr.enabled
+  if (pr.enabled && pr.webhook) api.photoRelaySet(pr)
+
   // VRChat account restore
   $('vrcUser').value = await api.getSetting('vrcUser', '')
   const vrcLoggedIn = await api.vrchatIsLoggedIn()
@@ -1342,6 +1411,13 @@ async function init () {
   trackedGroups = await api.getSetting('eventGroups', [])
   $('friendAuto').checked = await api.getSetting('friendAuto', true)
   syncFriendAuto()
+
+  // Auto-Greeter restore
+  const gr = await api.getSetting('greeter', {})
+  $('greeterEnable').checked = !!gr.enabled
+  $('greeterMode').value = gr.mode || 'all'
+  $('greeterAllow').value = (gr.allow || []).join(', ')
+  if (gr.enabled) api.greeterSet(gr)
 
   await setupAiProviders()
   $('overlayEnabled') // overlay restore

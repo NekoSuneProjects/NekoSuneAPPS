@@ -87,6 +87,8 @@ window.electronAPI = {
   vrchatFavWorlds: () => ipcRenderer.invoke('vrchat:favWorlds'),
   vrchatBoop: (id, emojiId) => ipcRenderer.invoke('vrchat:boop', { id, emojiId }),
   vrchatMyAvatars: () => ipcRenderer.invoke('vrchat:myAvatars'),
+  vrchatAddFav: (type, id) => ipcRenderer.invoke('vrchat:addFav', { type, id }),
+  vrchatRemoveFav: id => ipcRenderer.invoke('vrchat:removeFav', id),
   vrchatSearchUsers: q => ipcRenderer.invoke('vrchat:searchUsers', q),
   vrchatSearchWorlds: q => ipcRenderer.invoke('vrchat:searchWorlds', q),
   vrchatSearchGroups: q => ipcRenderer.invoke('vrchat:searchGroups', q),
@@ -94,6 +96,17 @@ window.electronAPI = {
   vrchatGroup: id => ipcRenderer.invoke('vrchat:group', id),
   pawprintsList: () => ipcRenderer.invoke('pawprints:list'),
   pawprintsClear: () => ipcRenderer.invoke('pawprints:clear'),
+
+  // history / game-log
+  historyList: opts => ipcRenderer.invoke('history:list', opts),
+  historyClear: () => ipcRenderer.invoke('history:clear'),
+  historyLog: ev => ipcRenderer.invoke('history:log', ev),
+
+  // auto-greeter
+  greeterSet: cfg => ipcRenderer.invoke('greeter:set', cfg),
+
+  // photo relay
+  photoRelaySet: cfg => ipcRenderer.invoke('photoRelay:set', cfg),
   launchVRChat: () => ipcRenderer.invoke('app:launchVRChat'),
 
   // weather

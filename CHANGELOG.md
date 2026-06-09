@@ -156,6 +156,15 @@ built on the proven OSCAudiolink architecture.
   (Dec), 🏳️‍🌈 Pride (June), 🐰 Easter (computed), green otherwise — with a season badge
   in the top bar.
 
+### History, auto-greeter & more tools
+- **📜 History** — a real **SQLite** game-log (via `sql.js`, no native build) recording
+  **player join/leave**, **friend added/removed** (diffed), and **world visits**; filterable
+  timeline with clear. (New dep: `sql.js` — run `npm install`.)
+- **👋 Auto-Greeter** — auto-accept friend requests (everyone or an allow-list); logs to History.
+- **🎚 Param Lab** — send any OSC avatar parameter (bool/int/float).
+- **📸 Photo Relay** — auto-upload new VRChat screenshots to a Discord webhook.
+- **⭐ Favorites** — add/remove favorites (worlds in the world modal, friends in the profile modal).
+
 ### VRChat browser (search + detail)
 - **Search** page — search **users / worlds / groups** (results are clickable cards).
 - **Open by ID / URL** — paste a `usr_`/`wrld_`/`grp_` id or a vrchat.com link to open it.

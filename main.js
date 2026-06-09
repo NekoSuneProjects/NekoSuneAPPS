@@ -32,6 +32,8 @@ const soundpad = require('./modules/integrations/soundpadModule')
 const { pressMediaKey } = require('./modules/vrchat/osc/mediaKeys')
 const vrcTools = require('./modules/vrchat/tools/vrcTools')
 const pawprints = require('./modules/vrchat/tools/pawprints')
+const gamelog = require('./modules/history/gamelog')
+const photoRelay = require('./modules/integrations/photoRelay')
 
 // Keep a stray error in any poller/network module from hard-crashing the app.
 process.on('uncaughtException', err => console.error('[uncaughtException]', err))
@@ -123,12 +125,15 @@ app.whenReady().then(async () => {
   createWindow()
   // Track the current VRChat world from its log; feed it to the renderer and
   // (when connected) into the Discord presence.
+  gamelog.init(app.getPath('userData')).catch(err => console.warn('gamelog init:', err.message))
   startVrcWorld(w => {
     push('vrc:world', w)
     setVrcContext({ worldName: w.inWorld ? w.worldName : '', joinUrl: w.joinUrl, worldUrl: w.worldUrl, profileUrl: w.profileUrl })
     pawprints.setWorld(w.inWorld ? w.worldName : '')
+    logWorldDiff(w)
   })
   setInterval(() => pawprints.tickCommit(), 60000) // persist ongoing world time
+  startFriendDiff()
 })
 
 app.on('window-all-closed', () => {
@@ -142,7 +147,7 @@ app.on('activate', () => {
 app.on('before-quit', () => {
   stopComponentStats(); stopNetworkStats(); stopPulsoid(); stopHyperate(); stopWindowActivity()
   disconnectTikTok(); stopTwitch(); stopKick(); stopDiscord(); stopVrBattery(); stopVrcWorld(); stopAfk()
-  stopWeather(); stopVrcStatusPoll(); stopBot(); pawprints.tickCommit()
+  stopWeather(); stopVrcStatusPoll(); stopBot(); pawprints.tickCommit(); stopFriendDiff(); stopGreeter(); gamelog.close(); photoRelay.stop()
 })
 
 /* ------------------------------------------------------------------ */
@@ -334,6 +339,8 @@ ipcMain.handle('vrchat:mutuals', (e, id) => vrchatApi.getMutualFriends(id))
 ipcMain.handle('vrchat:favWorlds', () => vrchatApi.getFavoriteWorlds())
 ipcMain.handle('vrchat:boop', (e, { id, emojiId } = {}) => vrchatApi.sendBoop(id, emojiId))
 ipcMain.handle('vrchat:myAvatars', () => vrchatApi.getMyAvatars())
+ipcMain.handle('vrchat:addFav', (e, { type, id } = {}) => vrchatApi.addFavorite(type, id))
+ipcMain.handle('vrchat:removeFav', (e, id) => vrchatApi.removeFavorite(id))
 ipcMain.handle('vrchat:searchUsers', (e, q) => vrchatApi.searchUsers(q))
 ipcMain.handle('vrchat:searchWorlds', (e, q) => vrchatApi.searchWorlds(q))
 ipcMain.handle('vrchat:searchGroups', (e, q) => vrchatApi.searchGroups(q))
@@ -341,6 +348,73 @@ ipcMain.handle('vrchat:world', (e, id) => vrchatApi.getWorld(id))
 ipcMain.handle('vrchat:group', (e, id) => vrchatApi.getGroup(id))
 ipcMain.handle('pawprints:list', () => pawprints.list())
 ipcMain.handle('pawprints:clear', () => { pawprints.clear(); return true })
+
+/* ------------------------------------------------------------------ */
+/* History / game-log (SQLite via sql.js)                              */
+/* ------------------------------------------------------------------ */
+let lastPlayers = new Set()
+let playersPrimed = false
+let lastWorldLogged = ''
+function logWorldDiff (w) {
+  if (!w) return
+  if (!w.inWorld) { lastPlayers = new Set(); playersPrimed = false; lastWorldLogged = ''; return }
+  if (w.worldName && w.worldName !== lastWorldLogged) { lastWorldLogged = w.worldName; gamelog.log('world', w.worldName, 'Entered world', w.worldName) }
+  const cur = new Set(w.players || [])
+  if (!playersPrimed) { lastPlayers = cur; playersPrimed = true; return }
+  for (const p of cur) if (!lastPlayers.has(p)) gamelog.log('join', p, 'joined', w.worldName)
+  for (const p of lastPlayers) if (!cur.has(p)) gamelog.log('leave', p, 'left', w.worldName)
+  lastPlayers = cur
+}
+
+let lastFriends = null // Map(id -> displayName)
+let friendDiffTimer = null
+async function pollFriendDiff () {
+  if (!vrchatApi.isLoggedIn()) return
+  const [on, off] = await Promise.all([vrchatApi.getFriends(false), vrchatApi.getFriends(true)])
+  if (!on.ok && !off.ok) return
+  const map = new Map()
+  for (const f of [...(on.friends || []), ...(off.friends || [])]) map.set(f.id, f.displayName)
+  if (lastFriends === null) { lastFriends = map; return } // baseline
+  for (const [id, name] of map) if (!lastFriends.has(id)) gamelog.log('friend_add', name, 'New friend', '')
+  for (const [id, name] of lastFriends) if (!map.has(id)) gamelog.log('friend_remove', name, 'No longer friends', '')
+  lastFriends = map
+}
+function startFriendDiff () { stopFriendDiff(); pollFriendDiff(); friendDiffTimer = setInterval(pollFriendDiff, 120000) }
+function stopFriendDiff () { if (friendDiffTimer) { clearInterval(friendDiffTimer); friendDiffTimer = null } }
+
+ipcMain.handle('history:list', (e, opts) => gamelog.list(opts || {}))
+ipcMain.handle('history:clear', () => { gamelog.clear(); return true })
+ipcMain.handle('history:log', (e, { type, name, detail, world } = {}) => { gamelog.log(type, name, detail, world); return true })
+
+/* ------------------------------------------------------------------ */
+/* Auto-Greeter — auto-accept friend requests                          */
+/* ------------------------------------------------------------------ */
+let greeterTimer = null
+let greeterCfg = { enabled: false, mode: 'all', allow: [] }
+async function pollGreeter () {
+  if (!greeterCfg.enabled || !vrchatApi.isLoggedIn()) return
+  const r = await vrchatApi.getNotifications()
+  if (!r.ok) return
+  for (const n of r.notifications) {
+    if (n.type !== 'friendRequest') continue
+    const who = String(n.senderUsername || '').toLowerCase()
+    const allowed = greeterCfg.mode === 'all' || greeterCfg.allow.some(a => a && (who.includes(a) || n.senderUserId === a))
+    if (!allowed) continue
+    const res = await vrchatApi.acceptFriendRequest(n.id)
+    if (res.ok) { gamelog.log('friend_add', n.senderUsername || 'someone', 'Auto-accepted request', ''); push('greeter:accepted', { name: n.senderUsername || 'someone' }) }
+  }
+}
+function stopGreeter () { if (greeterTimer) { clearInterval(greeterTimer); greeterTimer = null } }
+ipcMain.handle('greeter:set', (e, cfg = {}) => {
+  greeterCfg = {
+    enabled: !!cfg.enabled,
+    mode: cfg.mode === 'list' ? 'list' : 'all',
+    allow: (cfg.allow || []).map(s => String(s).toLowerCase().trim()).filter(Boolean)
+  }
+  stopGreeter()
+  if (greeterCfg.enabled) { pollGreeter(); greeterTimer = setInterval(pollGreeter, 60000) }
+  return true
+})
 ipcMain.handle('app:launchVRChat', () => { shell.openExternal('steam://rungameid/438100'); return true })
 
 /* ------------------------------------------------------------------ */
@@ -384,6 +458,9 @@ ipcMain.handle('soundpad:list', async () => {
 /* Media keys (SpotiOSC)                                               */
 /* ------------------------------------------------------------------ */
 ipcMain.handle('media:key', (e, action) => pressMediaKey(action).then(() => ({ ok: true })).catch(err => ({ ok: false, error: err.message })))
+
+// Photo Relay (VRChat screenshots -> Discord webhook)
+ipcMain.handle('photoRelay:set', (e, cfg) => { photoRelay.start(cfg || {}, s => push('photoRelay:event', s)); return true })
 
 /* ------------------------------------------------------------------ */
 /* VRChat maintenance tools (external/file-based — no game injection)  */

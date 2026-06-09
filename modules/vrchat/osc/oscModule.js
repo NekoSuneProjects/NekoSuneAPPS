@@ -220,6 +220,22 @@ function createOscMessage (address, value) {
   return Buffer.concat([addressBuffer, typeTag, floatBuffer])
 }
 
+// Param Lab: send any avatar parameter as bool / int / float.
+function sendParam (address, value, type = 'float') {
+  const addr = encodeOscString(address)
+  let buf
+  if (type === 'bool') {
+    buf = Buffer.concat([addr, encodeOscString(value ? ',T' : ',F')])
+  } else if (type === 'int') {
+    const b = Buffer.alloc(4); b.writeInt32BE(parseInt(value, 10) || 0, 0)
+    buf = Buffer.concat([addr, encodeOscString(',i'), b])
+  } else {
+    const b = Buffer.alloc(4); b.writeFloatBE(Number(value) || 0, 0)
+    buf = Buffer.concat([addr, encodeOscString(',f'), b])
+  }
+  oscClient.send(buf, oscPort, '127.0.0.1', err => { if (err) console.error('OSC Error:', err) })
+}
+
 function createChatboxMessage (message, send, notify) {
   return Buffer.concat([
     encodeOscString(CHATBOX_INPUT_PATH),
@@ -238,6 +254,7 @@ module.exports = {
   setOscPort,
   setOscReceiverPort,
   sendOsc,
+  sendParam,
   sendBeat,
   sendChatboxMessage,
   startOscReceiver,

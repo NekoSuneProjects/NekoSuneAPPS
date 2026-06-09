@@ -241,6 +241,26 @@ async function getGroup (id) {
   return { ok: false, error: errOf(res, 'Could not load group') }
 }
 
+// Favorites add/remove. type: 'world' | 'avatar' | 'friend'.
+function favTag (type) { return type === 'world' ? 'worlds1' : type === 'avatar' ? 'avatars1' : 'group_0' }
+async function addFavorite (type, id) {
+  loadCookies()
+  const res = await axios.post(`${BASE}/favorites`, { type, favoriteId: id, tags: [favTag(type)] }, Object.assign({ headers: baseHeaders({ 'Content-Type': 'application/json' }) }, REQ))
+  storeSetCookie(res)
+  return res.status === 200 ? { ok: true } : { ok: false, error: errOf(res, 'Add favorite failed') }
+}
+async function removeFavorite (favoriteId) {
+  loadCookies()
+  // favoriteId is the world/avatar/user id — find its favorite record then delete it.
+  const listRes = await axios.get(`${BASE}/favorites`, Object.assign({ headers: baseHeaders(), params: { n: 200 } }, REQ))
+  storeSetCookie(listRes)
+  const rec = Array.isArray(listRes.data) ? listRes.data.find(f => f.favoriteId === favoriteId) : null
+  if (!rec) return { ok: false, error: 'Not in your favorites' }
+  const res = await axios.delete(`${BASE}/favorites/${rec.id}`, Object.assign({ headers: baseHeaders() }, REQ))
+  storeSetCookie(res)
+  return res.status === 200 ? { ok: true } : { ok: false, error: errOf(res, 'Remove favorite failed') }
+}
+
 // Your own avatars (for the Content page).
 async function getMyAvatars () {
   loadCookies()
@@ -328,7 +348,7 @@ function logout () { cookies = {}; currentUserId = ''; saveCookies() }
 module.exports = {
   login, verify2fa, fetchUser, mapStatus, isLoggedIn, logout,
   getFriends, getUser, sendFriendRequest, requestInvite, unfriend, inviteUser, getUserGroups, getUserWorlds,
-  getMutualFriends, getFavoriteWorlds, sendBoop, getMyAvatars,
+  getMutualFriends, getFavoriteWorlds, sendBoop, getMyAvatars, addFavorite, removeFavorite,
   searchUsers, searchWorlds, searchGroups, getWorld, getGroup,
   getMyGroups, getGroupEvents, getNotifications, acceptFriendRequest
 }

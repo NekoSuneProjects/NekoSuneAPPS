@@ -188,6 +188,7 @@
       <button class="navbtn" data-tab="groups"><span class="ico">👥</span><span class="lbl">Groups</span></button>
       <button class="navbtn" data-tab="content"><span class="ico">🌐</span><span class="lbl">Content</span></button>
       <button class="navbtn" data-tab="search"><span class="ico">🔍</span><span class="lbl">Search</span></button>
+      <button class="navbtn" data-tab="history"><span class="ico">📜</span><span class="lbl">History</span></button>
       <button class="navbtn" data-tab="weather"><span class="ico">🌦</span><span class="lbl">Weather</span></button>
       <button class="navbtn" data-tab="osccontrol"><span class="ico">🎛</span><span class="lbl">OSC Control</span></button>
       <button class="navbtn" data-tab="vrctools"><span class="ico">🧰</span><span class="lbl">VRChat Tools</span></button>
@@ -629,6 +630,28 @@
         </div>
       </section>
 
+      <!-- HISTORY -->
+      <section id="history" class="tabpanel">
+        <div class="card">
+          <h3>📜 History <span class="muted" style="font-size:.72rem">(saved locally to SQLite)</span></h3>
+          <div class="row">
+            <select id="histType" style="max-width:160px">
+              <option value="">All events</option>
+              <option value="join">Player joins</option>
+              <option value="leave">Player leaves</option>
+              <option value="friend_add">Friend added</option>
+              <option value="friend_remove">Friend removed</option>
+              <option value="world">World visits</option>
+              <option value="alert">Alerts</option>
+              <option value="group">Group</option>
+            </select>
+            <button class="btn" id="histRefresh">Refresh</button>
+            <button class="btn danger" id="histClear">Clear</button>
+          </div>
+          <div id="histList" class="muted" style="margin-top:10px;max-height:580px;overflow:auto;font-size:.82rem">Loading…</div>
+        </div>
+      </section>
+
       <!-- GROUPS -->
       <section id="groups" class="tabpanel">
         <div class="card">
@@ -684,6 +707,25 @@
           </div>
           <div class="stat-big" id="calcResult" style="margin-top:8px">0</div>
           <div class="muted" style="font-size:.72rem;margin-top:4px">Powered by mathjs — supports + - * / ^, sqrt(), sin(), %, parentheses, etc.</div>
+        </div>
+
+        <div class="card">
+          <h3>🎚 Param Lab <span class="muted" style="font-size:.72rem">(send any OSC avatar parameter)</span></h3>
+          <input type="text" id="paramAddr" placeholder="/avatar/parameters/MyParam" />
+          <div class="row" style="margin-top:8px">
+            <select id="paramType" style="max-width:110px"><option value="bool">Bool</option><option value="int">Int</option><option value="float">Float</option></select>
+            <input type="text" id="paramValue" placeholder="true / 1 / 0.5" />
+            <button class="btn" id="paramSend">Send</button>
+          </div>
+          <div class="muted" id="paramOut" style="margin-top:6px;font-size:.78rem"></div>
+        </div>
+
+        <div class="card">
+          <h3>📸 Photo Relay <span class="muted" style="font-size:.72rem">(VRChat screenshots → Discord)</span></h3>
+          <label>Discord webhook URL</label>
+          <input type="password" id="photoWebhook" placeholder="https://discord.com/api/webhooks/..." autocomplete="off" />
+          <label class="switch" style="margin-top:8px"><input type="checkbox" id="photoRelayEnable"> Auto-send new VRChat photos</label>
+          <div class="muted" id="photoRelayOut" style="margin-top:6px;font-size:.78rem"></div>
         </div>
 
         <div class="card">
@@ -746,6 +788,16 @@
             <label class="switch"><input type="checkbox" id="autoKick"> 🟢 Kick followers</label>
           </div>
           <div class="muted" style="font-size:.75rem; margin-top:6px">Saved tokens/IDs are reused — no need to press Connect each launch.</div>
+        </div>
+        <div class="card">
+          <h3>👋 Auto-Greeter</h3>
+          <div class="muted" style="font-size:.75rem;margin-bottom:8px">Auto-accept incoming friend requests via the VRChat API (needs VRChat login). Polls every 60s.</div>
+          <label class="switch"><input type="checkbox" id="greeterEnable"> Auto-accept friend requests</label>
+          <label style="margin-top:8px">Who</label>
+          <select id="greeterMode"><option value="all">Everyone</option><option value="list">Allow-list only</option></select>
+          <label style="margin-top:8px">Allow-list <span class="muted" style="font-size:.72rem">(comma-separated usernames)</span></label>
+          <input type="text" id="greeterAllow" placeholder="name1, name2" />
+          <div class="muted" id="greeterOut" style="margin-top:6px;font-size:.78rem"></div>
         </div>
         <div class="card">
           <h3>🤖 IntelliChat (AI provider)</h3>
@@ -908,7 +960,8 @@
         <button class="btn" id="umAddFriend">➕ Add Friend</button>
         <button class="btn ghost" id="umInvite">📨 Invite</button>
         <button class="btn ghost" id="umRequestInvite">✉️ Request Invite</button>
-        <button class="btn ghost" id="umBoop" title="VRChat boop is in-game only — no API">👉 Boop</button>
+        <button class="btn ghost" id="umFav">⭐ Favorite</button>
+        <button class="btn ghost" id="umBoop">👉 Boop</button>
       </div>
       <div id="umActionOut" class="muted" style="padding:6px 20px 0;font-size:.78rem"></div>
       <div class="modal-tabs">
