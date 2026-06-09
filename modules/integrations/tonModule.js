@@ -22,6 +22,8 @@ let reconnectTimer = null
 let emitTimer = null
 let onUpdate = null
 let onRound = null
+let onAchievement = null
+let onSave = null
 let running = false
 let port = DEFAULT_PORT
 let currentRound = null // in-progress round snapshot, finalised on round end
@@ -120,8 +122,22 @@ function applyEvent (ev) {
       if (key && Number.isFinite(ev.Value)) state[key] = ev.Value
       break
     }
-    // PLAYER_JOIN / PLAYER_LEAVE / TRACKER are covered by STATS.PlayersOnline and
-    // the round events above, so we don't need to track them individually.
+    case 'TRACKER': {
+      // ToNSaveManager fires { event:"achievement", args:["<Name>"] } when the
+      // player unlocks one in-game — the live auto-unlock signal for the board.
+      if (ev.event === 'achievement' && Array.isArray(ev.args) && ev.args[0]) {
+        const name = String(ev.args[0]).trim()
+        if (name && typeof onAchievement === 'function') { try { onAchievement(name) } catch (_) { /* ignore */ } }
+      }
+      break
+    }
+    case 'SAVED': {
+      // The game's full save code — auto-backed up with a timestamp.
+      const code = String(ev.Value || '').trim()
+      if (code && typeof onSave === 'function') { try { onSave(code) } catch (_) { /* ignore */ } }
+      break
+    }
+    // PLAYER_JOIN / PLAYER_LEAVE are covered by STATS.PlayersOnline.
     default: break
   }
 }
@@ -202,9 +218,11 @@ function connect () {
   })
 }
 
-function startTon (listener, { port: p, onRound: roundCb } = {}) {
+function startTon (listener, { port: p, onRound: roundCb, onAchievement: achCb, onSave: saveCb } = {}) {
   onUpdate = listener
   onRound = typeof roundCb === 'function' ? roundCb : null
+  onAchievement = typeof achCb === 'function' ? achCb : null
+  onSave = typeof saveCb === 'function' ? saveCb : null
   port = Number(p) > 0 ? Number(p) : DEFAULT_PORT
   stopTon()
   running = true

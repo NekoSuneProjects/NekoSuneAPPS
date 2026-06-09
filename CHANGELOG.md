@@ -3,6 +3,20 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.3] - 2026-06-09
+
+### Added
+- **Live achievement auto-unlock** — when the game fires an achievement (WS
+  `TRACKER { event:"achievement" }`), it's marked unlocked on the board instantly
+  with a toast.
+- **Dated save backups** — the in-game save code (WS `SAVED` event) is captured
+  automatically into a timestamped backup history (last 200). Copy any code back
+  to your clipboard to paste in-game and restore. Included in export/import.
+- **Auto-connect on the Terrors tab** — opening 👻 Terrors connects to
+  ToNSaveManager and **keeps retrying every 5s until connected**, with a live
+  status line (🟢 connected / round info / 🔴 retrying) and rolling stat,
+  encounter and ✓-marker updates — no need to toggle anything on the Stats tab.
+
 ## [1.0.2] - 2026-06-09
 
 ### Added

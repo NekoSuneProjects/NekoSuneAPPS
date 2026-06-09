@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, shell, dialog } = require('electron')
+const { app, BrowserWindow, ipcMain, Tray, Menu, shell, dialog, clipboard } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const { spawn } = require('child_process')
@@ -240,6 +240,11 @@ ipcMain.handle('window:stop', () => { stopWindowActivity(); return true })
 // Encountered terrors / maps — the "how many you've bumped into" tally, persisted.
 const tonSeenTerrors = new Set(settings.get('tonSeenTerrors', []))
 const tonSeenMaps = new Set(settings.get('tonSeenMaps', []))
+// Manually-marked + live auto-unlocked entries (ToN broadcasts achievement unlocks
+// over the WS as TRACKER { event:"achievement" }).
+const tonUnlockAch = new Set(settings.get('tonUnlockAch', []))
+const tonUnlockItems = new Set(settings.get('tonUnlockItems', []))
+const tonUnlockRounds = new Set(settings.get('tonUnlockRounds', []))
 let tonSeenSaveTimer = null
 function tonRecordSeen (s) {
   let changed = false
@@ -262,7 +267,14 @@ ipcMain.handle('ton:start', (e, opts) => {
       gamelog.log('ton_round', rec.roundType || 'Round',
         JSON.stringify({ terror: rec.terror, map: rec.map, result: rec.result, dur: rec.durationSec }), rec.map || '')
       push('ton:round', rec)
-    }
+    },
+    // Live achievement unlock from the game — mark it, persist, and tell the renderer.
+    onAchievement: name => {
+      if (!tonUnlockAch.has(name)) { tonUnlockAch.add(name); settings.set('tonUnlockAch', [...tonUnlockAch]) }
+      push('ton:achievement', name)
+    },
+    // The game's save code — keep a dated backup history.
+    onSave: code => { const rec = tonAddSave(code); if (rec) push('ton:save', { ts: rec.ts, length: code.length }) }
   })
   return true
 })
@@ -282,11 +294,7 @@ ipcMain.handle('ton:dataRefresh', async () => {
 ipcMain.handle('ton:seen', () => ({ terrors: [...tonSeenTerrors], maps: [...tonSeenMaps] }))
 ipcMain.handle('app:openExternal', (e, url) => { if (/^https?:\/\//i.test(url || '')) shell.openExternal(url); return true })
 
-// Manually-marked unlocks (ToN's API has no per-achievement feed). Terrors/maps
-// also auto-unlock from live encounters (tonSeen*); the rest are user-toggled.
-const tonUnlockAch = new Set(settings.get('tonUnlockAch', []))
-const tonUnlockItems = new Set(settings.get('tonUnlockItems', []))
-const tonUnlockRounds = new Set(settings.get('tonUnlockRounds', []))
+// Achievements auto-unlock from the live WS feed; all categories are click-to-toggle.
 const tonSetFor = cat => ({ achievements: tonUnlockAch, items: tonUnlockItems, rounds: tonUnlockRounds, terrors: tonSeenTerrors, locations: tonSeenMaps }[cat])
 const tonKeyFor = cat => ({ achievements: 'tonUnlockAch', items: 'tonUnlockItems', rounds: 'tonUnlockRounds', terrors: 'tonSeenTerrors', locations: 'tonSeenMaps' }[cat])
 ipcMain.handle('ton:unlocks', () => ({
@@ -300,6 +308,25 @@ ipcMain.handle('ton:toggleUnlock', (e, { category, key } = {}) => {
   return set.has(key)
 })
 
+// Dated backups of the game's save code (captured from the WS SAVED event).
+let tonSaves = null
+function tonSavesFile () { return path.join(app.getPath('userData'), 'ton-saves.json') }
+function tonLoadSaves () { if (tonSaves) return; try { tonSaves = JSON.parse(fs.readFileSync(tonSavesFile(), 'utf8')) } catch (_) { tonSaves = [] } }
+function tonAddSave (code) {
+  code = String(code || '').trim(); if (!code) return null
+  tonLoadSaves()
+  if (tonSaves[0] && tonSaves[0].code === code) return null // skip consecutive identical saves
+  const rec = { ts: Date.now(), code }
+  tonSaves.unshift(rec)
+  if (tonSaves.length > 200) tonSaves.length = 200 // keep the 200 most recent backups
+  try { fs.writeFileSync(tonSavesFile(), JSON.stringify(tonSaves)) } catch (err) { console.warn('ton-saves write:', err.message) }
+  return rec
+}
+ipcMain.handle('ton:saves', () => { tonLoadSaves(); return tonSaves.map(s => ({ ts: s.ts, length: (s.code || '').length, preview: (s.code || '').slice(0, 24) })) })
+ipcMain.handle('ton:saveCode', (e, ts) => { tonLoadSaves(); const s = tonSaves.find(x => x.ts === ts); return s ? s.code : '' })
+ipcMain.handle('ton:savesClear', () => { tonSaves = []; try { fs.writeFileSync(tonSavesFile(), '[]') } catch (_) {} return true })
+ipcMain.handle('app:clipboard', (e, text) => { clipboard.writeText(String(text || '')); return true })
+
 // Export / import the player's ToN data (stats + encounters + round history).
 ipcMain.handle('ton:export', async () => {
   const r = await dialog.showSaveDialog({ defaultPath: 'ton-player-data.json', filters: [{ name: 'JSON', extensions: ['json'] }] })
@@ -310,6 +337,8 @@ ipcMain.handle('ton:export', async () => {
       stats: getTonState(),
       seenTerrors: [...tonSeenTerrors],
       seenMaps: [...tonSeenMaps],
+      unlockAch: [...tonUnlockAch],
+      saves: (tonLoadSaves(), tonSaves),
       history: gamelog.list({ type: 'ton_round', limit: 5000 })
     }
     fs.writeFileSync(r.filePath, JSON.stringify(payload, null, 2))
@@ -323,7 +352,16 @@ ipcMain.handle('ton:import', async () => {
     const data = JSON.parse(fs.readFileSync(r.filePaths[0], 'utf8'))
     if (Array.isArray(data.seenTerrors)) data.seenTerrors.forEach(t => tonSeenTerrors.add(t))
     if (Array.isArray(data.seenMaps)) data.seenMaps.forEach(m => tonSeenMaps.add(m))
-    settings.set('tonSeenTerrors', [...tonSeenTerrors]); settings.set('tonSeenMaps', [...tonSeenMaps])
+    if (Array.isArray(data.unlockAch)) data.unlockAch.forEach(a => tonUnlockAch.add(a))
+    settings.set('tonSeenTerrors', [...tonSeenTerrors]); settings.set('tonSeenMaps', [...tonSeenMaps]); settings.set('tonUnlockAch', [...tonUnlockAch])
+    // Merge save backups (skip duplicates by timestamp).
+    if (Array.isArray(data.saves)) {
+      tonLoadSaves()
+      const have = new Set(tonSaves.map(s => s.ts))
+      data.saves.forEach(s => { if (s && s.ts && s.code && !have.has(s.ts)) tonSaves.push({ ts: s.ts, code: String(s.code) }) })
+      tonSaves.sort((a, b) => b.ts - a.ts); if (tonSaves.length > 200) tonSaves.length = 200
+      try { fs.writeFileSync(tonSavesFile(), JSON.stringify(tonSaves)) } catch (_) {}
+    }
     // Merge round history (skip exact duplicates by timestamp+type).
     if (Array.isArray(data.history)) {
       const existing = new Set(gamelog.list({ type: 'ton_round', limit: 5000 }).map(e => e.ts))

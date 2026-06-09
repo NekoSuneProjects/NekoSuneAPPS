@@ -494,6 +494,10 @@ $('enableWindow').addEventListener('change', e => { setPill('winState', e.target
 
 // ToNSaveManager (Terrors of Nowhere)
 function tonPortVal () { const p = parseInt($('tonPort') && $('tonPort').value, 10); return Number.isFinite(p) && p > 0 ? p : 11398 }
+let tonStarted = false // whether the WS has been asked to connect (module auto-retries until connected)
+function tonEnsureConnected () { if (!tonStarted) { tonStarted = true; api.tonStart({ port: tonPortVal() }) } }
+let tonLastPlayerLoad = 0
+function tonThrottledPlayer () { const t = Date.now(); if (t - tonLastPlayerLoad < 4000) return; tonLastPlayerLoad = t; loadTonPlayer() }
 
 // Local milestone achievements derived from the lifetime stats ToNSaveManager
 // reports (it has no native achievement feed). Each unlocks when its stat crosses
@@ -582,9 +586,18 @@ api.on('ton:update', s => {
     tonRounds: s.rounds || 0, tonDeaths: s.deaths || 0, tonSurvivals: s.survivals || 0,
     tonDamage: s.damageTaken || 0, tonStuns: s.stunsAll || 0
   })
+  // Terrors tab live connection status + rolling updates
+  setPill('tonConnState', s.connected, s.roundActive ? 'in round' : 'connected', 'retrying…')
+  setText('tonLiveInfo', s.connected
+    ? (s.roundActive
+        ? `🟢 Connected · ${[s.roundType, s.terror].filter(Boolean).join(' · ') || 'Round'} · ${s.alive ? 'Alive' : 'Dead'} · 👥 ${s.players} @ ${s.map || '?'}`
+        : `🟢 Connected · In lobby${s.map ? ' · ' + s.map : ''} · 👥 ${s.players}`)
+    : `🔴 Not connected${s.error ? ' — ' + s.error : ''} · retrying every 5s…`)
+  if (s.connected) tonThrottledPlayer() // refresh stats/encounters/✓ markers live
 })
 $('enableTon').addEventListener('change', e => {
   setPill('tonState', e.target.checked, 'on') // ton:update will refine to connected / in round
+  tonStarted = e.target.checked
   e.target.checked ? api.tonStart({ port: tonPortVal() }) : api.tonStop()
   api.saveSetting('tonEnabled', e.target.checked)
 })
@@ -737,8 +750,37 @@ if ($('tonImport')) $('tonImport').addEventListener('click', async () => { const
 
 api.on('ton:round', () => { loadTonRoundHistory(); loadTonPlayer() })
 
+// Live achievement unlock from the game (WS TRACKER event) — light it up instantly.
+api.on('ton:achievement', name => {
+  tonUnlock.achievements.add(name); tonUnlock.achievements.add(String(name).toLowerCase())
+  if (tonCat === 'achievements') renderTonBoard()
+  setText('tonOut', `🏆 Achievement unlocked: ${name}!`)
+  setText('tonCacheInfo', `🏆 Unlocked: ${name}`)
+})
+
+// Save backups — dated copies of the in-game save code (captured from the WS).
+async function loadTonSaves () {
+  const list = await api.tonSaves()
+  const el = $('tonSavesList'); if (!el) return
+  setPill('tonSaveState', list.length > 0, `${list.length} saved`)
+  if (!list.length) { el.textContent = 'No saves captured yet — they appear when the game saves.'; return }
+  el.innerHTML = list.map(s => `<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;padding:3px 0;border-bottom:1px solid var(--line,#222)">
+      <span>💾 ${new Date(s.ts).toLocaleString()} <span class="muted">· ${s.length} chars</span></span>
+      <button class="btn ghost tonSaveCopy" data-ts="${s.ts}" style="padding:2px 8px;font-size:.72rem">Copy</button></div>`).join('')
+}
+if ($('tonSavesList')) $('tonSavesList').addEventListener('click', async ev => {
+  const b = ev.target.closest('.tonSaveCopy'); if (!b) return
+  const code = await api.tonSaveCode(Number(b.dataset.ts))
+  if (code) { await api.clipboardWrite(code); if ($('tonSaveView')) $('tonSaveView').value = code; b.textContent = 'Copied ✓'; setTimeout(() => { b.textContent = 'Copy' }, 1500) }
+})
+if ($('tonSavesClear')) $('tonSavesClear').addEventListener('click', async () => { await api.tonSavesClear(); loadTonSaves(); if ($('tonSaveView')) $('tonSaveView').value = '' })
+api.on('ton:save', s => { loadTonSaves(); setText('tonCacheInfo', `💾 Save backed up · ${new Date(s.ts).toLocaleTimeString()}`) })
+
 const tonRefBtn = document.querySelector('[data-tab="tonref"]')
-if (tonRefBtn) tonRefBtn.addEventListener('click', () => { loadTonCache(); loadTonPlayer() })
+if (tonRefBtn) tonRefBtn.addEventListener('click', () => {
+  tonEnsureConnected() // auto-connect the WS when viewing Terrors; module retries until connected
+  loadTonCache(); loadTonPlayer(); loadTonSaves()
+})
 
 api.on('vr:update', s => {
   setPill('vrState', s.available, 'on')
@@ -2115,7 +2157,7 @@ async function init () {
   if (await api.getSetting('netEnabled', false)) { $('enableNet').checked = true; setPill('netState', true, 'on'); api.netStart({ intervalMs: 5000 }) }
   if (await api.getSetting('windowEnabled', false)) { $('enableWindow').checked = true; setPill('winState', true, 'on'); api.windowStart() }
   if ($('tonPort')) $('tonPort').value = await api.getSetting('tonPort', 11398)
-  if (await api.getSetting('tonEnabled', false)) { $('enableTon').checked = true; setPill('tonState', true, 'on'); api.tonStart({ port: tonPortVal() }) }
+  if (await api.getSetting('tonEnabled', false)) { $('enableTon').checked = true; setPill('tonState', true, 'on'); tonStarted = true; api.tonStart({ port: tonPortVal() }) }
   $('tiktokUser').value = await api.getSetting('tiktokUser', '')
   $('tiktokSignKey').value = await api.getSetting('tiktokSignKey', '')
   $('kickSlug').value = await api.getSetting('kickSlug', '')
