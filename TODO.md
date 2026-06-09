@@ -45,19 +45,19 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 ### Activity & logging
 - [x] **Video/media link tracking** — video URLs parsed from the log → History
 - [ ] **Name-change tracking** — detect & log when a friend renames (store last known name)
-- [ ] **Activity heatmap** — online-time-by-day/hour visualisation
+- [x] **Activity heatmap** — day×hour event heatmap on the History page
 - [ ] **Instance join/leave history** for yourself (which instances you joined, duration)
 - [~] **GameLog** — have join/leave/world/friend; add: invites received, portals dropped, events
 
 ### Friends & social
 - [x] **VRC Notes editor** — read + write your note on a user (profile Info tab)
 - [x] **Social status presets** — save/apply status + statusDescription combos (Profile Editor)
-- [ ] **Last-seen / time-together** per friend on the profile (we have some via History)
+- [x] **Last-seen / time-together** — shown on the profile Info tab (from History)
 - [x] **Block / mute** — toggle on profiles + a Blocked/Muted list (Settings) with Remove
 - [ ] **Trust/feedback view** beyond the trust chip
 
 ### Search & data
-- [ ] **Local fuzzy quick-search** across cached friends/worlds/groups (instant, offline)
+- [x] **Local quick-search** — instant offline friend search on the Search page
 - [x] **Avatar search** — via the Avatars page (provider-based)
 - [ ] **Favorites backup** — export/restore favorite worlds/avatars/friends groups
 - [x] **Data export/import** — settings + history to JSON

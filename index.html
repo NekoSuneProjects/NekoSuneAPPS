@@ -676,7 +676,7 @@
         <div class="card">
           <h3>🔍 Search</h3>
           <div class="row">
-            <select id="searchType" style="max-width:130px"><option value="users">Users</option><option value="worlds">Worlds</option><option value="groups">Groups</option></select>
+            <select id="searchType" style="max-width:150px"><option value="friends">My friends (instant)</option><option value="users">Users</option><option value="worlds">Worlds</option><option value="groups">Groups</option></select>
             <input type="text" id="searchQuery" placeholder="Search…" />
             <button class="btn" id="searchBtn">Search</button>
           </div>
@@ -721,7 +721,8 @@
             <button class="btn ghost" id="histImport" title="Import history from an existing VRCX install">Import VRCX</button>
             <button class="btn danger" id="histClear">Clear</button>
           </div>
-          <div id="histList" class="muted" style="margin-top:10px;max-height:580px;overflow:auto;font-size:.82rem">Loading…</div>
+          <div id="histHeatmap" style="margin:12px 0"></div>
+          <div id="histList" class="muted" style="margin-top:10px;max-height:520px;overflow:auto;font-size:.82rem">Loading…</div>
         </div>
       </section>
 

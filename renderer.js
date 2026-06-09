@@ -987,6 +987,12 @@ async function doSearch () {
   const q = $('searchQuery').value.trim(); if (!q) return
   const type = $('searchType').value
   const el = $('searchResults'); el.textContent = 'Searching…'
+  if (type === 'friends') {
+    const ql = q.toLowerCase()
+    const all = [...(rbFriendsCache.online || []), ...(rbFriendsCache.offline || [])].filter(f => String(f.displayName || '').toLowerCase().includes(ql))
+    el.innerHTML = all.length ? `<div class="card-grid">${all.map(f => `<div class="mini-card" data-kind="user" data-id="${f.id}" style="cursor:pointer"><img src="${f.image || 'assets/logo.png'}" referrerpolicy="no-referrer" /><div style="min-width:0"><div class="nm">${esc(f.displayName)}</div><div class="muted" style="font-size:.72rem">${esc(fmtLocation(f.location))}</div></div></div>`).join('')}</div>` : 'No matching friends (open the friends panel once to load them).'
+    return
+  }
   if (type === 'users') {
     const r = await api.vrchatSearchUsers(q)
     if (!r.ok) { el.textContent = r.error || 'Search failed'; return }
@@ -1008,8 +1014,21 @@ $('searchResults').addEventListener('click', e => { const c = e.target.closest('
 
 /* ---------------- History page ---------------- */
 const HIST_ICON = { join: '➡️', leave: '⬅️', friend_add: '➕', friend_remove: '➖', name_change: '✏️', world: '🌐', video: '🎬', alert: '🔔', group: '👥' }
+function renderHeatmap (rows) {
+  const el = $('histHeatmap'); if (!el) return
+  const grid = Array.from({ length: 7 }, () => Array(24).fill(0))
+  for (const r of rows) { const d = new Date(r.ts); grid[d.getDay()][d.getHours()]++ }
+  const max = Math.max(1, ...grid.flat())
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  let html = '<div class="um-sec">Activity heatmap</div><div style="display:grid;grid-template-columns:28px repeat(24,1fr);gap:2px;font-size:.58rem">'
+  html += '<div></div>' + Array.from({ length: 24 }, (_, h) => `<div class="muted" style="text-align:center">${h % 6 === 0 ? h : ''}</div>`).join('')
+  for (let d = 0; d < 7; d++) html += `<div class="muted">${days[d]}</div>` + grid[d].map(c => `<div title="${c} events" style="height:12px;border-radius:2px;background:rgba(34,197,94,${(0.1 + (c / max) * 0.9).toFixed(2)})"></div>`).join('')
+  html += '</div>'
+  el.innerHTML = html
+}
 async function loadHistory () {
   const el = $('histList'); el.textContent = 'Loading…'
+  api.historyList({ limit: 5000 }).then(renderHeatmap)
   const rows = await api.historyList({ type: $('histType').value || undefined, limit: 300 })
   if (!rows || !rows.length) { el.textContent = 'No history yet — it fills as you use VRChat with the app open.'; return }
   el.innerHTML = rows.map(r => {
@@ -1356,6 +1375,18 @@ async function renderMTab (tab) {
       noteBlock
     const ns = $('umNoteSave')
     if (ns) ns.addEventListener('click', async () => { setText('umNoteOut', 'Saving…'); const r = await api.vrchatSetNote(u.id, $('umNote').value); setText('umNoteOut', r.ok ? '✅ Saved' : 'Error: ' + (r.error || 'failed')) })
+    // Time-together / last-seen from local History (matched by display name).
+    if (u.id !== myUserId) {
+      api.historyList({ limit: 3000 }).then(rows => {
+        const meets = (rows || []).filter(h => h.type === 'join' && h.name === u.displayName)
+        if (meets.length && $('umTabBody')) {
+          const last = new Date(meets[0].ts).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+          const note = document.createElement('div'); note.className = 'muted'; note.style.cssText = 'font-size:.78rem;margin-top:6px'
+          note.textContent = `🐾 Seen together ${meets.length}× · last ${last}`
+          $('umTabBody').appendChild(note)
+        }
+      })
+    }
   } else if (tab === 'groups') {
     body.innerHTML = '<div class="muted">Loading groups…</div>'
     const r = await api.vrchatUserGroups(u.id)
