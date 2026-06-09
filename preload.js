@@ -48,6 +48,15 @@ window.electronAPI = {
   clipboardWrite: text => ipcRenderer.invoke('app:clipboard', text),
   openExternal: url => ipcRenderer.invoke('app:openExternal', url),
 
+  // Manage the ToNSaveManager app (download/run/stop/update)
+  tonMgrStatus: () => ipcRenderer.invoke('tonmgr:status'),
+  tonMgrInstall: () => ipcRenderer.invoke('tonmgr:install'),
+  tonMgrUpdate: () => ipcRenderer.invoke('tonmgr:update'),
+  tonMgrStart: () => ipcRenderer.invoke('tonmgr:start'),
+  tonMgrStop: () => ipcRenderer.invoke('tonmgr:stop'),
+  tonMgrSetAuto: on => ipcRenderer.invoke('tonmgr:setAuto', on),
+  tonMgrGetAuto: () => ipcRenderer.invoke('tonmgr:getAuto'),
+
   // tiktok
   tiktokConnect: (user, signApiKey) => ipcRenderer.invoke('tiktok:connect', { username: user, signApiKey }),
   tiktokDisconnect: () => ipcRenderer.invoke('tiktok:disconnect'),

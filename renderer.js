@@ -776,10 +776,26 @@ if ($('tonSavesList')) $('tonSavesList').addEventListener('click', async ev => {
 if ($('tonSavesClear')) $('tonSavesClear').addEventListener('click', async () => { await api.tonSavesClear(); loadTonSaves(); if ($('tonSaveView')) $('tonSaveView').value = '' })
 api.on('ton:save', s => { loadTonSaves(); setText('tonCacheInfo', `💾 Save backed up · ${new Date(s.ts).toLocaleTimeString()}`) })
 
+// Manage the ToNSaveManager app (download / run / stop / update in the background).
+async function loadTonMgr () {
+  const s = await api.tonMgrStatus()
+  const label = !s.installed ? 'not installed' : (s.running ? 'running' : 'stopped')
+  setPill('tonMgrState', s.installed && s.running, label, label)
+}
+function tonMgrBusy (id, txt) { const b = $(id); if (b) { b.disabled = true; b.dataset.t = b.textContent; b.textContent = txt } }
+function tonMgrDone (id) { const b = $(id); if (b) { b.disabled = false; if (b.dataset.t) b.textContent = b.dataset.t } }
+if ($('tonMgrInstall')) $('tonMgrInstall').addEventListener('click', async () => { tonMgrBusy('tonMgrInstall', 'Downloading…'); const r = await api.tonMgrInstall(); tonMgrDone('tonMgrInstall'); setText('tonCacheInfo', r.ok ? '✅ ToNSaveManager installed' : 'Install failed: ' + r.error); loadTonMgr() })
+if ($('tonMgrUpdate')) $('tonMgrUpdate').addEventListener('click', async () => { tonMgrBusy('tonMgrUpdate', 'Updating…'); const r = await api.tonMgrUpdate(); tonMgrDone('tonMgrUpdate'); setText('tonCacheInfo', r.ok ? '✅ ToNSaveManager updated' : 'Update failed: ' + r.error); loadTonMgr() })
+if ($('tonMgrStart')) $('tonMgrStart').addEventListener('click', async () => { const r = await api.tonMgrStart(); setText('tonCacheInfo', r.ok ? '▶ ToNSaveManager started' : 'Start failed: ' + r.error); setTimeout(loadTonMgr, 1500); setTimeout(tonEnsureConnected, 2500) })
+if ($('tonMgrStop')) $('tonMgrStop').addEventListener('click', async () => { await api.tonMgrStop(); setText('tonCacheInfo', '■ ToNSaveManager stopped'); setTimeout(loadTonMgr, 800) })
+if ($('tonMgrAuto')) $('tonMgrAuto').addEventListener('change', e => api.tonMgrSetAuto(e.target.checked))
+api.on('tonmgr:status', () => loadTonMgr())
+
 const tonRefBtn = document.querySelector('[data-tab="tonref"]')
 if (tonRefBtn) tonRefBtn.addEventListener('click', () => {
   tonEnsureConnected() // auto-connect the WS when viewing Terrors; module retries until connected
-  loadTonCache(); loadTonPlayer(); loadTonSaves()
+  loadTonCache(); loadTonPlayer(); loadTonSaves(); loadTonMgr()
+  api.tonMgrGetAuto().then(v => { if ($('tonMgrAuto')) $('tonMgrAuto').checked = !!v })
 })
 
 api.on('vr:update', s => {

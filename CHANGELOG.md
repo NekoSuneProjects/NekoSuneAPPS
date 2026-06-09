@@ -16,6 +16,11 @@ This project follows [Semantic Versioning](https://semver.org/).
   ToNSaveManager and **keeps retrying every 5s until connected**, with a live
   status line (🟢 connected / round info / 🔴 retrying) and rolling stat,
   encounter and ✓-marker updates — no need to toggle anything on the Stats tab.
+- **Built-in ToNSaveManager management** — Install / Start / Stop / Update the
+  ToNSaveManager app from the Terrors tab (downloads the latest release from
+  GitHub, extracts and runs it in the background — the same job as the official
+  `update.bat`, built in). Optional **auto-launch on app start** so the WS source
+  is always up. No more separate download/update step.
 
 ## [1.0.2] - 2026-06-09
 

@@ -40,6 +40,7 @@ const avatarDb = require('./modules/vrchat/avatars/avatarDb')
 const crashGuard = require('./modules/vrchat/tools/crashGuard')
 const { startTon, stopTon, getTonState } = require('./modules/integrations/tonModule')
 const tonData = require('./modules/integrations/tonData')
+const tonManager = require('./modules/integrations/tonManager')
 
 // Keep a stray error in any poller/network module from hard-crashing the app.
 process.on('uncaughtException', err => console.error('[uncaughtException]', err))
@@ -133,6 +134,9 @@ app.whenReady().then(async () => {
   // (when connected) into the Discord presence.
   gamelog.init(app.getPath('userData')).catch(err => console.warn('gamelog init:', err.message))
   tonData.init(app.getPath('userData')) // load/refresh the offline ToN reference cache
+  tonManager.init(app.getPath('userData'))
+  // Auto-launch ToNSaveManager in the background on app start (downloads it first if missing).
+  if (settings.get('tonAutoManager', false)) tonManager.ensureRunning().then(r => { if (r && r.ok) push('tonmgr:status', { installed: true, running: true }) }).catch(() => {})
   startVrcWorld(w => {
     push('vrc:world', w)
     setVrcContext({ worldName: w.inWorld ? w.worldName : '', joinUrl: w.joinUrl, worldUrl: w.worldUrl, profileUrl: w.profileUrl })
@@ -326,6 +330,15 @@ ipcMain.handle('ton:saves', () => { tonLoadSaves(); return tonSaves.map(s => ({ 
 ipcMain.handle('ton:saveCode', (e, ts) => { tonLoadSaves(); const s = tonSaves.find(x => x.ts === ts); return s ? s.code : '' })
 ipcMain.handle('ton:savesClear', () => { tonSaves = []; try { fs.writeFileSync(tonSavesFile(), '[]') } catch (_) {} return true })
 ipcMain.handle('app:clipboard', (e, text) => { clipboard.writeText(String(text || '')); return true })
+
+// Manage the ToNSaveManager app itself (download / run / stop / update in background).
+ipcMain.handle('tonmgr:status', () => tonManager.status())
+ipcMain.handle('tonmgr:install', () => tonManager.install())
+ipcMain.handle('tonmgr:update', () => tonManager.update())
+ipcMain.handle('tonmgr:start', () => tonManager.start())
+ipcMain.handle('tonmgr:stop', () => tonManager.stop())
+ipcMain.handle('tonmgr:setAuto', (e, on) => { settings.set('tonAutoManager', !!on); return true })
+ipcMain.handle('tonmgr:getAuto', () => settings.get('tonAutoManager', false))
 
 // Export / import the player's ToN data (stats + encounters + round history).
 ipcMain.handle('ton:export', async () => {
