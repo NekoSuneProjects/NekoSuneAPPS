@@ -1579,7 +1579,15 @@ async function init () {
   try { renderHrSessions(await api.hrSessions()) } catch (_) {}
   const dc = await api.getSetting('discord', {})
   discordAccessToken = dc.accessToken || ''
-  $('discordAppId').value = dc.clientId || DEFAULT_DISCORD_APP_ID
+  // Migrate the old NekoSuneOSC app id to the current NekoSuneAPPS default.
+  const OLD_DISCORD_APP_IDS = ['1513880249409208462']
+  let savedAppId = dc.clientId || ''
+  if (!savedAppId || OLD_DISCORD_APP_IDS.includes(savedAppId)) {
+    savedAppId = DEFAULT_DISCORD_APP_ID
+    dc.clientId = savedAppId
+    await api.saveSetting('discord', dc) // persist so it sticks + auto-start uses it
+  }
+  $('discordAppId').value = savedAppId
   $('discordSecret').value = dc.clientSecret || ''
   $('discordRP').checked = dc.enableRichPresence !== false
   $('discordVoice').checked = !!dc.enableVoice
