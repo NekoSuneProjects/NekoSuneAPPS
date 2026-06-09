@@ -1146,8 +1146,10 @@ api.on('notif:update', () => loadNotifications())
 const RB_COLOR = { 'join me': '#3b82f6', active: '#22c55e', 'ask me': '#f59e0b', busy: '#ef4444', offline: '#6b7280' }
 let rbFriendsCache = { online: [], offline: [] }
 let favFriendIds = new Set()
+let favFriendGroups = {} // friend id -> favorite group name
+let favGroupNames = {} // group name -> display name
 let myUserId = ''
-const rbCollapsed = { fav: false, same: false, online: false, web: false, offline: true } // offline collapsed by default
+const rbCollapsed = { same: false, online: false, web: false, offline: true } // offline collapsed by default
 function rbFriendRow (f) {
   const onWeb = f.state === 'active' && (!f.location || f.location === 'offline')
   const color = onWeb ? '#f59e0b' : (RB_COLOR[String(f.status || '').toLowerCase()] || '#6b7280')
@@ -1169,16 +1171,20 @@ function renderRightbar () {
   const online = (rbFriendsCache.online || []).filter(match)
   const offline = (rbFriendsCache.offline || []).filter(match)
   const onWeb = f => f.state === 'active' && (!f.location || f.location === 'offline')
-  const favList = [...online, ...offline].filter(f => favFriendIds.has(f.id))
-  const same = online.filter(f => myLoc && f.location === myLoc)
-  const inGame = online.filter(f => !onWeb(f) && !(myLoc && f.location === myLoc))
-  const web = online.filter(f => onWeb(f))
-  $('rbFriends').innerHTML =
-    rbSection('fav', '⭐ Favorites', favList) +
-    rbSection('same', '🏠 Same World', same) +
-    rbSection('online', '🟢 In-Game', inGame) +
-    rbSection('web', '🌐 On Web', web) +
-    rbSection('offline', '⚫ Offline', offline)
+  // Place each online friend in exactly one bucket (precedence: same world → fav
+  // lists [in-game only] → in-game → on web). Web/offline favs fall through.
+  const same = []; const inGame = []; const web = []; const favBuckets = {}
+  for (const f of online) {
+    if (onWeb(f)) { web.push(f); continue }
+    if (myLoc && f.location === myLoc) { same.push(f); continue }
+    if (favFriendIds.has(f.id)) { const g = favFriendGroups[f.id] || 'group_0'; (favBuckets[g] = favBuckets[g] || []).push(f) } else inGame.push(f)
+  }
+  let html = rbSection('same', '🏠 Same World', same)
+  for (const g of Object.keys(favBuckets).sort()) html += rbSection('fav:' + g, '⭐ ' + (favGroupNames[g] || 'Favorites'), favBuckets[g])
+  html += rbSection('online', '🟢 In-Game', inGame)
+  html += rbSection('web', '🌐 On Web', web)
+  html += rbSection('offline', '⚫ Offline', offline)
+  $('rbFriends').innerHTML = html
 }
 async function loadRightbar () {
   if (!await api.vrchatIsLoggedIn()) { $('rbFriends').textContent = 'Log in on the VRChat tab.'; return }
@@ -1191,7 +1197,8 @@ async function loadRightbar () {
   }
   if (frOn && frOn.ok) rbFriendsCache.online = frOn.friends
   if (frOff && frOff.ok) rbFriendsCache.offline = frOff.friends
-  try { const fav = await api.vrchatFavFriendIds(); if (fav.ok) favFriendIds = new Set(fav.ids) } catch (_) {}
+  try { const fav = await api.vrchatFavFriendIds(); if (fav.ok) { favFriendIds = new Set(fav.ids); favFriendGroups = fav.groups || {} } } catch (_) {}
+  try { const fg = await api.vrchatFavGroups('friend'); if (fg.ok) { favGroupNames = {}; fg.groups.forEach(g => { favGroupNames[g.name] = g.displayName || g.name }) } } catch (_) {}
   if ((frOn && frOn.ok) || (frOff && frOff.ok)) renderRightbar()
   else $('rbFriends').textContent = (frOn && frOn.error) || 'Could not load friends.'
 }

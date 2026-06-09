@@ -265,7 +265,11 @@ async function getFavoriteFriendIds () {
   if (!cookies.auth) return { ok: false, error: 'Not logged in' }
   const res = await axios.get(`${BASE}/favorites`, Object.assign({ headers: baseHeaders(), params: { type: 'friend', n: 100 } }, REQ))
   storeSetCookie(res)
-  if (res.status === 200 && Array.isArray(res.data)) return { ok: true, ids: res.data.map(f => f.favoriteId) }
+  if (res.status === 200 && Array.isArray(res.data)) {
+    const groups = {}
+    for (const f of res.data) groups[f.favoriteId] = (f.tags && f.tags[0]) || 'group_0'
+    return { ok: true, ids: res.data.map(f => f.favoriteId), groups }
+  }
   return { ok: false, error: errOf(res, 'Could not load favorite friends') }
 }
 
