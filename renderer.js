@@ -938,6 +938,25 @@ $('myContentBody').addEventListener('click', async e => {
   }
 })
 
+/* ---------------- Inventory (icons/emoji/stickers/prints) ---------------- */
+async function loadInventory (kind) {
+  const el = $('invGrid'); el.textContent = 'Loading…'
+  const r = kind === 'prints' ? await api.vrchatPrints() : await api.vrchatInventory(kind)
+  if (!r.ok) { el.textContent = (r.error || 'failed') + ' — log in on the VRChat tab.'; return }
+  if (!r.items.length) { el.textContent = 'Nothing here.'; return }
+  el.innerHTML = r.items.map(i => `<div class="mini-card" title="${esc(i.name)}" style="flex-direction:column;align-items:stretch;padding:0;overflow:hidden"><img data-src="${esc(i.url)}" src="assets/logo.png" referrerpolicy="no-referrer" style="width:100%;height:100px;object-fit:cover" /></div>`).join('')
+  // Proxy the auth-gated VRChat images → data URLs (sequential to avoid hammering).
+  for (const img of el.querySelectorAll('img[data-src]')) {
+    const res = await api.vrchatImage(img.dataset.src)
+    if (res.ok) img.src = res.data
+  }
+}
+document.querySelectorAll('[data-inv]').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-inv]').forEach(x => x.classList.toggle('active', x === b))
+  loadInventory(b.dataset.inv)
+}))
+document.querySelector('[data-tab="inventory"]').addEventListener('click', () => loadInventory(document.querySelector('[data-inv].active').dataset.inv))
+
 /* ---------------- Avatar browse (avtrdb + custom providers) ---------------- */
 let avProviders = []
 async function loadAvProviders () {

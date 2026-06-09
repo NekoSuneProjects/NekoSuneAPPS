@@ -107,7 +107,7 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
 - [~] **Profile editor (your own)** — status/status-text/bio done; pronouns, bio links, pfp & banner todo
 - [x] **Messenger / message-slot editor** — edit invite & response message slots (Messenger tab)
 - [x] **Multi-Invite** — friend-picker multi-select invite to instance/group
-- [ ] **Inventory** — view/manage Photos, Gallery, custom **icons / emojis / stickers / prints** (endpoints need verifying)
+- [x] **Inventory** — icons / emoji / stickers / prints (with image proxy for auth-gated images)
 - [x] **Avatar browse** — configurable providers (avtrdb + **custom VRCX-style endpoints**) → wear/favourite
 - [x] **Group posts** + **group image gallery** — shown in the group detail modal
 - [ ] **Create group instances** — POST /instances type=group + groupAccessType (needs world picker)

@@ -243,6 +243,45 @@ async function getGroupPosts (groupId) {
   return { ok: false, error: errOf(res, 'Could not load posts') }
 }
 
+// ---- Inventory (icons / emoji / stickers / prints) + image proxy ----
+function bestFileUrl (f) {
+  const v = (f.versions || []).filter(x => x.file && x.file.url)
+  if (v.length) return v[v.length - 1].file.url
+  return f.thumbnailUrl || f.imageUrl || ''
+}
+async function getInventory (tag) { // tag: icon | emoji | sticker | gallery
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  const res = await axios.get(`${BASE}/files`, Object.assign({ headers: baseHeaders(), params: { tag, n: 60 } }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && Array.isArray(res.data)) return { ok: true, items: res.data.map(f => ({ id: f.id, name: f.name || tag, url: bestFileUrl(f) })).filter(i => i.url) }
+  return { ok: false, error: errOf(res, 'Could not load ' + tag) }
+}
+async function getPrints () {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  if (!currentUserId) { const u = await fetchUser(); if (!u.ok) return u }
+  const res = await axios.get(`${BASE}/prints/user/${currentUserId}`, Object.assign({ headers: baseHeaders(), params: { n: 60 } }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && Array.isArray(res.data)) return { ok: true, items: res.data.map(p => ({ id: p.id, name: p.note || 'Print', url: (p.files && (p.files.image || p.files.fileUrl)) || p.image || '' })).filter(i => i.url) }
+  return { ok: false, error: errOf(res, 'Could not load prints') }
+}
+// Fetch an auth-gated VRChat image and return it as a data URL (for <img>).
+const _imgCache = new Map()
+async function imageData (url) {
+  if (!url) return { ok: false, error: 'no url' }
+  if (_imgCache.has(url)) return { ok: true, data: _imgCache.get(url) }
+  loadCookies()
+  const res = await axios.get(url, { headers: baseHeaders(), responseType: 'arraybuffer', validateStatus: () => true, timeout: 20000 })
+  if (res.status === 200) {
+    const ct = res.headers['content-type'] || 'image/png'
+    const dataUrl = `data:${ct};base64,${Buffer.from(res.data).toString('base64')}`
+    if (_imgCache.size < 300) _imgCache.set(url, dataUrl)
+    return { ok: true, data: dataUrl }
+  }
+  return { ok: false, error: 'HTTP ' + res.status }
+}
+
 // ---- Avatar detail, group members/roles, moderations ----
 async function getAvatar (id) {
   loadCookies()
@@ -590,5 +629,6 @@ module.exports = {
   setNote, moderate, unmoderate, getFavoriteFriendIds, getOnlineCount, getGroupPosts,
   getMessages, updateMessage, getGroupGalleries, getGroupGalleryImages,
   getAvatar, getGroupMembers, getGroupRoles, getModerations,
+  getInventory, getPrints, imageData,
   getMyGroups, getGroupEvents, getNotifications, acceptFriendRequest, hideNotification
 }
