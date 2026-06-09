@@ -439,39 +439,35 @@
         </div>
       </section>
 
-      <!-- TERRORS OF NOWHERE REFERENCE -->
+      <!-- TERRORS OF NOWHERE REFERENCE (fully native — no embeds) -->
       <section id="tonref" class="tabpanel">
         <div class="card">
-          <h3>👻 Terrors of Nowhere — Reference &amp; Tracker <span class="pill" id="tonRefState">off</span></h3>
-          <div class="muted" id="tonRefSummary" style="font-size:.8rem">Live boards from terror.moe &amp; tontrack.me. Connect ToNSaveManager (Stats tab) for live tracking.</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0">
-            <button class="btn ghost" data-tonurl="https://terror.moe/achievements/">🏆 Achievements</button>
-            <button class="btn ghost" data-tonurl="https://terror.moe/terrors/">👹 Terrors</button>
-            <button class="btn ghost" data-tonurl="https://terror.moe/items/">🎒 Items</button>
-            <button class="btn ghost" data-tonurl="https://terror.moe/locations/">🗺 Locations</button>
-            <button class="btn ghost" data-tonurl="https://terror.moe/bonus/">✨ Bonus</button>
-            <button class="btn ghost" data-tonurl="https://tontrack.me/">📊 Progress Tracker</button>
+          <h3>👻 Terrors of Nowhere — Reference <span class="pill" id="tonCacheState">—</span></h3>
+          <div class="muted" id="tonCacheInfo" style="font-size:.78rem">—</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0;align-items:center">
+            <button class="btn ghost tonCat active" data-toncat="achievements">🏆 Achievements</button>
+            <button class="btn ghost tonCat" data-toncat="terrors">👹 Terrors</button>
+            <button class="btn ghost tonCat" data-toncat="items">🎒 Items</button>
+            <button class="btn ghost tonCat" data-toncat="locations">🗺 Locations</button>
+            <button class="btn ghost tonCat" data-toncat="rounds">🎲 Rounds</button>
+            <button class="btn ghost" id="tonRefresh" style="margin-left:auto" title="Update the cached data from the source sites">↻ Refresh</button>
           </div>
-          <webview id="tonWeb" src="" style="width:100%;height:520px;border:1px solid var(--line,#2a2a3a);border-radius:8px;background:#0e0e16"></webview>
+          <input id="tonSearch" placeholder="Search names &amp; unlock hints…" style="margin-bottom:8px" />
+          <div id="tonBoard" style="max-height:540px;overflow:auto">Loading…</div>
         </div>
         <div class="grid cols-2">
-          <div class="card">
-            <h3>📦 Offline cache <span class="pill" id="tonCacheState">—</span></h3>
-            <div class="muted" id="tonCacheInfo" style="font-size:.78rem">—</div>
-            <input id="tonAchSearch" placeholder="Search achievements &amp; unlock hints…" style="margin-top:8px" />
-            <div id="tonAchBoard" style="max-height:360px;overflow:auto;margin-top:8px"></div>
-            <button class="btn ghost" id="tonRefresh" style="margin-top:8px">↻ Refresh from terror.moe</button>
-          </div>
           <div class="card">
             <h3>📊 Player data</h3>
             <div id="tonPlayerStats" class="muted" style="font-size:.82rem"></div>
             <div id="tonEncounters" style="margin-top:8px"></div>
-            <h4 style="margin:12px 0 4px">Round history</h4>
-            <div id="tonRoundHistory" style="max-height:240px;overflow:auto;font-size:.8rem">—</div>
             <div style="display:flex;gap:6px;margin-top:10px">
               <button class="btn ghost" id="tonExport">⬇ Export player data</button>
               <button class="btn ghost" id="tonImport">⬆ Import</button>
             </div>
+          </div>
+          <div class="card">
+            <h3>📜 Round history</h3>
+            <div id="tonRoundHistory" style="max-height:300px;overflow:auto;font-size:.8rem">—</div>
           </div>
         </div>
       </section>

@@ -593,35 +593,65 @@ if ($('tonPort')) $('tonPort').addEventListener('change', e => {
   if ($('enableTon').checked) api.tonStart({ port: tonPortVal() }) // reconnect on the new port
 })
 
-/* ---------------- ToN Reference tab (embedded boards + offline cache + player data) ---------------- */
+/* ---------------- ToN Reference tab (fully native — renders from the offline cache) ---------------- */
 const tonEsc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
-let tonWebLoaded = false
 let tonCacheData = null
+let tonCat = 'achievements'
+let tonSeenData = { terrors: [], maps: [] }
 
-function tonSetWeb (url) { const wv = $('tonWeb'); if (wv) { wv.src = url; tonWebLoaded = true } }
-document.querySelectorAll('#tonref [data-tonurl]').forEach(b => b.addEventListener('click', () => tonSetWeb(b.dataset.tonurl)))
+function tonSwatch (colors) {
+  const c = (colors && colors[0]) || '#7c5cff'
+  return `<span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${tonEsc(c)};flex:0 0 auto"></span>`
+}
+function tonRow (inner, title) {
+  return `<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line,#222)"${title ? ` title="${tonEsc(title)}"` : ''}>${inner}</div>`
+}
 
-function renderTonCache (filter) {
-  const board = $('tonAchBoard'); if (!board) return
-  const list = (tonCacheData && tonCacheData.achievements) || []
-  const q = (filter || '').trim().toLowerCase()
-  const filtered = q ? list.filter(a => `${a.name} ${a.unlock} ${a.flavor}`.toLowerCase().includes(q)) : list
-  board.innerHTML = filtered.slice(0, 300).map(a =>
-    `<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--line,#222)" title="${tonEsc(a.tip)}">
-       <img src="${tonEsc(a.img)}" loading="lazy" decoding="async" style="width:38px;height:38px;border-radius:6px;object-fit:cover;flex:0 0 auto" onerror="this.style.visibility='hidden'"/>
+function renderTonBoard () {
+  const board = $('tonBoard'); if (!board) return
+  const d = tonCacheData || {}
+  const q = ($('tonSearch') ? $('tonSearch').value : '').trim().toLowerCase()
+  const seenT = new Set((tonSeenData.terrors || []).map(x => x.toLowerCase()))
+  const seenM = new Set((tonSeenData.maps || []).map(x => x.toLowerCase()))
+  let html = ''
+  if (tonCat === 'achievements') {
+    const list = (d.achievements || []).filter(a => !q || `${a.name} ${a.unlock} ${a.flavor}`.toLowerCase().includes(q))
+    html = list.map(a => tonRow(
+      `<img src="${tonEsc(a.img)}" loading="lazy" decoding="async" style="width:38px;height:38px;border-radius:6px;object-fit:cover;flex:0 0 auto" onerror="this.style.visibility='hidden'"/>
        <div style="min-width:0"><b style="font-size:.82rem">${tonEsc(a.name)}</b>
-       <div class="muted" style="font-size:.74rem">${tonEsc(a.unlock || a.flavor || '')}</div></div>
-     </div>`).join('') || '<div class="muted">No matches.</div>'
+       <div class="muted" style="font-size:.74rem">${tonEsc(a.unlock || a.flavor || '')}</div></div>`, a.tip)).join('')
+  } else if (tonCat === 'terrors') {
+    const list = (d.terrors || []).filter(t => !q || t.name.toLowerCase().includes(q))
+    html = '<div style="display:flex;flex-wrap:wrap;gap:8px">' + list.map(t => {
+      const seen = seenT.has(t.name.toLowerCase())
+      return `<div title="${tonEsc(t.name)}${seen ? ' (encountered)' : ''}" style="width:80px;text-align:center;${seen ? '' : 'opacity:.6'}">
+        <img src="${tonEsc(t.img)}" loading="lazy" decoding="async" style="width:64px;height:64px;border-radius:8px;object-fit:cover;border:1px solid ${seen ? 'var(--accent,#7c5cff)' : 'var(--line,#333)'}" onerror="this.style.visibility='hidden'"/>
+        <div style="font-size:.68rem;margin-top:2px">${seen ? '✓ ' : ''}${tonEsc(t.name)}</div></div>`
+    }).join('') + '</div>'
+  } else if (tonCat === 'items') {
+    const list = (d.items || []).filter(i => !q || `${i.name} ${i.type}`.toLowerCase().includes(q))
+    html = list.map(i => tonRow(`<b style="font-size:.82rem;flex:1">${tonEsc(i.name)}</b><span class="pill" style="font-size:.68rem">${tonEsc(i.type)}</span>`)).join('')
+  } else if (tonCat === 'locations') {
+    const list = (d.locations || []).filter(l => !q || l.name.toLowerCase().includes(q))
+    html = list.map(l => {
+      const seen = seenM.has(l.name.toLowerCase())
+      return tonRow(`${tonSwatch(l.colors)}<b style="font-size:.82rem;flex:1">${tonEsc(l.name)}</b>${seen ? '<span class="pill" style="font-size:.68rem">✓ visited</span>' : ''}`)
+    }).join('')
+  } else if (tonCat === 'rounds') {
+    const list = (d.rounds || []).filter(r => !q || r.name.toLowerCase().includes(q))
+    html = list.map(r => tonRow(`${tonSwatch(r.colors)}<b style="font-size:.82rem">${tonEsc(r.name)}</b>`)).join('')
+  }
+  board.innerHTML = html || '<div class="muted">No matches.</div>'
 }
 
 async function loadTonCache () {
   tonCacheData = await api.tonData()
-  const n = tonCacheData ? (tonCacheData.achievements || []).length : 0
-  const t = tonCacheData ? (tonCacheData.terrors || []).length : 0
-  setPill('tonCacheState', n > 0, `${n} ach`)
-  const when = tonCacheData && tonCacheData.fetchedAt ? new Date(tonCacheData.fetchedAt).toLocaleString() : 'never'
-  setText('tonCacheInfo', `${n} achievements · ${t} terrors · cached ${when}`)
-  renderTonCache($('tonAchSearch') ? $('tonAchSearch').value : '')
+  const d = tonCacheData || {}
+  const counts = `${(d.achievements || []).length} ach · ${(d.terrors || []).length} terrors · ${(d.items || []).length} items · ${(d.locations || []).length} maps · ${(d.rounds || []).length} rounds`
+  setPill('tonCacheState', (d.achievements || []).length > 0, 'cached')
+  const when = d.fetchedAt ? new Date(d.fetchedAt).toLocaleString() : 'never'
+  setText('tonCacheInfo', `${counts} · updated ${when}`)
+  renderTonBoard()
 }
 
 async function loadTonRoundHistory () {
@@ -638,21 +668,28 @@ async function loadTonRoundHistory () {
 
 async function loadTonPlayer () {
   const s = await api.tonGet()
-  const seen = await api.tonSeen()
+  tonSeenData = await api.tonSeen()
   const wr = s.rounds ? Math.round((s.survivals / s.rounds) * 100) + '%' : '—'
   setText('tonPlayerStats', `Rounds ${s.rounds || 0} · Survived ${s.survivals || 0} (${wr}) · Deaths ${s.deaths || 0} · Stuns ${s.stunsAll || 0} · Damage ${(s.damageTaken || 0).toLocaleString()}`)
-  const terrors = seen.terrors || []
+  const terrors = tonSeenData.terrors || []
   const total = tonCacheData ? (tonCacheData.terrors || []).length : 0
   $('tonEncounters').innerHTML =
-    `<div class="muted" style="font-size:.78rem;margin-bottom:4px">👹 Terrors encountered: ${terrors.length}${total ? '/' + total : ''} · 🗺 Maps seen: ${(seen.maps || []).length}</div>` +
+    `<div class="muted" style="font-size:.78rem;margin-bottom:4px">👹 Terrors encountered: ${terrors.length}${total ? '/' + total : ''} · 🗺 Maps seen: ${(tonSeenData.maps || []).length}</div>` +
     terrors.map(t => `<span class="pill" style="margin:2px">${tonEsc(t)}</span>`).join('')
+  if (tonCat === 'terrors' || tonCat === 'locations') renderTonBoard() // refresh ✓ markers
   loadTonRoundHistory()
 }
 
-if ($('tonAchSearch')) $('tonAchSearch').addEventListener('input', e => renderTonCache(e.target.value))
+document.querySelectorAll('#tonref .tonCat').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#tonref .tonCat').forEach(x => x.classList.remove('active'))
+  b.classList.add('active')
+  tonCat = b.dataset.toncat
+  renderTonBoard()
+}))
+if ($('tonSearch')) $('tonSearch').addEventListener('input', renderTonBoard)
 if ($('tonRefresh')) $('tonRefresh').addEventListener('click', async () => {
-  setText('tonCacheInfo', 'Refreshing from terror.moe…')
-  try { await api.tonDataRefresh(); await loadTonCache() } catch (_) { setText('tonCacheInfo', 'Refresh failed (offline?)') }
+  setText('tonCacheInfo', 'Updating cached data…')
+  try { await api.tonDataRefresh(); await loadTonCache() } catch (_) { setText('tonCacheInfo', 'Update failed (offline?)') }
 })
 if ($('tonExport')) $('tonExport').addEventListener('click', async () => { const r = await api.tonExport(); if (r && r.ok) setText('tonCacheInfo', 'Exported to ' + r.path) })
 if ($('tonImport')) $('tonImport').addEventListener('click', async () => { const r = await api.tonImport(); if (r && r.ok) { setText('tonCacheInfo', `Imported · ${r.terrors} terrors seen`); loadTonPlayer() } })
@@ -660,11 +697,7 @@ if ($('tonImport')) $('tonImport').addEventListener('click', async () => { const
 api.on('ton:round', () => { loadTonRoundHistory(); loadTonPlayer() })
 
 const tonRefBtn = document.querySelector('[data-tab="tonref"]')
-if (tonRefBtn) tonRefBtn.addEventListener('click', () => {
-  if (!tonWebLoaded) tonSetWeb('https://terror.moe/achievements/')
-  loadTonCache(); loadTonPlayer()
-  setPill('tonRefState', !!($('enableTon') && $('enableTon').checked), 'live')
-})
+if (tonRefBtn) tonRefBtn.addEventListener('click', () => { loadTonCache(); loadTonPlayer() })
 
 api.on('vr:update', s => {
   setPill('vrState', s.available, 'on')

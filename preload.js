@@ -40,6 +40,7 @@ window.electronAPI = {
   tonSeen: () => ipcRenderer.invoke('ton:seen'),
   tonExport: () => ipcRenderer.invoke('ton:export'),
   tonImport: () => ipcRenderer.invoke('ton:import'),
+  openExternal: url => ipcRenderer.invoke('app:openExternal', url),
 
   // tiktok
   tiktokConnect: (user, signApiKey) => ipcRenderer.invoke('tiktok:connect', { username: user, signApiKey }),

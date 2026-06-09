@@ -94,8 +94,7 @@ function createWindow () {
       contextIsolation: false,
       nodeIntegration: true,
       preload: path.join(__dirname, 'preload.js'),
-      backgroundThrottling: false,
-      webviewTag: true // ToN Reference tab embeds the live terror.moe / tontrack.me boards
+      backgroundThrottling: false
     }
   })
 
@@ -281,6 +280,7 @@ ipcMain.handle('ton:dataRefresh', async () => {
   return { achievements: c.achievements.length, terrors: c.terrors.length, fetchedAt: c.fetchedAt }
 })
 ipcMain.handle('ton:seen', () => ({ terrors: [...tonSeenTerrors], maps: [...tonSeenMaps] }))
+ipcMain.handle('app:openExternal', (e, url) => { if (/^https?:\/\//i.test(url || '')) shell.openExternal(url); return true })
 
 // Export / import the player's ToN data (stats + encounters + round history).
 ipcMain.handle('ton:export', async () => {

@@ -6,15 +6,14 @@ This project follows [Semantic Versioning](https://semver.org/).
 ## [1.0.2] - 2026-06-09
 
 ### Added
-- **ToN Reference & Tracker tab** (👻 Terrors) — a dedicated tab that embeds the
-  live **terror.moe** boards (Achievements / Terrors / Items / Locations / Bonus)
-  and the **tontrack.me** progress tracker in-app, so you can look up any
-  achievement, terror, item or location with its official hint without leaving
-  NekoSuneAPPS.
-- **Offline ToN reference cache** — achievements (with unlock hints + tips) and
-  the terror roster are scraped from terror.moe into a local cache that is
-  searchable offline and auto-refreshes (re-fetching picks up anything new the
-  site adds). Includes a manual "Refresh from terror.moe" button.
+- **ToN Reference tab** (👻 Terrors) — a fully **native, in-app** board (no
+  embeds / no iframes): browse **Achievements** (with unlock hints + tips + art),
+  **Terrors** (with art, ✓-marked once you've encountered them), **Items**,
+  **Locations** (✓-marked once visited) and **Round types**, all searchable.
+- **Offline ToN reference cache** — the dataset is fetched from terror.moe
+  (achievements + terror roster) and tontrack.me (locations / items / rounds),
+  stored locally so the board works offline, and auto-refreshed (re-fetching
+  picks up anything new the sites add). Includes a manual "Refresh" button.
 - **Offline round history** — every finished round (type, terror, map,
   survived/died, duration) is saved locally and shown as a history list.
 - **Terror/map encounters** — tracks how many distinct terrors you've "bumped
