@@ -178,7 +178,7 @@ async function getUserGroups (userId) {
   if (!cookies.auth) return { ok: false, error: 'Not logged in' }
   const res = await axios.get(`${BASE}/users/${userId}/groups`, Object.assign({ headers: baseHeaders() }, REQ))
   storeSetCookie(res)
-  if (res.status === 200 && Array.isArray(res.data)) return { ok: true, groups: res.data.map(g => ({ id: g.groupId || g.id, name: g.name, icon: g.iconUrl || '', members: g.memberCount })) }
+  if (res.status === 200 && Array.isArray(res.data)) return { ok: true, groups: res.data.map(g => ({ id: g.groupId || g.id, name: g.name, icon: g.iconUrl || '', members: g.memberCount, ownerId: g.ownerId })) }
   return { ok: false, error: errOf(res, 'Could not load groups') }
 }
 async function getUserWorlds (userId) {
@@ -281,14 +281,26 @@ async function getMutualFriends (userId) {
   if (res.status === 403) return { ok: false, off: true, error: 'This user has Shared Connections turned off.' }
   return { ok: false, error: errOf(res, 'Could not load mutual friends') }
 }
-// Your own favorite worlds (favorites are private to other users).
+// Your own favorite worlds (favorites are private to other users), tagged with
+// which favorite GROUP each belongs to so the UI can categorise them.
 async function getFavoriteWorlds () {
   loadCookies()
   if (!cookies.auth) return { ok: false, error: 'Not logged in' }
   const res = await axios.get(`${BASE}/worlds/favorites`, Object.assign({ headers: baseHeaders(), params: { n: 100 } }, REQ))
   storeSetCookie(res)
-  if (res.status === 200 && Array.isArray(res.data)) return { ok: true, worlds: res.data.map(w => ({ id: w.id, name: w.name, image: w.thumbnailImageUrl || w.imageUrl, visits: w.visits, favorites: w.favorites })) }
+  if (res.status === 200 && Array.isArray(res.data)) {
+    return { ok: true, worlds: res.data.map(w => ({ id: w.id, name: w.name, image: w.thumbnailImageUrl || w.imageUrl, visits: w.visits, favorites: w.favorites, group: w.favoriteGroup || (Array.isArray(w.favoriteGroups) && w.favoriteGroups[0]) || 'worlds1' })) }
+  }
   return { ok: false, error: errOf(res, 'Could not load favorites') }
+}
+// Favorite group display names (worlds1 -> "Game Worlds", etc.).
+async function getFavoriteGroups (type = 'world') {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  const res = await axios.get(`${BASE}/favorite/groups`, Object.assign({ headers: baseHeaders(), params: { type, n: 25 } }, REQ))
+  storeSetCookie(res)
+  if (res.status === 200 && Array.isArray(res.data)) return { ok: true, groups: res.data.map(g => ({ name: g.name, displayName: g.displayName })) }
+  return { ok: false, error: errOf(res, 'Could not load favorite groups') }
 }
 
 // ---- Event Scout: your groups + each group's calendar events ----
@@ -348,7 +360,7 @@ function logout () { cookies = {}; currentUserId = ''; saveCookies() }
 module.exports = {
   login, verify2fa, fetchUser, mapStatus, isLoggedIn, logout,
   getFriends, getUser, sendFriendRequest, requestInvite, unfriend, inviteUser, getUserGroups, getUserWorlds,
-  getMutualFriends, getFavoriteWorlds, sendBoop, getMyAvatars, addFavorite, removeFavorite,
+  getMutualFriends, getFavoriteWorlds, getFavoriteGroups, sendBoop, getMyAvatars, addFavorite, removeFavorite,
   searchUsers, searchWorlds, searchGroups, getWorld, getGroup,
   getMyGroups, getGroupEvents, getNotifications, acceptFriendRequest
 }

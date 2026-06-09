@@ -65,7 +65,27 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 
 ---
 
-## 🥽 Our pending clusters (from the build plan)
+## 🥽 Requested big features (next session)
+
+### Avatars (own + others)
+- [ ] **Avatar detail** view (info/image) from Content/search
+- [ ] **Switch avatar** — `PUT /avatars/{id}/select` (wear it before launching)
+- [ ] **Delete personal avatar** — `DELETE /avatars/{id}` with a **Yes/No confirm dialog**
+
+### Worlds — create instance + invites
+- [ ] **Create instance** with access type: **Public / Friends+ / Friends / Invite+ / Invite / Group** (build instanceId region+nonce → launch link or `POST /instances`)
+- [ ] **Shared invite link** (copy launch URL); **Invite yourself** (`POST /invite/myself/to/{worldId}:{instanceId}`); **Invite someone** via friend picker
+- [ ] Join / self-invite buttons in the world detail modal
+
+### Groups
+- [ ] **Invite people to a group** (`POST /groups/{id}/invites`) via friend picker, if you have permission
+- [ ] Group detail: members, roles, posts, your permissions
+
+### Shared UI to build first
+- [ ] **Friend-picker modal** (searchable, multi-select) — reused by instance + group invite
+- [ ] **Confirm (Yes/No) modal** — reused by avatar delete + destructive actions
+
+## Our pending clusters (from the build plan)
 
 ### VR / heavy ⚠️ (need native or large deps — can't test in sandbox)
 - [ ] **Neko HUD** (VR overlay) — ⚠️ needs native OpenVR overlay binding (same blocker as VR battery). Ship a small C#/C++ OpenVR helper exe and spawn it.

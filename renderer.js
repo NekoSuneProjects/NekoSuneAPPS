@@ -1189,7 +1189,14 @@ async function renderMTab (tab) {
   } else if (tab === 'groups') {
     body.innerHTML = '<div class="muted">Loading groups…</div>'
     const r = await api.vrchatUserGroups(u.id)
-    body.innerHTML = !r.ok ? `<div class="muted">${esc(r.error)}</div>` : (r.groups.length ? `<div class="card-grid">${r.groups.map(groupCard).join('')}</div>` : '<div class="muted">No groups.</div>')
+    if (!r.ok) { body.innerHTML = `<div class="muted">${esc(r.error)}</div>`; return }
+    if (!r.groups.length) { body.innerHTML = '<div class="muted">No groups.</div>'; return }
+    const own = r.groups.filter(g => g.ownerId === u.id)
+    const mem = r.groups.filter(g => g.ownerId !== u.id)
+    let html = ''
+    if (own.length) html += `<div class="mgroup">Own Groups — ${own.length}</div><div class="card-grid">${own.map(groupCard).join('')}</div>`
+    if (mem.length) html += `<div class="mgroup">Groups — ${mem.length}</div><div class="card-grid">${mem.map(groupCard).join('')}</div>`
+    body.innerHTML = html
   } else if (tab === 'content') {
     body.innerHTML = '<div class="muted">Loading worlds…</div>'
     const r = await api.vrchatUserWorlds(u.id)
@@ -1199,13 +1206,21 @@ async function renderMTab (tab) {
     body.querySelectorAll('[data-msub]').forEach(b => b.addEventListener('click', () => { body.querySelectorAll('[data-msub]').forEach(x => x.classList.toggle('active', x === b)); renderMutSub(b.dataset.msub) }))
     renderMutSub('friends')
   } else if (tab === 'favs') {
-    if (umUser.id === myUserId) {
-      body.innerHTML = '<div class="muted">Loading favorites…</div>'
-      const r = await api.vrchatFavWorlds()
-      body.innerHTML = !r.ok ? `<div class="muted">${esc(r.error)}</div>` : (r.worlds.length ? `<div class="card-grid">${r.worlds.map(worldCard).join('')}</div>` : '<div class="muted">No favorite worlds.</div>')
-    } else {
-      body.innerHTML = '<div class="muted">No public favorite worlds. (A user’s favorites are only visible if they’ve made them public.)</div>'
-    }
+    if (umUser.id !== myUserId) { body.innerHTML = '<div class="muted">No public favorite worlds. (A user’s favorites are only visible if they’ve made them public.)</div>'; return }
+    body.innerHTML = '<div class="muted">Loading favorites…</div>'
+    const [r, gr] = await Promise.all([api.vrchatFavWorlds(), api.vrchatFavGroups('world')])
+    if (!r.ok) { body.innerHTML = `<div class="muted">${esc(r.error)}</div>`; return }
+    if (!r.worlds.length) { body.innerHTML = '<div class="muted">No favorite worlds.</div>'; return }
+    const names = {}; if (gr.ok) gr.groups.forEach(g => { names[g.name] = g.displayName || g.name })
+    const byGroup = {}
+    for (const w of r.worlds) { const k = w.group || 'worlds1'; (byGroup[k] = byGroup[k] || []).push(w) }
+    body.innerHTML = Object.keys(byGroup).map(k => `<div class="mgroup mfav-toggle" data-grp="${k}">▾ ${esc(names[k] || k)} — ${byGroup[k].length}</div><div class="card-grid" data-grpbody="${k}">${byGroup[k].map(worldCard).join('')}</div>`).join('')
+    body.querySelectorAll('.mfav-toggle').forEach(t => t.addEventListener('click', () => {
+      const gb = body.querySelector(`[data-grpbody="${t.dataset.grp}"]`)
+      const hidden = gb.style.display === 'none'
+      gb.style.display = hidden ? '' : 'none'
+      t.textContent = (hidden ? '▾' : '▸') + t.textContent.slice(1)
+    }))
   }
 }
 function worldCard (w) {
