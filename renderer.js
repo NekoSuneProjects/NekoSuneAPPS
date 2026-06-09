@@ -536,7 +536,10 @@ $('discordStop').addEventListener('click', async () => { await api.discordStop()
     api.discordVrc({ vrcStatus: cfg.vrcStatus, showWorld: cfg.showWorld, vrcProfileUrl: cfg.vrcProfileUrl, showHeartRate: cfg.showHeartRate, showNowPlaying: cfg.showNowPlaying })
   }))
 
-// Live world readout + radar from the VRChat log tracker.
+// Live world readout + radar from the VRChat log tracker. NOTE: this fires every
+// few seconds — only touch the DOM when something actually changed (perf).
+let _lastLoc = ''
+let _lastRadarSig = ''
 api.on('vrc:world', w => {
   if (w && w.inWorld && w.worldName) setText('discordWorldOut', `World: ${w.worldName}`)
   else if (w && w.inWorld) setText('discordWorldOut', 'World: (joining…)')
@@ -544,16 +547,21 @@ api.on('vrc:world', w => {
   renderRadar(w)
   if (w) {
     composer.update({ players: (w.players || []).length })
-    window.__myLocation = (w.worldId && w.instanceId) ? `${w.worldId}:${w.instanceId}` : ''
+    const loc = (w.worldId && w.instanceId) ? `${w.worldId}:${w.instanceId}` : ''
+    window.__myLocation = loc
     if ($('rbWorld')) {
       setText('rbWorld', w.inWorld ? (w.worldName || 'In a world') : 'Not in a world')
       setText('rbInstCount', w.inWorld ? `${(w.players || []).length} player(s) in instance` : '—')
     }
-    if (typeof renderRightbar === 'function' && rbFriendsCache.online && rbFriendsCache.online.length) renderRightbar()
+    // Re-render the friends panel only when our instance actually changes.
+    if (loc !== _lastLoc) { _lastLoc = loc; if (typeof renderRightbar === 'function' && rbFriendsCache.online && rbFriendsCache.online.length) renderRightbar() }
   }
 })
 function renderRadar (w) {
   const players = (w && w.players) || []
+  const sig = (w && w.inWorld ? '1' : '0') + ':' + players.join('|')
+  if (sig === _lastRadarSig) return // nothing changed — skip DOM work
+  _lastRadarSig = sig
   setText('radarCount', String(players.length))
   const el = $('radarList'); if (!el) return
   if (!w || !w.inWorld) { el.textContent = 'Not in a world.' } else if (!players.length) { el.textContent = 'No other players detected.' } else {
@@ -571,9 +579,10 @@ function fmtSw (ms) {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${d}`
 }
 setInterval(() => {
+  if (!swRunning) return // idle — don't touch the DOM 10×/sec
   setText('swDisplay', fmtSw(swElapsed()))
   // Live-post once a second (10th 100ms tick) to respect VRChat's chatbox rate.
-  if (swRunning && $('swLiveChatbox').checked && (++swTick % 10 === 0)) sendChatboxMessage(`⏱ ${fmtSw(swElapsed())}`, false)
+  if ($('swLiveChatbox').checked && (++swTick % 10 === 0)) sendChatboxMessage(`⏱ ${fmtSw(swElapsed())}`, false)
 }, 100)
 $('swStartStop').addEventListener('click', () => {
   if (swRunning) { swAccum = swElapsed(); swRunning = false; $('swStartStop').textContent = 'Start'; setText('swOut', 'Paused') } else { swStart = Date.now(); swRunning = true; $('swStartStop').textContent = 'Stop'; setText('swOut', 'Running') }
