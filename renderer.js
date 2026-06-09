@@ -705,8 +705,16 @@ $('vrc2faVerify').addEventListener('click', async () => {
 })
 $('vrcLogout').addEventListener('click', async () => { await api.vrchatLogout(); setAcctState(false, 'Logged out'); $('vrcAutoStatus').checked = false; api.saveSetting('vrcAutoStatus', false) })
 $('vrcAutoStatus').addEventListener('change', e => { api.saveSetting('vrcAutoStatus', e.target.checked); api.vrchatAutoStatus(e.target.checked); $('discordVrcStatus').disabled = e.target.checked })
+const STATUS_KEY = { 'join me': 'join', active: 'active', 'ask me': 'ask', busy: 'busy', offline: 'busy' }
 api.on('vrchat:account', s => {
-  if (s.ok) { setAcctState(true, `${s.displayName} · ${s.status}${s.statusDescription ? ' — ' + s.statusDescription : ''}`) } else if (s.needs2fa) { $('vrc2faRow').style.display = ''; setText('vrcAcctOut', '2FA required') } else if (s.error) setText('vrcAcctOut', 'Error: ' + s.error)
+  if (s.ok) {
+    setAcctState(true, `${s.displayName} · ${s.status}${s.statusDescription ? ' — ' + s.statusDescription : ''}`)
+    // Reflect the live VRChat status in the gate dropdown + profile editor.
+    const key = STATUS_KEY[String(s.status || '').toLowerCase()]
+    if (key && $('vrcAutoStatus').checked) $('discordVrcStatus').value = key
+    if (s.status) $('peStatus').value = s.status
+    if (s.statusDescription != null) $('peStatusDesc').value = s.statusDescription
+  } else if (s.needs2fa) { $('vrc2faRow').style.display = ''; setText('vrcAcctOut', '2FA required') } else if (s.error) setText('vrcAcctOut', 'Error: ' + s.error)
 })
 
 /* ---------------- weather ---------------- */
@@ -818,7 +826,7 @@ $('cacheClear').addEventListener('click', async () => {
 document.querySelectorAll('[data-folder]').forEach(b => b.addEventListener('click', () => api.vrcToolsOpenFolder(b.dataset.folder)))
 
 /* ---------------- Friend Den ---------------- */
-const STATUS_DOT = { 'join me': '🟢', active: '🔵', 'ask me': '🟠', busy: '🔴', offline: '⚫' }
+const STATUS_DOT = { 'join me': '🔵', active: '🟢', 'ask me': '🟠', busy: '🔴', offline: '⚫' }
 function fmtLocation (loc) {
   if (!loc || loc === 'offline') return 'Offline'
   if (loc === 'private') return '🔒 Private'
@@ -1124,7 +1132,7 @@ async function loadNotifications () {
 }
 
 /* ---------------- right friends panel ---------------- */
-const RB_COLOR = { 'join me': '#22c55e', active: '#3b82f6', 'ask me': '#f59e0b', busy: '#ef4444', offline: '#6b7280' }
+const RB_COLOR = { 'join me': '#3b82f6', active: '#22c55e', 'ask me': '#f59e0b', busy: '#ef4444', offline: '#6b7280' }
 let rbFriendsCache = { online: [], offline: [] }
 let favFriendIds = new Set()
 let myUserId = ''

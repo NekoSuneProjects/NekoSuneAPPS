@@ -315,7 +315,7 @@ async function applyVrcStatus () {
     push('vrchat:account', { ok: false, needs2fa: r.needs2fa, error: r.error })
   }
 }
-function startVrcStatusPoll () { stopVrcStatusPoll(); applyVrcStatus(); vrcStatusTimer = setInterval(applyVrcStatus, 90000) }
+function startVrcStatusPoll () { stopVrcStatusPoll(); applyVrcStatus(); vrcStatusTimer = setInterval(applyVrcStatus, 60000) }
 function stopVrcStatusPoll () { if (vrcStatusTimer) { clearInterval(vrcStatusTimer); vrcStatusTimer = null } }
 
 ipcMain.handle('vrchat:login', (e, { username, password }) => vrchatApi.login(username, password))

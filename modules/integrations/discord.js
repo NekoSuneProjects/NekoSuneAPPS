@@ -75,8 +75,8 @@ const vrc = { worldName: '', joinUrl: '', worldUrl: '', profileUrl: '', hrBpm: 0
 // Privacy gate: only green (Join Me) and blue (Active) reveal where you are.
 // Orange (Ask Me) and red (Do Not Disturb) hide the world + join button.
 const STATUS = {
-  join: { label: 'Join Me', emoji: '🟢', showWorld: true },
-  active: { label: 'Active', emoji: '🔵', showWorld: true },
+  join: { label: 'Join Me', emoji: '🔵', showWorld: true }, // VRChat: Join Me = blue
+  active: { label: 'Active', emoji: '🟢', showWorld: true }, // Active = green
   ask: { label: 'Ask Me', emoji: '🟠', showWorld: false },
   busy: { label: 'Do Not Disturb', emoji: '🔴', showWorld: false }
 }
