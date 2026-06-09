@@ -3,25 +3,39 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
-## [1.0.1] - 2026-06-09
-
-### Performance
-- **Far fewer background processes** — fixed the "too many programs running" lag
-  where the app spawned a constant churn of `powershell.exe` and `conhost.exe`
-  ("Console Window") processes:
-  - **System & Network stats** now route every CPU/GPU/RAM/temperature/network/
-    ping query through a single, reused PowerShell session (via
-    `systeminformation`'s persistent shell) instead of spawning a brand-new
-    `powershell.exe` (+ `conhost.exe`) for *every* reading. The shell is
-    ref-counted: started when the first poller turns on, released when the last
-    one turns off.
-  - **Window Activity** polling slowed from every 3s to every 10s (5s floor),
-    cutting its PowerShell spawns by ~70%.
-  - **System Stats** poll interval relaxed 3s → 5s; **Network Stats** 3s → 5s.
-
-## [Unreleased]
+## [1.0.2] - 2026-06-09
 
 ### Added
+- **ToN Reference & Tracker tab** (👻 Terrors) — a dedicated tab that embeds the
+  live **terror.moe** boards (Achievements / Terrors / Items / Locations / Bonus)
+  and the **tontrack.me** progress tracker in-app, so you can look up any
+  achievement, terror, item or location with its official hint without leaving
+  NekoSuneAPPS.
+- **Offline ToN reference cache** — achievements (with unlock hints + tips) and
+  the terror roster are scraped from terror.moe into a local cache that is
+  searchable offline and auto-refreshes (re-fetching picks up anything new the
+  site adds). Includes a manual "Refresh from terror.moe" button.
+- **Offline round history** — every finished round (type, terror, map,
+  survived/died, duration) is saved locally and shown as a history list.
+- **Terror/map encounters** — tracks how many distinct terrors you've "bumped
+  into" and maps you've seen across sessions, persisted between launches.
+- **Export / Import player data** — back up or move your ToN stats, encounters
+  and round history as a JSON file.
+- **ToNSaveManager integration** (Terrors of Nowhere) — connects to
+  ToNSaveManager's local WebSocket API (Stats tab, default port `11398`) and
+  surfaces the live round (round type, terror, map, alive/opted-in status,
+  players in instance) plus lifetime + per-session stats (rounds / deaths /
+  survivals / win rate / damage taken / stuns / records). Auto-reconnects when
+  ToNSaveManager is closed or restarted, can show its own chatbox line, and adds
+  a `{ton*}` token family: `{ton}` `{tonround}` `{tonterror}` `{tonmap}`
+  `{tonalive}` `{tonplayers}` `{tonrounds}` `{tondeaths}` `{tonsurvivals}`
+  `{tonwinrate}` `{tondamage}` `{tonstuns}`. Requires ToNSaveManager's
+  "WebSocket API" enabled.
+- **ToN achievements** — a milestone achievement system derived from your ToN
+  stats (15 badges across rounds played, survivals, deaths, damage taken, stuns
+  and win rate). The ToN card shows a stats grid and the full achievement list
+  split into **✓ Unlocked** and **🔒 Locked** (with live progress %), and pops a
+  toast on the status line the moment a new one unlocks.
 - **Create group instances** — pick a world (your worlds + favourites) with
   access (members / group+ / public) and region, created from the group modal.
 - **VRCVideoCacher** — install/update + start/stop the local video-cache proxy
@@ -41,6 +55,22 @@ This project follows [Semantic Versioning](https://semver.org/).
 - 429 rate-limit backoff is now honoured by every poller; pollers are staggered
   on launch; right-rail sections cap at 150 rows; all dynamic images are
   `loading="lazy" decoding="async"` to cut memory and prevent crashes.
+
+## [1.0.1] - 2026-06-09
+
+### Performance
+- **Far fewer background processes** — fixed the "too many programs running" lag
+  where the app spawned a constant churn of `powershell.exe` and `conhost.exe`
+  ("Console Window") processes:
+  - **System & Network stats** now route every CPU/GPU/RAM/temperature/network/
+    ping query through a single, reused PowerShell session (via
+    `systeminformation`'s persistent shell) instead of spawning a brand-new
+    `powershell.exe` (+ `conhost.exe`) for *every* reading. The shell is
+    ref-counted: started when the first poller turns on, released when the last
+    one turns off.
+  - **Window Activity** polling slowed from every 3s to every 10s (5s floor),
+    cutting its PowerShell spawns by ~70%.
+  - **System Stats** poll interval relaxed 3s → 5s; **Network Stats** 3s → 5s.
 
 ## [1.0.0] - 2026-06-09
 

@@ -38,6 +38,8 @@ const gamelog = require('./modules/history/gamelog')
 const photoRelay = require('./modules/integrations/photoRelay')
 const avatarDb = require('./modules/vrchat/avatars/avatarDb')
 const crashGuard = require('./modules/vrchat/tools/crashGuard')
+const { startTon, stopTon, getTonState } = require('./modules/integrations/tonModule')
+const tonData = require('./modules/integrations/tonData')
 
 // Keep a stray error in any poller/network module from hard-crashing the app.
 process.on('uncaughtException', err => console.error('[uncaughtException]', err))
@@ -92,7 +94,8 @@ function createWindow () {
       contextIsolation: false,
       nodeIntegration: true,
       preload: path.join(__dirname, 'preload.js'),
-      backgroundThrottling: false
+      backgroundThrottling: false,
+      webviewTag: true // ToN Reference tab embeds the live terror.moe / tontrack.me boards
     }
   })
 
@@ -130,6 +133,7 @@ app.whenReady().then(async () => {
   // Track the current VRChat world from its log; feed it to the renderer and
   // (when connected) into the Discord presence.
   gamelog.init(app.getPath('userData')).catch(err => console.warn('gamelog init:', err.message))
+  tonData.init(app.getPath('userData')) // load/refresh the offline ToN reference cache
   startVrcWorld(w => {
     push('vrc:world', w)
     setVrcContext({ worldName: w.inWorld ? w.worldName : '', joinUrl: w.joinUrl, worldUrl: w.worldUrl, profileUrl: w.profileUrl })
@@ -155,7 +159,7 @@ app.on('activate', () => {
 })
 
 app.on('before-quit', () => {
-  stopComponentStats(); stopNetworkStats(); stopPulsoid(); stopHyperate(); stopWindowActivity()
+  stopComponentStats(); stopNetworkStats(); stopPulsoid(); stopHyperate(); stopWindowActivity(); stopTon()
   disconnectTikTok(); stopTwitch(); stopKick(); stopDiscord(); stopVrBattery(); stopVrcWorld(); stopAfk()
   stopWeather(); stopVrcStatusPoll(); stopBot(); pawprints.tickCommit(); stopFriendDiff(); stopGreeter(); gamelog.close(); photoRelay.stop(); stopGroupAlerts(); stopNotifPoll(); crashGuard.stop(); vrcTools.stopVideoCacher()
 })
@@ -230,6 +234,86 @@ ipcMain.handle('window:start', () => {
   return true
 })
 ipcMain.handle('window:stop', () => { stopWindowActivity(); return true })
+
+/* ------------------------------------------------------------------ */
+/* ToNSaveManager (Terrors of Nowhere tracker)                         */
+/* ------------------------------------------------------------------ */
+// Encountered terrors / maps — the "how many you've bumped into" tally, persisted.
+const tonSeenTerrors = new Set(settings.get('tonSeenTerrors', []))
+const tonSeenMaps = new Set(settings.get('tonSeenMaps', []))
+let tonSeenSaveTimer = null
+function tonRecordSeen (s) {
+  let changed = false
+  if (s.roundActive && s.terror && s.terror !== '???' && !tonSeenTerrors.has(s.terror)) { tonSeenTerrors.add(s.terror); changed = true }
+  if (s.map && !tonSeenMaps.has(s.map)) { tonSeenMaps.add(s.map); changed = true }
+  if (changed) {
+    clearTimeout(tonSeenSaveTimer)
+    tonSeenSaveTimer = setTimeout(() => {
+      settings.set('tonSeenTerrors', [...tonSeenTerrors]); settings.set('tonSeenMaps', [...tonSeenMaps])
+    }, 3000)
+  }
+}
+function onTonUpdate (s) { tonRecordSeen(s); push('ton:update', s) }
+
+ipcMain.handle('ton:start', (e, opts) => {
+  startTon(onTonUpdate, {
+    ...(opts || {}),
+    // Persist each finished round to the offline history (sql.js gamelog) and push live.
+    onRound: rec => {
+      gamelog.log('ton_round', rec.roundType || 'Round',
+        JSON.stringify({ terror: rec.terror, map: rec.map, result: rec.result, dur: rec.durationSec }), rec.map || '')
+      push('ton:round', rec)
+    }
+  })
+  return true
+})
+ipcMain.handle('ton:stop', () => { stopTon(); return true })
+ipcMain.handle('ton:get', () => getTonState())
+ipcMain.handle('ton:history', (e, limit) => gamelog.list({ type: 'ton_round', limit: limit || 200 }).map(r => {
+  let d = {}; try { d = JSON.parse(r.detail || '{}') } catch (_) {}
+  return { ts: r.ts, roundType: r.name, terror: d.terror || '', map: d.map || r.world || '', result: d.result || '', durationSec: d.dur || 0 }
+}))
+
+// Offline ToN reference cache (achievements + terrors, scraped from terror.moe).
+ipcMain.handle('ton:data', () => tonData.get())
+ipcMain.handle('ton:dataRefresh', async () => {
+  const c = await tonData.refresh()
+  return { achievements: c.achievements.length, terrors: c.terrors.length, fetchedAt: c.fetchedAt }
+})
+ipcMain.handle('ton:seen', () => ({ terrors: [...tonSeenTerrors], maps: [...tonSeenMaps] }))
+
+// Export / import the player's ToN data (stats + encounters + round history).
+ipcMain.handle('ton:export', async () => {
+  const r = await dialog.showSaveDialog({ defaultPath: 'ton-player-data.json', filters: [{ name: 'JSON', extensions: ['json'] }] })
+  if (r.canceled || !r.filePath) return { ok: false, error: 'cancelled' }
+  try {
+    const payload = {
+      app: 'NekoSuneAPPS', kind: 'ton-player-data', version: 1, exportedAt: Date.now(),
+      stats: getTonState(),
+      seenTerrors: [...tonSeenTerrors],
+      seenMaps: [...tonSeenMaps],
+      history: gamelog.list({ type: 'ton_round', limit: 5000 })
+    }
+    fs.writeFileSync(r.filePath, JSON.stringify(payload, null, 2))
+    return { ok: true, path: r.filePath }
+  } catch (err) { return { ok: false, error: err.message } }
+})
+ipcMain.handle('ton:import', async () => {
+  const r = await dialog.showOpenDialog({ properties: ['openFile'], filters: [{ name: 'JSON', extensions: ['json'] }] })
+  if (r.canceled || !r.filePaths[0]) return { ok: false, error: 'cancelled' }
+  try {
+    const data = JSON.parse(fs.readFileSync(r.filePaths[0], 'utf8'))
+    if (Array.isArray(data.seenTerrors)) data.seenTerrors.forEach(t => tonSeenTerrors.add(t))
+    if (Array.isArray(data.seenMaps)) data.seenMaps.forEach(m => tonSeenMaps.add(m))
+    settings.set('tonSeenTerrors', [...tonSeenTerrors]); settings.set('tonSeenMaps', [...tonSeenMaps])
+    // Merge round history (skip exact duplicates by timestamp+type).
+    if (Array.isArray(data.history)) {
+      const existing = new Set(gamelog.list({ type: 'ton_round', limit: 5000 }).map(e => e.ts))
+      data.history.forEach(h => { if (h && h.ts && !existing.has(h.ts)) gamelog.log('ton_round', h.name || 'Round', h.detail || '{}', h.world || '') })
+    }
+    return { ok: true, terrors: tonSeenTerrors.size, maps: tonSeenMaps.size }
+  } catch (err) { return { ok: false, error: err.message } }
+})
 
 /* ------------------------------------------------------------------ */
 /* TikTok live (followers)                                             */

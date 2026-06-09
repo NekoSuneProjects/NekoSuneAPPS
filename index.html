@@ -207,6 +207,7 @@
       <button class="navbtn" data-tab="discord"><span class="ico">💜</span><span class="lbl">Discord</span></button>
       <div class="navlabel">General</div>
       <button class="navbtn" data-tab="stats"><span class="ico">📊</span><span class="lbl">Stats</span></button>
+      <button class="navbtn" data-tab="tonref"><span class="ico">👻</span><span class="lbl">Terrors</span></button>
       <button class="navbtn" data-tab="overlay"><span class="ico">🖥</span><span class="lbl">Overlay</span></button>
       <button class="navbtn" data-tab="tools"><span class="ico">🧩</span><span class="lbl">Tools</span></button>
       <button class="navbtn" data-tab="settings"><span class="ico">⚙️</span><span class="lbl">Settings</span></button>
@@ -283,6 +284,7 @@
               <b>TikTok:</b> {tiktok}=followers · {tiktoklive}=viewers · {tiktoklikes} · {tiktokvideos} · {tiktoknew}=new follows<br>
               <b>Twitch:</b> {twitch}=followers · {twitchlive}=viewers<br>
               <b>Kick:</b> {kick}=followers · {kicklive}=viewers<br>
+              <b>Terrors of Nowhere:</b> {ton}=summary · {tonround} · {tonterror} · {tonmap} · {tonalive} · {tonplayers} · {tonrounds} · {tondeaths} · {tonsurvivals} · {tonwinrate} · {tondamage} · {tonstuns}<br>
               <b>Other:</b> {window} {world}
             </div>
           </details>
@@ -420,6 +422,56 @@
             <h3>🔋 VR gear battery <span class="pill" id="vrState">off</span></h3>
             <label class="switch"><input type="checkbox" id="enableVr"> Enable</label>
             <div id="vrOut" class="muted" style="margin-top:10px">Requires native OpenVR helper (see README).</div>
+          </div>
+          <div class="card">
+            <h3>👻 Terrors of Nowhere <span class="pill" id="tonState">off</span></h3>
+            <label class="switch"><input type="checkbox" id="enableTon"> Connect to ToNSaveManager</label>
+            <label style="margin-top:8px">WebSocket port</label>
+            <input type="number" id="tonPort" value="11398" min="1" max="65535" />
+            <div id="tonOut" class="muted" style="margin-top:10px">—</div>
+            <details style="margin-top:10px">
+              <summary class="muted" style="cursor:pointer">Stats &amp; achievements</summary>
+              <div id="tonStatsGrid" style="font-size:.8rem; margin-top:8px"></div>
+              <div id="tonAchievements" style="margin-top:10px"></div>
+            </details>
+            <div class="muted" style="font-size:.72rem; margin-top:6px">In ToNSaveManager, open <b>Settings → WebSocket API</b>, enable it (and "WebTracker compatibility"). Live round type, terror, map, alive status and lifetime stats become <code>{ton*}</code> chatbox tokens.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TERRORS OF NOWHERE REFERENCE -->
+      <section id="tonref" class="tabpanel">
+        <div class="card">
+          <h3>👻 Terrors of Nowhere — Reference &amp; Tracker <span class="pill" id="tonRefState">off</span></h3>
+          <div class="muted" id="tonRefSummary" style="font-size:.8rem">Live boards from terror.moe &amp; tontrack.me. Connect ToNSaveManager (Stats tab) for live tracking.</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0">
+            <button class="btn ghost" data-tonurl="https://terror.moe/achievements/">🏆 Achievements</button>
+            <button class="btn ghost" data-tonurl="https://terror.moe/terrors/">👹 Terrors</button>
+            <button class="btn ghost" data-tonurl="https://terror.moe/items/">🎒 Items</button>
+            <button class="btn ghost" data-tonurl="https://terror.moe/locations/">🗺 Locations</button>
+            <button class="btn ghost" data-tonurl="https://terror.moe/bonus/">✨ Bonus</button>
+            <button class="btn ghost" data-tonurl="https://tontrack.me/">📊 Progress Tracker</button>
+          </div>
+          <webview id="tonWeb" src="" style="width:100%;height:520px;border:1px solid var(--line,#2a2a3a);border-radius:8px;background:#0e0e16"></webview>
+        </div>
+        <div class="grid cols-2">
+          <div class="card">
+            <h3>📦 Offline cache <span class="pill" id="tonCacheState">—</span></h3>
+            <div class="muted" id="tonCacheInfo" style="font-size:.78rem">—</div>
+            <input id="tonAchSearch" placeholder="Search achievements &amp; unlock hints…" style="margin-top:8px" />
+            <div id="tonAchBoard" style="max-height:360px;overflow:auto;margin-top:8px"></div>
+            <button class="btn ghost" id="tonRefresh" style="margin-top:8px">↻ Refresh from terror.moe</button>
+          </div>
+          <div class="card">
+            <h3>📊 Player data</h3>
+            <div id="tonPlayerStats" class="muted" style="font-size:.82rem"></div>
+            <div id="tonEncounters" style="margin-top:8px"></div>
+            <h4 style="margin:12px 0 4px">Round history</h4>
+            <div id="tonRoundHistory" style="max-height:240px;overflow:auto;font-size:.8rem">—</div>
+            <div style="display:flex;gap:6px;margin-top:10px">
+              <button class="btn ghost" id="tonExport">⬇ Export player data</button>
+              <button class="btn ghost" id="tonImport">⬆ Import</button>
+            </div>
           </div>
         </div>
       </section>
@@ -889,6 +941,7 @@
             <label class="switch"><input type="checkbox" id="autoStats"> 🖥 Component stats</label>
             <label class="switch"><input type="checkbox" id="autoNet"> 🌐 Network stats</label>
             <label class="switch"><input type="checkbox" id="autoWindow"> 🪟 Window activity</label>
+            <label class="switch"><input type="checkbox" id="autoTon"> 👻 Terrors of Nowhere</label>
             <label class="switch"><input type="checkbox" id="autoTwitch"> 🟣 Twitch followers</label>
             <label class="switch"><input type="checkbox" id="autoKick"> 🟢 Kick followers</label>
           </div>

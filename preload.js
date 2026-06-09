@@ -30,6 +30,17 @@ window.electronAPI = {
   windowStart: () => ipcRenderer.invoke('window:start'),
   windowStop: () => ipcRenderer.invoke('window:stop'),
 
+  // ToNSaveManager (Terrors of Nowhere)
+  tonStart: opts => ipcRenderer.invoke('ton:start', opts),
+  tonStop: () => ipcRenderer.invoke('ton:stop'),
+  tonGet: () => ipcRenderer.invoke('ton:get'),
+  tonHistory: limit => ipcRenderer.invoke('ton:history', limit),
+  tonData: () => ipcRenderer.invoke('ton:data'),
+  tonDataRefresh: () => ipcRenderer.invoke('ton:dataRefresh'),
+  tonSeen: () => ipcRenderer.invoke('ton:seen'),
+  tonExport: () => ipcRenderer.invoke('ton:export'),
+  tonImport: () => ipcRenderer.invoke('ton:import'),
+
   // tiktok
   tiktokConnect: (user, signApiKey) => ipcRenderer.invoke('tiktok:connect', { username: user, signApiKey }),
   tiktokDisconnect: () => ipcRenderer.invoke('tiktok:disconnect'),

@@ -25,7 +25,7 @@ const MAX_CHATBOX = 144
 // at the top by default (rotationPosition = 'top').
 const LINE_ORDER = [
   'nowPlaying', 'world', 'discord', 'stats', 'network', 'heartRate', 'window',
-  'tiktok', 'twitch', 'kick', 'clock'
+  'ton', 'tiktok', 'twitch', 'kick', 'clock'
 ]
 
 class ChatboxComposer {
@@ -46,6 +46,7 @@ class ChatboxComposer {
       network: 'off',
       heartRate: 'line',
       window: 'off',
+      ton: 'off',
       tiktok: 'off',
       twitch: 'off',
       kick: 'off',
@@ -63,7 +64,11 @@ class ChatboxComposer {
       tiktokFollowers: 0, tiktokViewers: 0, tiktokLikes: 0, tiktokVideos: 0, tiktokNew: 0, tiktokLive: false,
       twitchFollowers: 0, twitchViewers: 0, twitchLive: false,
       kickFollowers: 0, kickViewers: 0, kickLive: false,
-      discordChannel: '', discordUsers: 0, discordMute: false, discordDeaf: false
+      discordChannel: '', discordUsers: 0, discordMute: false, discordDeaf: false,
+      // ToNSaveManager (Terrors of Nowhere)
+      tonConnected: false, tonRoundActive: false, tonRound: '', tonTerror: '', tonMap: '',
+      tonAlive: true, tonPlayers: 0, tonRounds: 0, tonDeaths: 0, tonSurvivals: 0,
+      tonDamage: 0, tonStuns: 0
     }
   }
 
@@ -110,7 +115,17 @@ class ChatboxComposer {
       // Kick - separate data points
       kick: n(d.kickFollowers), kicklive: n(d.kickViewers),
       // Discord voice
-      discord: d.discordChannel, discordusers: n(d.discordUsers)
+      discord: d.discordChannel, discordusers: n(d.discordUsers),
+      // ToNSaveManager (Terrors of Nowhere)
+      ton: d.tonRoundActive
+        ? [d.tonRound, d.tonTerror, d.tonAlive ? 'Alive' : 'Dead'].filter(Boolean).join(' · ')
+        : (d.tonRounds ? `${d.tonSurvivals}/${d.tonRounds} survived` : ''),
+      tonround: d.tonRound, tonterror: d.tonTerror, tonmap: d.tonMap,
+      tonalive: d.tonRoundActive ? (d.tonAlive ? 'Alive' : 'Dead') : '',
+      tonplayers: n(d.tonPlayers),
+      tonrounds: n(d.tonRounds), tondeaths: n(d.tonDeaths), tonsurvivals: n(d.tonSurvivals),
+      tonwinrate: d.tonRounds ? Math.round((d.tonSurvivals / d.tonRounds) * 100) + '%' : '',
+      tondamage: n(d.tonDamage), tonstuns: n(d.tonStuns)
     }
   }
 
@@ -131,6 +146,14 @@ class ChatboxComposer {
         return `💗 ${d.hr}${extra.length ? ' | ' + extra.join(' | ') : ' bpm'}`
       }
       case 'window': return (d.windowApp || d.window) ? `🪟 ${d.windowApp || d.window}` : ''
+      case 'ton': {
+        if (d.tonRoundActive) {
+          const parts = [d.tonRound || 'Round', d.tonTerror].filter(Boolean)
+          return `👻 ${parts.join(' · ')}${d.tonAlive ? ' · Alive' : ' · Dead'}`
+        }
+        if (d.tonRounds) return `👻 ToN: ${d.tonSurvivals}/${d.tonRounds} survived`
+        return ''
+      }
       case 'tiktok': return d.tiktokFollowers ? `🎬 TikTok: ${d.tiktokFollowers.toLocaleString()} followers` : ''
       case 'twitch': return d.twitchFollowers ? `🟣 Twitch: ${d.twitchFollowers.toLocaleString()} followers` : ''
       case 'kick': return d.kickFollowers ? `🟢 Kick: ${d.kickFollowers.toLocaleString()} followers` : ''

@@ -253,6 +253,7 @@ const SOURCES = [
   ['status', 'Status presets'], ['clock', 'Clock'], ['nowPlaying', 'Now playing'],
   ['world', 'World / instance'], ['stats', 'Component stats'], ['network', 'Network'],
   ['heartRate', 'Heart rate'], ['window', 'Window activity'], ['discord', 'Discord voice'],
+  ['ton', 'Terrors of Nowhere'],
   ['tiktok', 'TikTok followers'], ['twitch', 'Twitch followers'], ['kick', 'Kick followers']
 ]
 function buildModeGrid (savedModes) {
@@ -490,6 +491,180 @@ api.on('window:update', s => {
   composer.update({ window: s.title, windowApp: s.app })
 })
 $('enableWindow').addEventListener('change', e => { setPill('winState', e.target.checked, 'on'); e.target.checked ? api.windowStart() : api.windowStop(); api.saveSetting('windowEnabled', e.target.checked) })
+
+// ToNSaveManager (Terrors of Nowhere)
+function tonPortVal () { const p = parseInt($('tonPort') && $('tonPort').value, 10); return Number.isFinite(p) && p > 0 ? p : 11398 }
+
+// Local milestone achievements derived from the lifetime stats ToNSaveManager
+// reports (it has no native achievement feed). Each unlocks when its stat crosses
+// the goal; lifetime stats only ever go up, so unlocks are permanent.
+const TON_ACHIEVEMENTS = [
+  { icon: '🩸', name: 'First Steps', desc: 'Play your first round', val: s => s.rounds, goal: 1 },
+  { icon: '🎯', name: 'Getting the Hang', desc: 'Play 10 rounds', val: s => s.rounds, goal: 10 },
+  { icon: '💯', name: 'Centurion', desc: 'Play 100 rounds', val: s => s.rounds, goal: 100 },
+  { icon: '🏆', name: 'Veteran', desc: 'Play 500 rounds', val: s => s.rounds, goal: 500 },
+  { icon: '🛡️', name: 'Survivor', desc: 'Survive 10 rounds', val: s => s.survivals, goal: 10 },
+  { icon: '🛡️', name: 'Hardened', desc: 'Survive 50 rounds', val: s => s.survivals, goal: 50 },
+  { icon: '👑', name: 'Untouchable', desc: 'Survive 100 rounds', val: s => s.survivals, goal: 100 },
+  { icon: '☠️', name: 'It Happens', desc: 'Die for the first time', val: s => s.deaths, goal: 1 },
+  { icon: '💀', name: 'Pain Tolerance', desc: 'Die 50 times', val: s => s.deaths, goal: 50 },
+  { icon: '🤕', name: 'Damage Sponge', desc: 'Take 10,000 damage', val: s => s.damageTaken, goal: 10000 },
+  { icon: '🧱', name: 'Iron Will', desc: 'Take 50,000 damage', val: s => s.damageTaken, goal: 50000 },
+  { icon: '👊', name: 'Stunner', desc: 'Stun terrors 10 times', val: s => s.stunsAll, goal: 10 },
+  { icon: '💥', name: 'Stun Master', desc: 'Stun terrors 50 times', val: s => s.stunsAll, goal: 50 },
+  { icon: '🥇', name: 'Combo King', desc: 'Stun 5+ in a single round', val: s => s.topStunsAll, goal: 5 },
+  { icon: '🌗', name: 'Coin Flip', desc: '50% survival rate (20+ rounds)', val: s => (s.rounds >= 20 ? Math.round((s.survivals / s.rounds) * 100) : 0), goal: 50 }
+]
+let tonUnlockedSeen = null // Set of names already unlocked, to detect fresh unlocks
+
+function renderTonStats (s) {
+  const el = $('tonStatsGrid'); if (!el) return
+  const wr = s.rounds ? Math.round((s.survivals / s.rounds) * 100) + '%' : '—'
+  const rows = [
+    ['Rounds', (s.rounds || 0).toLocaleString()], ['Survivals', (s.survivals || 0).toLocaleString()],
+    ['Deaths', (s.deaths || 0).toLocaleString()], ['Win rate', wr],
+    ['Damage taken', (s.damageTaken || 0).toLocaleString()], ['Stuns', (s.stunsAll || 0).toLocaleString()],
+    ['Best stuns/round', (s.topStunsAll || 0).toLocaleString()],
+    ['This session', `${s.sessionSurvivals || 0}/${s.sessionRounds || 0} survived · ${s.sessionStuns || 0} stuns`]
+  ]
+  el.innerHTML = rows.map(([k, v]) =>
+    `<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0"><span class="muted">${k}</span><b>${v}</b></div>`
+  ).join('')
+}
+
+function renderTonAchievements (s) {
+  const el = $('tonAchievements'); if (!el) return
+  const computed = TON_ACHIEVEMENTS.map(a => {
+    const v = a.val(s) || 0
+    return { ...a, value: v, unlocked: v >= a.goal, pct: Math.min(100, Math.round((v / a.goal) * 100)) }
+  })
+  const done = computed.filter(a => a.unlocked).length
+  // Detect freshly-unlocked achievements after the first render of a session.
+  const nowSet = new Set(computed.filter(a => a.unlocked).map(a => a.name))
+  if (tonUnlockedSeen) {
+    computed.filter(a => a.unlocked && !tonUnlockedSeen.has(a.name))
+      .forEach(a => setText('tonOut', `🏆 Achievement unlocked: ${a.icon} ${a.name}!`))
+  }
+  tonUnlockedSeen = nowSet
+  const badge = a => {
+    const title = `${a.desc} (${a.value.toLocaleString()}/${a.goal.toLocaleString()})`
+    const style = a.unlocked
+      ? 'background:var(--accent,#7c5cff);color:#fff;border:1px solid transparent'
+      : 'opacity:.55;border:1px solid var(--line,#333);background:transparent'
+    const label = a.unlocked ? `✓ ${a.icon} ${a.name}` : `🔒 ${a.icon} ${a.name} · ${a.pct}%`
+    return `<span title="${title}" style="display:inline-block;padding:3px 8px;border-radius:10px;font-size:.72rem;margin:3px 4px 0 0;${style}">${label}</span>`
+  }
+  const unlocked = computed.filter(a => a.unlocked)
+  const locked = computed.filter(a => !a.unlocked)
+  const section = (heading, list) => list.length
+    ? `<div class="muted" style="font-size:.72rem;margin:8px 0 2px">${heading}</div>${list.map(badge).join('')}`
+    : ''
+  el.innerHTML =
+    `<div class="muted" style="font-size:.74rem;margin-bottom:2px">Achievements · ${done}/${TON_ACHIEVEMENTS.length} unlocked</div>` +
+    section(`✓ Unlocked (${unlocked.length})`, unlocked) +
+    section(`🔒 Locked (${locked.length})`, locked)
+}
+
+api.on('ton:update', s => {
+  setPill('tonState', s.connected, s.roundActive ? 'in round' : 'connected', s.error ? 'error' : 'offline')
+  if (s.connected) {
+    const live = s.roundActive ? `${[s.roundType, s.terror].filter(Boolean).join(' · ') || 'Round'} · ${s.alive ? 'Alive' : 'Dead'}` : 'In lobby'
+    setText('tonOut', `${live} · 👥 ${s.players} · ${s.survivals}/${s.rounds} survived · ☠ ${s.deaths}`)
+  } else {
+    setText('tonOut', s.error || 'Waiting for ToNSaveManager… (enable its WebSocket API)')
+  }
+  renderTonStats(s)
+  renderTonAchievements(s)
+  composer.update({
+    tonConnected: !!s.connected, tonRoundActive: !!s.roundActive,
+    tonRound: s.roundType || '', tonTerror: s.terror || '', tonMap: s.map || '',
+    tonAlive: !!s.alive, tonPlayers: s.players || 0,
+    tonRounds: s.rounds || 0, tonDeaths: s.deaths || 0, tonSurvivals: s.survivals || 0,
+    tonDamage: s.damageTaken || 0, tonStuns: s.stunsAll || 0
+  })
+})
+$('enableTon').addEventListener('change', e => {
+  setPill('tonState', e.target.checked, 'on') // ton:update will refine to connected / in round
+  e.target.checked ? api.tonStart({ port: tonPortVal() }) : api.tonStop()
+  api.saveSetting('tonEnabled', e.target.checked)
+})
+if ($('tonPort')) $('tonPort').addEventListener('change', e => {
+  api.saveSetting('tonPort', tonPortVal())
+  if ($('enableTon').checked) api.tonStart({ port: tonPortVal() }) // reconnect on the new port
+})
+
+/* ---------------- ToN Reference tab (embedded boards + offline cache + player data) ---------------- */
+const tonEsc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+let tonWebLoaded = false
+let tonCacheData = null
+
+function tonSetWeb (url) { const wv = $('tonWeb'); if (wv) { wv.src = url; tonWebLoaded = true } }
+document.querySelectorAll('#tonref [data-tonurl]').forEach(b => b.addEventListener('click', () => tonSetWeb(b.dataset.tonurl)))
+
+function renderTonCache (filter) {
+  const board = $('tonAchBoard'); if (!board) return
+  const list = (tonCacheData && tonCacheData.achievements) || []
+  const q = (filter || '').trim().toLowerCase()
+  const filtered = q ? list.filter(a => `${a.name} ${a.unlock} ${a.flavor}`.toLowerCase().includes(q)) : list
+  board.innerHTML = filtered.slice(0, 300).map(a =>
+    `<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--line,#222)" title="${tonEsc(a.tip)}">
+       <img src="${tonEsc(a.img)}" loading="lazy" decoding="async" style="width:38px;height:38px;border-radius:6px;object-fit:cover;flex:0 0 auto" onerror="this.style.visibility='hidden'"/>
+       <div style="min-width:0"><b style="font-size:.82rem">${tonEsc(a.name)}</b>
+       <div class="muted" style="font-size:.74rem">${tonEsc(a.unlock || a.flavor || '')}</div></div>
+     </div>`).join('') || '<div class="muted">No matches.</div>'
+}
+
+async function loadTonCache () {
+  tonCacheData = await api.tonData()
+  const n = tonCacheData ? (tonCacheData.achievements || []).length : 0
+  const t = tonCacheData ? (tonCacheData.terrors || []).length : 0
+  setPill('tonCacheState', n > 0, `${n} ach`)
+  const when = tonCacheData && tonCacheData.fetchedAt ? new Date(tonCacheData.fetchedAt).toLocaleString() : 'never'
+  setText('tonCacheInfo', `${n} achievements · ${t} terrors · cached ${when}`)
+  renderTonCache($('tonAchSearch') ? $('tonAchSearch').value : '')
+}
+
+async function loadTonRoundHistory () {
+  const rows = await api.tonHistory(200)
+  const el = $('tonRoundHistory'); if (!el) return
+  if (!rows.length) { el.textContent = 'No rounds recorded yet.'; return }
+  el.innerHTML = rows.map(r => {
+    const res = r.result === 'Survived' ? '✅' : (r.result === 'Died' ? '☠' : '·')
+    return `<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px solid var(--line,#222)">
+      <span>${res} ${tonEsc(r.roundType || 'Round')}${r.terror ? ' · ' + tonEsc(r.terror) : ''}</span>
+      <span class="muted">${tonEsc(r.map || '')} · ${new Date(r.ts).toLocaleDateString()}</span></div>`
+  }).join('')
+}
+
+async function loadTonPlayer () {
+  const s = await api.tonGet()
+  const seen = await api.tonSeen()
+  const wr = s.rounds ? Math.round((s.survivals / s.rounds) * 100) + '%' : '—'
+  setText('tonPlayerStats', `Rounds ${s.rounds || 0} · Survived ${s.survivals || 0} (${wr}) · Deaths ${s.deaths || 0} · Stuns ${s.stunsAll || 0} · Damage ${(s.damageTaken || 0).toLocaleString()}`)
+  const terrors = seen.terrors || []
+  const total = tonCacheData ? (tonCacheData.terrors || []).length : 0
+  $('tonEncounters').innerHTML =
+    `<div class="muted" style="font-size:.78rem;margin-bottom:4px">👹 Terrors encountered: ${terrors.length}${total ? '/' + total : ''} · 🗺 Maps seen: ${(seen.maps || []).length}</div>` +
+    terrors.map(t => `<span class="pill" style="margin:2px">${tonEsc(t)}</span>`).join('')
+  loadTonRoundHistory()
+}
+
+if ($('tonAchSearch')) $('tonAchSearch').addEventListener('input', e => renderTonCache(e.target.value))
+if ($('tonRefresh')) $('tonRefresh').addEventListener('click', async () => {
+  setText('tonCacheInfo', 'Refreshing from terror.moe…')
+  try { await api.tonDataRefresh(); await loadTonCache() } catch (_) { setText('tonCacheInfo', 'Refresh failed (offline?)') }
+})
+if ($('tonExport')) $('tonExport').addEventListener('click', async () => { const r = await api.tonExport(); if (r && r.ok) setText('tonCacheInfo', 'Exported to ' + r.path) })
+if ($('tonImport')) $('tonImport').addEventListener('click', async () => { const r = await api.tonImport(); if (r && r.ok) { setText('tonCacheInfo', `Imported · ${r.terrors} terrors seen`); loadTonPlayer() } })
+
+api.on('ton:round', () => { loadTonRoundHistory(); loadTonPlayer() })
+
+const tonRefBtn = document.querySelector('[data-tab="tonref"]')
+if (tonRefBtn) tonRefBtn.addEventListener('click', () => {
+  if (!tonWebLoaded) tonSetWeb('https://terror.moe/achievements/')
+  loadTonCache(); loadTonPlayer()
+  setPill('tonRefState', !!($('enableTon') && $('enableTon').checked), 'live')
+})
 
 api.on('vr:update', s => {
   setPill('vrState', s.available, 'on')
@@ -1865,6 +2040,8 @@ async function init () {
   if (await api.getSetting('statsEnabled', false)) { $('enableStats').checked = true; setPill('statsState', true, 'on'); api.statsStart(5000) }
   if (await api.getSetting('netEnabled', false)) { $('enableNet').checked = true; setPill('netState', true, 'on'); api.netStart({ intervalMs: 5000 }) }
   if (await api.getSetting('windowEnabled', false)) { $('enableWindow').checked = true; setPill('winState', true, 'on'); api.windowStart() }
+  if ($('tonPort')) $('tonPort').value = await api.getSetting('tonPort', 11398)
+  if (await api.getSetting('tonEnabled', false)) { $('enableTon').checked = true; setPill('tonState', true, 'on'); api.tonStart({ port: tonPortVal() }) }
   $('tiktokUser').value = await api.getSetting('tiktokUser', '')
   $('tiktokSignKey').value = await api.getSetting('tiktokSignKey', '')
   $('kickSlug').value = await api.getSetting('kickSlug', '')
@@ -1976,7 +2153,7 @@ async function init () {
 
   // ---- Startup / auto-start ----
   const as = await api.getSetting('autostart', {})
-  const AUTO_IDS = ['autoMinimized', 'autoDiscord', 'autoHeartrate', 'autoStats', 'autoNet', 'autoWindow', 'autoTwitch', 'autoKick']
+  const AUTO_IDS = ['autoMinimized', 'autoDiscord', 'autoHeartrate', 'autoStats', 'autoNet', 'autoWindow', 'autoTon', 'autoTwitch', 'autoKick']
   AUTO_IDS.forEach(id => { $(id).checked = !!as[id] })
   try { $('autoLaunch').checked = await api.getLaunchOnLogin() } catch (_) {}
 
@@ -1995,6 +2172,7 @@ async function init () {
   if (as.autoStats) fireToggle('enableStats')
   if (as.autoNet) fireToggle('enableNet')
   if (as.autoWindow) fireToggle('enableWindow')
+  if (as.autoTon) fireToggle('enableTon')
   if (as.autoTwitch) $('twitchConnect').click()
   if (as.autoKick) $('kickConnect').click()
 
