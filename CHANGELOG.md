@@ -14,6 +14,11 @@ This project follows [Semantic Versioning](https://semver.org/).
   (achievements + terror roster) and tontrack.me (locations / items / rounds),
   stored locally so the board works offline, and auto-refreshed (re-fetching
   picks up anything new the sites add). Includes a manual "Refresh" button.
+- **Cached icons + locked/unlocked board** — all achievement & terror art is
+  downloaded to a local icon cache. Entries render **grayed-out when locked** and
+  in **full colour when unlocked**, with the "how to unlock" hint shown. Terrors &
+  maps auto-unlock from live play; **click any entry to toggle** its unlocked
+  state (persisted). Each category shows an `X/Y unlocked` count.
 - **Offline round history** — every finished round (type, terror, map,
   survived/died, duration) is saved locally and shown as a history list.
 - **Terror/map encounters** — tracks how many distinct terrors you've "bumped

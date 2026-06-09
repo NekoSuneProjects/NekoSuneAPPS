@@ -282,6 +282,24 @@ ipcMain.handle('ton:dataRefresh', async () => {
 ipcMain.handle('ton:seen', () => ({ terrors: [...tonSeenTerrors], maps: [...tonSeenMaps] }))
 ipcMain.handle('app:openExternal', (e, url) => { if (/^https?:\/\//i.test(url || '')) shell.openExternal(url); return true })
 
+// Manually-marked unlocks (ToN's API has no per-achievement feed). Terrors/maps
+// also auto-unlock from live encounters (tonSeen*); the rest are user-toggled.
+const tonUnlockAch = new Set(settings.get('tonUnlockAch', []))
+const tonUnlockItems = new Set(settings.get('tonUnlockItems', []))
+const tonUnlockRounds = new Set(settings.get('tonUnlockRounds', []))
+const tonSetFor = cat => ({ achievements: tonUnlockAch, items: tonUnlockItems, rounds: tonUnlockRounds, terrors: tonSeenTerrors, locations: tonSeenMaps }[cat])
+const tonKeyFor = cat => ({ achievements: 'tonUnlockAch', items: 'tonUnlockItems', rounds: 'tonUnlockRounds', terrors: 'tonSeenTerrors', locations: 'tonSeenMaps' }[cat])
+ipcMain.handle('ton:unlocks', () => ({
+  achievements: [...tonUnlockAch], items: [...tonUnlockItems], rounds: [...tonUnlockRounds],
+  terrors: [...tonSeenTerrors], locations: [...tonSeenMaps]
+}))
+ipcMain.handle('ton:toggleUnlock', (e, { category, key } = {}) => {
+  const set = tonSetFor(category); if (!set || !key) return false
+  if (set.has(key)) set.delete(key); else set.add(key)
+  settings.set(tonKeyFor(category), [...set])
+  return set.has(key)
+})
+
 // Export / import the player's ToN data (stats + encounters + round history).
 ipcMain.handle('ton:export', async () => {
   const r = await dialog.showSaveDialog({ defaultPath: 'ton-player-data.json', filters: [{ name: 'JSON', extensions: ['json'] }] })

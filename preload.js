@@ -40,6 +40,8 @@ window.electronAPI = {
   tonSeen: () => ipcRenderer.invoke('ton:seen'),
   tonExport: () => ipcRenderer.invoke('ton:export'),
   tonImport: () => ipcRenderer.invoke('ton:import'),
+  tonUnlocks: () => ipcRenderer.invoke('ton:unlocks'),
+  tonToggleUnlock: (category, key) => ipcRenderer.invoke('ton:toggleUnlock', { category, key }),
   openExternal: url => ipcRenderer.invoke('app:openExternal', url),
 
   // tiktok

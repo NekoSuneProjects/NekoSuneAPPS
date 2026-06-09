@@ -598,54 +598,83 @@ const tonEsc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '
 let tonCacheData = null
 let tonCat = 'achievements'
 let tonSeenData = { terrors: [], maps: [] }
+// Unlock state per category (Sets hold both exact + lowercased names for matching).
+let tonUnlock = { achievements: new Set(), items: new Set(), rounds: new Set(), terrors: new Set(), locations: new Set() }
+const tonToSet = arr => { const s = new Set(); (arr || []).forEach(x => { s.add(x); s.add(String(x).toLowerCase()) }); return s }
+const tonIsUnlocked = (cat, name) => { const s = tonUnlock[cat]; return !!s && (s.has(name) || s.has(String(name).toLowerCase())) }
 
-function tonSwatch (colors) {
-  const c = (colors && colors[0]) || '#7c5cff'
-  return `<span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${tonEsc(c)};flex:0 0 auto"></span>`
+// Local cached icon (downloaded) with the remote URL as fallback; grayed when locked.
+function tonImg (e, unlocked, size) {
+  const remote = e.img || ''
+  let src = remote
+  if (e.icon && tonCacheData && tonCacheData.iconDir) src = 'file:///' + (tonCacheData.iconDir + '/' + e.icon).replace(/\\/g, '/').replace(/^\/+/, '')
+  const filter = unlocked ? '' : 'filter:grayscale(1) brightness(.45);'
+  return `<img src="${tonEsc(src)}" data-remote="${tonEsc(remote)}" loading="lazy" decoding="async"
+     onerror="if(this.dataset.remote&&this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.style.visibility='hidden'}"
+     style="width:${size}px;height:${size}px;border-radius:8px;object-fit:cover;flex:0 0 auto;${filter}"/>`
 }
-function tonRow (inner, title) {
-  return `<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line,#222)"${title ? ` title="${tonEsc(title)}"` : ''}>${inner}</div>`
+function tonSwatch (colors, unlocked) {
+  const c = unlocked ? ((colors && colors[0]) || '#7c5cff') : '#555'
+  return `<span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${tonEsc(c)};flex:0 0 auto"></span>`
 }
 
 function renderTonBoard () {
   const board = $('tonBoard'); if (!board) return
   const d = tonCacheData || {}
   const q = ($('tonSearch') ? $('tonSearch').value : '').trim().toLowerCase()
-  const seenT = new Set((tonSeenData.terrors || []).map(x => x.toLowerCase()))
-  const seenM = new Set((tonSeenData.maps || []).map(x => x.toLowerCase()))
+  const all = d[tonCat] || []
+  const total = all.length
+  const unlockedTotal = all.filter(e => tonIsUnlocked(tonCat, e.name)).length
+  const rowOpen = (key, extra, title) => `<div class="tonItem" data-cat="${tonCat}" data-key="${tonEsc(key)}"${title ? ` title="${tonEsc(title)}"` : ''} style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line,#222);cursor:pointer;${extra || ''}">`
   let html = ''
   if (tonCat === 'achievements') {
-    const list = (d.achievements || []).filter(a => !q || `${a.name} ${a.unlock} ${a.flavor}`.toLowerCase().includes(q))
-    html = list.map(a => tonRow(
-      `<img src="${tonEsc(a.img)}" loading="lazy" decoding="async" style="width:38px;height:38px;border-radius:6px;object-fit:cover;flex:0 0 auto" onerror="this.style.visibility='hidden'"/>
-       <div style="min-width:0"><b style="font-size:.82rem">${tonEsc(a.name)}</b>
-       <div class="muted" style="font-size:.74rem">${tonEsc(a.unlock || a.flavor || '')}</div></div>`, a.tip)).join('')
+    const list = all.filter(a => !q || `${a.name} ${a.unlock} ${a.flavor}`.toLowerCase().includes(q))
+    html = list.map(a => {
+      const u = tonIsUnlocked('achievements', a.name)
+      return rowOpen(a.name, u ? '' : 'opacity:.85', a.tip) +
+        `${tonImg(a, u, 40)}
+         <div style="min-width:0;flex:1"><b style="font-size:.82rem">${u ? '✓ ' : '🔒 '}${tonEsc(a.name)}</b>
+         <div class="muted" style="font-size:.74rem"><b>How to unlock:</b> ${tonEsc(a.unlock || a.flavor || '—')}</div></div></div>`
+    }).join('')
   } else if (tonCat === 'terrors') {
-    const list = (d.terrors || []).filter(t => !q || t.name.toLowerCase().includes(q))
+    const list = all.filter(t => !q || t.name.toLowerCase().includes(q))
     html = '<div style="display:flex;flex-wrap:wrap;gap:8px">' + list.map(t => {
-      const seen = seenT.has(t.name.toLowerCase())
-      return `<div title="${tonEsc(t.name)}${seen ? ' (encountered)' : ''}" style="width:80px;text-align:center;${seen ? '' : 'opacity:.6'}">
-        <img src="${tonEsc(t.img)}" loading="lazy" decoding="async" style="width:64px;height:64px;border-radius:8px;object-fit:cover;border:1px solid ${seen ? 'var(--accent,#7c5cff)' : 'var(--line,#333)'}" onerror="this.style.visibility='hidden'"/>
-        <div style="font-size:.68rem;margin-top:2px">${seen ? '✓ ' : ''}${tonEsc(t.name)}</div></div>`
+      const u = tonIsUnlocked('terrors', t.name)
+      return `<div class="tonItem" data-cat="terrors" data-key="${tonEsc(t.name)}" title="${tonEsc(t.name)}${u ? ' (encountered — click to toggle)' : ' (click if you have met it)'}" style="width:80px;text-align:center;cursor:pointer;${u ? '' : 'opacity:.65'}">
+        ${tonImg(t, u, 64).replace('border-radius:8px;', `border-radius:8px;border:1px solid ${u ? 'var(--accent,#7c5cff)' : 'var(--line,#333)'};`)}
+        <div style="font-size:.68rem;margin-top:2px">${u ? '✓ ' : '🔒 '}${tonEsc(t.name)}</div></div>`
     }).join('') + '</div>'
   } else if (tonCat === 'items') {
-    const list = (d.items || []).filter(i => !q || `${i.name} ${i.type}`.toLowerCase().includes(q))
-    html = list.map(i => tonRow(`<b style="font-size:.82rem;flex:1">${tonEsc(i.name)}</b><span class="pill" style="font-size:.68rem">${tonEsc(i.type)}</span>`)).join('')
+    const list = all.filter(i => !q || `${i.name} ${i.type}`.toLowerCase().includes(q))
+    html = list.map(i => {
+      const u = tonIsUnlocked('items', i.name)
+      return rowOpen(i.name, u ? '' : 'opacity:.7') + `<span style="flex:0 0 auto">${u ? '✓' : '🔒'}</span><b style="font-size:.82rem;flex:1">${tonEsc(i.name)}</b><span class="pill" style="font-size:.68rem">${tonEsc(i.type)}</span></div>`
+    }).join('')
   } else if (tonCat === 'locations') {
-    const list = (d.locations || []).filter(l => !q || l.name.toLowerCase().includes(q))
+    const list = all.filter(l => !q || l.name.toLowerCase().includes(q))
     html = list.map(l => {
-      const seen = seenM.has(l.name.toLowerCase())
-      return tonRow(`${tonSwatch(l.colors)}<b style="font-size:.82rem;flex:1">${tonEsc(l.name)}</b>${seen ? '<span class="pill" style="font-size:.68rem">✓ visited</span>' : ''}`)
+      const u = tonIsUnlocked('locations', l.name)
+      return rowOpen(l.name, u ? '' : 'opacity:.7') + `${tonSwatch(l.colors, u)}<b style="font-size:.82rem;flex:1">${u ? '✓ ' : '🔒 '}${tonEsc(l.name)}</b>${u ? '<span class="pill" style="font-size:.68rem">visited</span>' : ''}</div>`
     }).join('')
   } else if (tonCat === 'rounds') {
-    const list = (d.rounds || []).filter(r => !q || r.name.toLowerCase().includes(q))
-    html = list.map(r => tonRow(`${tonSwatch(r.colors)}<b style="font-size:.82rem">${tonEsc(r.name)}</b>`)).join('')
+    const list = all.filter(r => !q || r.name.toLowerCase().includes(q))
+    html = list.map(r => {
+      const u = tonIsUnlocked('rounds', r.name)
+      return rowOpen(r.name, u ? '' : 'opacity:.7') + `${tonSwatch(r.colors, u)}<b style="font-size:.82rem">${u ? '✓ ' : '🔒 '}${tonEsc(r.name)}</b></div>`
+    }).join('')
   }
-  board.innerHTML = html || '<div class="muted">No matches.</div>'
+  const header = `<div class="muted" style="font-size:.72rem;margin-bottom:6px">${unlockedTotal}/${total} unlocked · click an entry to toggle ${tonCat === 'terrors' || tonCat === 'locations' ? '(auto-marked from live play)' : ''}</div>`
+  board.innerHTML = header + (html || '<div class="muted">No matches.</div>')
+}
+
+async function loadTonUnlocks () {
+  const u = await api.tonUnlocks()
+  tonUnlock = { achievements: tonToSet(u.achievements), items: tonToSet(u.items), rounds: tonToSet(u.rounds), terrors: tonToSet(u.terrors), locations: tonToSet(u.locations) }
 }
 
 async function loadTonCache () {
   tonCacheData = await api.tonData()
+  await loadTonUnlocks()
   const d = tonCacheData || {}
   const counts = `${(d.achievements || []).length} ach · ${(d.terrors || []).length} terrors · ${(d.items || []).length} items · ${(d.locations || []).length} maps · ${(d.rounds || []).length} rounds`
   setPill('tonCacheState', (d.achievements || []).length > 0, 'cached')
@@ -676,9 +705,21 @@ async function loadTonPlayer () {
   $('tonEncounters').innerHTML =
     `<div class="muted" style="font-size:.78rem;margin-bottom:4px">👹 Terrors encountered: ${terrors.length}${total ? '/' + total : ''} · 🗺 Maps seen: ${(tonSeenData.maps || []).length}</div>` +
     terrors.map(t => `<span class="pill" style="margin:2px">${tonEsc(t)}</span>`).join('')
-  if (tonCat === 'terrors' || tonCat === 'locations') renderTonBoard() // refresh ✓ markers
+  if (tonCat === 'terrors' || tonCat === 'locations') { await loadTonUnlocks(); renderTonBoard() } // refresh ✓ markers
   loadTonRoundHistory()
 }
+
+// Click an entry to toggle its unlocked state (persisted); grayscale ↔ colour.
+if ($('tonBoard')) $('tonBoard').addEventListener('click', async ev => {
+  const el = ev.target.closest('.tonItem'); if (!el) return
+  const cat = el.dataset.cat
+  const key = el.dataset.key
+  const now = await api.tonToggleUnlock(cat, key)
+  const s = tonUnlock[cat]
+  if (now) { s.add(key); s.add(key.toLowerCase()) } else { s.delete(key); s.delete(key.toLowerCase()) }
+  renderTonBoard()
+  if (cat === 'terrors' || cat === 'locations') loadTonPlayer() // keep encounter counts in sync
+})
 
 document.querySelectorAll('#tonref .tonCat').forEach(b => b.addEventListener('click', () => {
   document.querySelectorAll('#tonref .tonCat').forEach(x => x.classList.remove('active'))

@@ -20,6 +20,7 @@ const MAX_AGE_MS = 24 * 60 * 60 * 1000
 const UA = { 'User-Agent': 'Mozilla/5.0 (NekoSuneAPPS ToN cache)' }
 
 let cachePath = ''
+let iconDir = ''
 let cache = null
 let refreshing = false
 
@@ -89,6 +90,39 @@ async function fetchText (url) {
   return String(data || '')
 }
 
+// Run async tasks with limited concurrency.
+async function pool (tasks, n = 8) {
+  const q = [...tasks]
+  await Promise.all(Array.from({ length: n }, async () => {
+    while (q.length) { const t = q.shift(); try { await t() } catch (_) { /* ignore one icon */ } }
+  }))
+}
+
+async function downloadIcon (url, file) {
+  const r = await axios.get(url, { responseType: 'arraybuffer', timeout: 20000, headers: UA })
+  fs.writeFileSync(file, Buffer.from(r.data))
+}
+
+// Download achievement + terror art into the local icon cache so the board has
+// offline previews. Sets each entry's `icon` (filename) once the file exists.
+async function ensureIcons () {
+  if (!iconDir || !cache) return
+  try { fs.mkdirSync(iconDir, { recursive: true }) } catch (_) {}
+  const targets = []
+  const collect = (arr, prefix) => (arr || []).forEach(e => {
+    if (!e.img) return
+    const fn = prefix + '_' + e.img.split('/').pop().split('?')[0].replace(/[^\w.-]/g, '_')
+    targets.push({ e, fn, fp: path.join(iconDir, fn) })
+  })
+  collect(cache.achievements, 'a')
+  collect(cache.terrors, 't')
+  const jobs = targets.filter(t => !fs.existsSync(t.fp)).map(t => () => downloadIcon(t.e.img, t.fp))
+  if (jobs.length) await pool(jobs, 8)
+  let changed = false
+  targets.forEach(t => { if (fs.existsSync(t.fp) && t.e.icon !== t.fn) { t.e.icon = t.fn; changed = true } })
+  if (changed && cachePath) { try { fs.writeFileSync(cachePath, JSON.stringify(cache)) } catch (_) {} }
+}
+
 async function refresh () {
   if (refreshing) return cache
   refreshing = true
@@ -105,9 +139,10 @@ async function refresh () {
     const pick = (fresh, old) => (fresh && fresh.length ? fresh : (old || []))
     if (!achievements.length && !terrors.length && !track.locations.length && cache) return cache
     cache = {
-      version: 2,
+      version: 3,
       fetchedAt: Date.now(),
       sources: [BASE, 'https://tontrack.me'],
+      iconDir,
       achievements: pick(achievements, prev.achievements),
       terrors: pick(terrors, prev.terrors),
       locations: pick(track.locations, prev.locations),
@@ -115,6 +150,7 @@ async function refresh () {
       rounds: pick(track.rounds, prev.rounds)
     }
     if (cachePath) { try { fs.writeFileSync(cachePath, JSON.stringify(cache)) } catch (e) { console.warn('ton-cache write failed:', e.message) } }
+    ensureIcons().catch(err => console.warn('ton-icon cache:', err.message)) // background download
     return cache
   } finally {
     refreshing = false
@@ -123,9 +159,13 @@ async function refresh () {
 
 function init (userDataDir) {
   cachePath = path.join(userDataDir || '.', 'ton-cache.json')
+  iconDir = path.join(userDataDir || '.', 'ton-icons')
+  try { fs.mkdirSync(iconDir, { recursive: true }) } catch (_) {}
   try { if (fs.existsSync(cachePath)) cache = JSON.parse(fs.readFileSync(cachePath, 'utf8')) } catch (_) { cache = null }
-  const stale = !cache || !cache.fetchedAt || (Date.now() - cache.fetchedAt) > MAX_AGE_MS
+  if (cache) cache.iconDir = iconDir
+  const stale = !cache || !cache.fetchedAt || cache.version < 3 || (Date.now() - cache.fetchedAt) > MAX_AGE_MS
   if (stale) refresh().catch(err => console.warn('ton-cache refresh:', err.message))
+  else ensureIcons().catch(err => console.warn('ton-icon cache:', err.message)) // fill any missing icons
   return cache
 }
 
