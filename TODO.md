@@ -85,6 +85,26 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 - [ ] **Friend-picker modal** (searchable, multi-select) — reused by instance + group invite
 - [ ] **Confirm (Yes/No) modal** — reused by avatar delete + destructive actions
 
+## 🟣 VRCNext-specific (next session)
+Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gaps not already listed above.
+- [ ] **Profile editor (your own)** — change status colour (join/active/ask/busy), status text,
+  bio, pronouns, bio/social links, profile picture & banner (`PUT /users/{id}`)
+- [ ] **Messenger / message-slot editor** — edit the 12 invite & response message slots
+  (`GET/PUT /message/{userId}/{messageType}/{slot}`) and send them
+- [ ] **Multi-Invite** — invite many friends to your instance at once (friend-picker multi-select)
+- [ ] **Inventory** — view/manage Photos, Gallery, custom **icons / emojis / stickers / prints**
+- [ ] **Avatar browse via avtrdb.com** (paginated public avatar search) → switch/favourite
+- [ ] **Create group instances** (covered above) + **group posts** + **group image gallery**
+- [ ] **Media Library** — local screenshot gallery with folders + VRChat picture metadata
+- [ ] **Configured Start** — launch VRChat together with companion apps (SlimeVR, VRCFaceTracking, …)
+- [ ] **VRCVideoCacher** — install/update + start/stop the local proxy (beyond our yt-dlp fix)
+- [ ] **Design customization** — dashboard welcome-screen background + launcher accent colour
+  (note: we intentionally ship fixed green + seasonal; make this opt-in)
+- [ ] **Fast-Fetch cache** — cache profiles/worlds/groups locally for instant reopen
+- [ ] **Right panel: Favorites section** — add a Favorites group to the friends rail (we have
+  Same World / In-Game / On Web / Offline)
+- [ ] **Crash detect + auto-rejoin** (also a VRCX feature) — relaunch VRChat into last instance
+
 ## Our pending clusters (from the build plan)
 
 ### VR / heavy ⚠️ (need native or large deps — can't test in sandbox)
