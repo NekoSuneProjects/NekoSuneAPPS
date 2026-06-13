@@ -3,6 +3,21 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.10] - 2026-06-13
+
+### Changed
+- **VR-friendly save copy.** Tap anywhere on a backup row to copy its code to the
+  clipboard — no need to highlight text (which you can't do in VR). Removed the
+  read-only code textarea and the advanced raw decode/diff tools from the Save backups
+  view; importing already reads your achievements automatically.
+
+### Fixed
+- **World now shows after an app restart/update.** The right-rail world + radar are
+  primed from the current VRChat log on startup, instead of only updating on the next
+  world change (which left it stuck on "Not in a world").
+- **Avatar falls back to a VRChat icon** in the right-rail profile when you have no
+  profile picture (or it fails to load), instead of the app logo / a broken image.
+
 ## [1.0.9] - 2026-06-13
 
 ### Changed

@@ -793,9 +793,9 @@ async function loadTonSaves () {
   setPill('tonSaveState', list.length > 0, `${list.length} saved`)
   tonFillDiffSelects(list)
   if (!list.length) { el.textContent = 'No saves captured yet — they appear when the game saves, or paste one above to import.'; return }
-  el.innerHTML = list.map(s => `<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;padding:3px 0;border-bottom:1px solid var(--line,#222)">
+  el.innerHTML = list.map(s => `<div class="tonSaveRow" data-ts="${s.ts}" title="Tap anywhere to copy this code" style="display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px;margin:4px 0;border:1px solid var(--line,#333);border-radius:8px;cursor:pointer">
       <span>💾 ${new Date(s.ts).toLocaleString()} <span class="muted">· ${s.length} chars</span></span>
-      <button class="btn ghost tonSaveCopy" data-ts="${s.ts}" style="padding:2px 8px;font-size:.72rem">Copy</button></div>`).join('')
+      <button class="btn tonSaveCopy" style="padding:4px 14px;font-size:.74rem;flex:none">Copy</button></div>`).join('')
 }
 // Populate the A/B decode/diff pickers. Default A = newest, B = next-newest
 // (so "Diff A → B" reads newest vs the one before it).
@@ -805,12 +805,17 @@ function tonFillDiffSelects (list) {
   if (a) { a.innerHTML = opts; if (list && list[0]) a.value = String(list[0].ts) }
   if (b) { b.innerHTML = opts; if (list && list[1]) b.value = String(list[1].ts) }
 }
+// Tap anywhere on a backup row to copy its code to the clipboard (VR-friendly — no
+// need to highlight the text).
 if ($('tonSavesList')) $('tonSavesList').addEventListener('click', async ev => {
-  const b = ev.target.closest('.tonSaveCopy'); if (!b) return
-  const code = await api.tonSaveCode(Number(b.dataset.ts))
-  if (code) { await api.clipboardWrite(code); if ($('tonSaveView')) $('tonSaveView').value = code; b.textContent = 'Copied ✓'; setTimeout(() => { b.textContent = 'Copy' }, 1500) }
+  const row = ev.target.closest('.tonSaveRow'); if (!row) return
+  const code = await api.tonSaveCode(Number(row.dataset.ts))
+  if (!code) return
+  await api.clipboardWrite(code)
+  const btn = row.querySelector('.tonSaveCopy')
+  if (btn) { btn.textContent = 'Copied ✓'; setTimeout(() => { btn.textContent = 'Copy' }, 1500) }
 })
-if ($('tonSavesClear')) $('tonSavesClear').addEventListener('click', async () => { await api.tonSavesClear(); loadTonSaves(); if ($('tonSaveView')) $('tonSaveView').value = '' })
+if ($('tonSavesClear')) $('tonSavesClear').addEventListener('click', async () => { await api.tonSavesClear(); loadTonSaves() })
 api.on('ton:save', s => { loadTonSaves(); setText('tonCacheInfo', `💾 Save backed up · ${new Date(s.ts).toLocaleTimeString()}`) })
 
 // Switch the board to the achievements view so freshly-applied unlocks are visible.
@@ -1023,7 +1028,7 @@ $('discordStop').addEventListener('click', async () => { await api.discordStop()
 // few seconds — only touch the DOM when something actually changed (perf).
 let _lastLoc = ''
 let _lastRadarSig = ''
-api.on('vrc:world', w => {
+function applyWorld (w) {
   if (w && w.inWorld && w.worldName) setText('discordWorldOut', `World: ${w.worldName}`)
   else if (w && w.inWorld) setText('discordWorldOut', 'World: (joining…)')
   else setText('discordWorldOut', 'World: not in a world')
@@ -1039,7 +1044,11 @@ api.on('vrc:world', w => {
     // Re-render the friends panel only when our instance actually changes.
     if (loc !== _lastLoc) { _lastLoc = loc; if (typeof renderRightbar === 'function' && rbFriendsCache.online && rbFriendsCache.online.length) renderRightbar() }
   }
-})
+}
+api.on('vrc:world', applyWorld)
+// Prime the world/radar from the current log on startup (the live event fires in the
+// main process before this window is listening, so fetch the current state directly).
+api.vrcGet().then(w => { if (w) applyWorld(w) }).catch(() => {})
 function renderRadar (w) {
   const players = (w && w.players) || []
   const sig = (w && w.inWorld ? '1' : '0') + ':' + players.join('|')
@@ -1930,7 +1939,7 @@ async function loadRightbar () {
     myUserId = me.user.id || ''
     setText('rbName', me.user.displayName || '—')
     setText('rbStatus', me.user.statusDescription || me.user.status || '')
-    if (me.user.userIcon || me.user.currentAvatarThumbnailImageUrl) $('rbAvatar').src = me.user.userIcon || me.user.currentAvatarThumbnailImageUrl
+    $('rbAvatar').src = me.user.userIcon || me.user.currentAvatarThumbnailImageUrl || 'assets/vrchat.png'
   }
   if (frOn && frOn.ok) rbFriendsCache.online = frOn.friends
   if (frOff && frOff.ok) rbFriendsCache.offline = frOff.friends

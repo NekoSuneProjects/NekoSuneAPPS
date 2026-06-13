@@ -537,41 +537,9 @@
                 <span class="muted" id="tonSaveImportMsg" style="font-size:.72rem"></span>
               </div>
             </div>
-            <div id="tonSavesList" style="max-height:200px;overflow:auto;margin-top:8px;font-size:.8rem">—</div>
-            <textarea id="tonSaveView" rows="3" placeholder="selected save code…" style="margin-top:8px;width:100%;font-family:monospace;font-size:.66rem" readonly></textarea>
+            <div class="muted" style="font-size:.72rem;margin-top:10px">Backed-up codes — tap <b>Copy</b> to put one on your clipboard (no need to highlight anything):</div>
+            <div id="tonSavesList" style="max-height:220px;overflow:auto;margin-top:6px;font-size:.8rem">—</div>
             <button class="btn ghost" id="tonSavesClear" style="margin-top:8px">Clear backups</button>
-            <details style="margin-top:10px">
-              <summary class="muted" style="cursor:pointer">🛠 Advanced — raw save inspector (developer · you don't need this)</summary>
-              <div class="muted" style="font-size:.72rem;margin:6px 0">
-                For developers only — importing already reads your achievements automatically. This shows
-                the raw decoded structure (records → fields) and can <b>diff two saves</b> to see which
-                bytes changed.
-              </div>
-              <div class="row" style="gap:6px;flex-wrap:wrap;align-items:center">
-                <span class="muted" style="font-size:.72rem">A</span>
-                <select id="tonDiffA" style="flex:1;min-width:110px;font-size:.72rem"></select>
-                <span class="muted" style="font-size:.72rem">B</span>
-                <select id="tonDiffB" style="flex:1;min-width:110px;font-size:.72rem"></select>
-              </div>
-              <div class="row" style="gap:6px;margin-top:6px">
-                <button class="btn ghost" id="tonDecodeBtn">Decode A</button>
-                <button class="btn ghost" id="tonDiffBtn">Diff A → B</button>
-              </div>
-              <pre id="tonDecodeOut" style="max-height:240px;overflow:auto;font-size:.66rem;background:var(--panel2,#1a1a1a);padding:8px;border-radius:8px;margin-top:8px;white-space:pre-wrap;word-break:break-all">—</pre>
-            </details>
-            <details style="margin-top:10px">
-              <summary class="muted" style="cursor:pointer">🔓 Re-apply achievements from a saved backup</summary>
-              <div class="muted" style="font-size:.72rem;margin:6px 0">
-                Importing a code already does this for you. Use this only to re-apply an <b>older saved
-                backup</b>: pick it as save <b>A</b> in the inspector above, then Decode &amp; Apply.
-              </div>
-              <div class="row" style="gap:6px;align-items:center;flex-wrap:wrap">
-                <button class="btn ghost" id="tonDecodeUnlockBtn">Decode A</button>
-                <button class="btn" id="tonApplyUnlockBtn" disabled>✓ Apply to board</button>
-              </div>
-              <div id="tonUnlockSummary" class="muted" style="font-size:.74rem;margin-top:6px"></div>
-              <div id="tonUnlockPreview" style="max-height:220px;overflow:auto;font-size:.72rem;margin-top:6px"></div>
-            </details>
           </div>
         </div>
       </section>
@@ -1206,7 +1174,7 @@
     <!-- Right friends panel -->
     <aside class="rightbar" id="rightbar">
       <div class="rb-profile">
-        <img id="rbAvatar" src="assets/logo.png" alt="" />
+        <img id="rbAvatar" src="assets/vrchat.png" alt="" onerror="this.onerror=null;this.src='assets/vrchat.png'" />
         <div class="meta" style="min-width:0">
           <div class="nm" id="rbName">Not logged in</div>
           <div class="muted" id="rbStatus" style="font-size:.74rem">VRChat tab → log in</div>
