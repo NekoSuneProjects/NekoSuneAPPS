@@ -29,12 +29,13 @@ This project follows [Semantic Versioning](https://semver.org/).
 - **Decode achievement unlocks → catch up board** — reverse-engineered the save
   format enough to read the **achievement bitfield** (200 unlocks packed into one
   big integer) out of an imported save. The Save backups panel can decode it,
-  **preview** the unlocked achievements with an **LSB/MSB bit-order toggle** to
-  verify against your real unlocks, then **Apply to board** to light up the matching
+  **preview** the unlocked achievements, then **Apply to board** to light up the matching
   achievements on the reference board. Only achievements that match a board entry
-  are marked — nothing is guessed, and you confirm the order before applying. (Other
-  unlock categories aren't reliably identifiable from a single save; use Save diff to
-  reverse-engineer those.)
+  are marked — nothing is guessed. The bit order is **confirmed LSB** (verified across
+  two players via the reserved "placeholder" achievement slots), and the decoder
+  auto-warns if a chosen order marks an unreleased achievement as unlocked. (Other
+  unlock categories aren't reliably identifiable from one save — the format is
+  variable-length, so use Save diff on two same-player saves to map those.)
 
 ## [1.0.4] - 2026-06-10
 

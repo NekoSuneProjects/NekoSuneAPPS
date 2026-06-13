@@ -28,6 +28,15 @@ function achOrder () {
   try { order = JSON.parse(fs.readFileSync(path.join(__dirname, 'ton-dict', 'achievementOrder.json'), 'utf8')) } catch (_) { order = [] }
   return order
 }
+// "placeholder" entries are reserved/unreleased achievement slots that nobody can
+// have unlocked. If a bit-order marks any as unlocked, that order is wrong — this
+// is how LSB was confirmed as the correct order (verified across two players).
+let placeholderIdx = null
+function placeholders () {
+  if (placeholderIdx) return placeholderIdx
+  placeholderIdx = achOrder().map((n, i) => (/placeholder/i.test(n) ? i : -1)).filter(i => i >= 0)
+  return placeholderIdx
+}
 
 const bitLen = b => (b === 0n ? 0 : b.toString(2).length)
 
@@ -72,6 +81,11 @@ function decodeAchievements (code, opts = {}) {
   }
   const matched = all.filter(a => a.board).map(a => a.board)
   const unmatched = all.filter(a => !a.board).map(a => a.name)
+  // Sanity check: a correct order never unlocks a reserved "placeholder" slot.
+  const badPlaceholders = placeholders().filter(i => {
+    const bit = ord === 'lsb' ? i : ACH_COUNT - 1 - i
+    return ((found.value >> BigInt(bit)) & 1n) === 1n
+  }).length
   return {
     ok: true,
     order: ord,
@@ -80,6 +94,7 @@ function decodeAchievements (code, opts = {}) {
     unlockedCount,
     matched, // canonical board names to mark (deduped below)
     unmatched, // decoded names with no board match (naming differences)
+    orderLikelyWrong: badPlaceholders > 0, // unreleased achievement marked unlocked => wrong order
     preview: all.map(a => ({ name: a.name, onBoard: !!a.board }))
   }
 }

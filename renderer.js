@@ -870,9 +870,12 @@ if ($('tonDecodeUnlockBtn')) $('tonDecodeUnlockBtn').addEventListener('click', a
   if (!r || !r.ok) { if (sum) sum.textContent = `Could not decode (${(r && r.error) || 'error'}).`; if (prev) prev.innerHTML = ''; return }
   tonDecodedMatched = r.matched
   if (sum) {
+    const warn = r.orderLikelyWrong
+      ? '<span style="color:var(--bad,#e66)">⚠ This order marks an unreleased achievement as unlocked — it\'s the wrong order, switch it.</span> '
+      : ''
     sum.innerHTML = `<b>${r.unlockedCount}/${r.total}</b> achievements unlocked · order <b>${r.order.toUpperCase()}</b> · ` +
-      `${r.matched.length} match the board${r.unmatched.length ? ` · ${r.unmatched.length} name mismatch` : ''}. ` +
-      'If these names aren\'t the achievements you really have, switch LSB/MSB and decode again.'
+      `${r.matched.length} match the board${r.unmatched.length ? ` · ${r.unmatched.length} name mismatch` : ''}. ${warn}` +
+      (r.orderLikelyWrong ? '' : 'If these names aren\'t the achievements you really have, switch LSB/MSB and decode again.')
   }
   if (prev) {
     prev.innerHTML = r.preview.map(p =>
