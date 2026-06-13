@@ -42,6 +42,7 @@ const { startTon, stopTon, getTonState } = require('./modules/integrations/tonMo
 const tonData = require('./modules/integrations/tonData')
 const tonSaveCodec = require('./modules/integrations/tonSaveCodec')
 const tonUnlockDecoder = require('./modules/integrations/tonUnlockDecoder')
+const updater = require('./modules/integrations/updater')
 const tonManager = require('./modules/integrations/tonManager')
 const vrNotify = require('./modules/integrations/vrNotify')
 
@@ -154,6 +155,11 @@ app.whenReady().then(async () => {
   setTimeout(startFriendDiff, 8000)
   setTimeout(startNotifPoll, 14000)
   setTimeout(startGroupAlerts, 22000)
+  // Check GitHub for a newer release and tell the renderer once it's loaded.
+  setTimeout(async () => {
+    const info = await updater.check(app.getVersion())
+    if (info && info.ok && info.available) push('update:available', info)
+  }, 4000)
 })
 
 app.on('window-all-closed', () => {
@@ -316,6 +322,7 @@ ipcMain.handle('ton:dataRefresh', async () => {
 })
 ipcMain.handle('ton:seen', () => ({ terrors: [...tonSeenTerrors], maps: [...tonSeenMaps] }))
 ipcMain.handle('app:openExternal', (e, url) => { if (/^https?:\/\//i.test(url || '')) shell.openExternal(url); return true })
+ipcMain.handle('update:check', () => updater.check(app.getVersion()))
 
 // Achievements auto-unlock from the live WS feed; all categories are click-to-toggle.
 const tonSetFor = cat => ({ achievements: tonUnlockAch, items: tonUnlockItems, rounds: tonUnlockRounds, terrors: tonSeenTerrors, locations: tonSeenMaps }[cat])
@@ -348,6 +355,21 @@ function tonAddSave (code) {
 ipcMain.handle('ton:saves', () => { tonLoadSaves(); return tonSaves.map(s => ({ ts: s.ts, length: (s.code || '').length, preview: (s.code || '').slice(0, 24) })) })
 ipcMain.handle('ton:saveCode', (e, ts) => { tonLoadSaves(); const s = tonSaves.find(x => x.ts === ts); return s ? s.code : '' })
 ipcMain.handle('ton:savesClear', () => { tonSaves = []; try { fs.writeFileSync(tonSavesFile(), '[]') } catch (_) {} return true })
+
+// Reset all of the app's tracked ToN progress: board unlocks (every category),
+// terrors/maps seen, and round history. Optionally also the save-code backups.
+// Note: lifetime stats (rounds/deaths/…) live in ToNSaveManager + the game and
+// repopulate from the WS on connect — the app can't wipe those.
+ipcMain.handle('ton:resetAll', (e, opts = {}) => {
+  for (const s of [tonUnlockAch, tonUnlockItems, tonUnlockRounds, tonSeenTerrors, tonSeenMaps]) s.clear()
+  settings.set('tonUnlockAch', []); settings.set('tonUnlockItems', []); settings.set('tonUnlockRounds', [])
+  settings.set('tonSeenTerrors', []); settings.set('tonSeenMaps', [])
+  let rounds = 0
+  try { rounds = gamelog.list({ type: 'ton_round', limit: 1000 }).length; gamelog.clearType('ton_round') } catch (_) {}
+  let saves = 0
+  if (opts.saves) { tonLoadSaves(); saves = tonSaves.length; tonSaves = []; try { fs.writeFileSync(tonSavesFile(), '[]') } catch (_) {} }
+  return { ok: true, rounds, saves }
+})
 
 // Import a manually-pasted save code (e.g. from ToNSaveManager or another PC) and
 // keep it alongside the auto-captured backups. Validates it looks like a real code.

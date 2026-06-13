@@ -761,6 +761,18 @@ if ($('tonRefresh')) $('tonRefresh').addEventListener('click', async () => {
   setText('tonCacheInfo', 'Updating cached data…')
   try { await api.tonDataRefresh(); await loadTonCache() } catch (_) { setText('tonCacheInfo', 'Update failed (offline?)') }
 })
+if ($('tonResetAll')) $('tonResetAll').addEventListener('click', async () => {
+  const ok = await confirmDialog('Reset all ToN data? This clears every board unlock, all terrors/maps seen, and your round history. Save-code backups are kept (use the Save backups “Clear” button for those). This cannot be undone.')
+  if (!ok) return
+  const r = await api.tonResetAll()
+  if (r && r.ok) {
+    await loadTonUnlocks()
+    renderTonBoard()
+    loadTonPlayer()
+    loadTonRoundHistory()
+    setText('tonCacheInfo', `🗑 Reset done · cleared unlocks, seen & ${r.rounds} round(s) of history`)
+  }
+})
 if ($('tonExport')) $('tonExport').addEventListener('click', async () => { const r = await api.tonExport(); if (r && r.ok) setText('tonCacheInfo', 'Exported to ' + r.path) })
 if ($('tonImport')) $('tonImport').addEventListener('click', async () => { const r = await api.tonImport(); if (r && r.ok) { setText('tonCacheInfo', `Imported · ${r.terrors} terrors seen`); loadTonPlayer() } })
 
@@ -2166,6 +2178,26 @@ function _confirmEnd (v) { $('confirmModal').style.display = 'none'; if (_confir
 $('confirmYes').addEventListener('click', () => _confirmEnd(true))
 $('confirmNo').addEventListener('click', () => _confirmEnd(false))
 $('confirmModal').addEventListener('click', e => { if (e.target === $('confirmModal')) _confirmEnd(false) })
+
+/* ---------------- update available ---------------- */
+let _updateInfo = null
+function showUpdate (info) {
+  _updateInfo = info
+  if (!$('updateModal')) return
+  setText('updateText', `You're on v${info.current}. Version v${info.latest} is available on GitHub.`)
+  if ($('updateNotes')) {
+    if (info.notes) { $('updateNotes').textContent = info.notes; $('updateNotes').style.display = 'block' } else { $('updateNotes').style.display = 'none' }
+  }
+  $('updateModal').style.display = 'flex'
+}
+if ($('updateInstall')) $('updateInstall').addEventListener('click', () => {
+  if (_updateInfo) api.openExternal(_updateInfo.installerUrl || _updateInfo.url)
+  if ($('updateModal')) $('updateModal').style.display = 'none'
+})
+// "Remind me later" — just dismiss; it'll check again next launch.
+if ($('updateLater')) $('updateLater').addEventListener('click', () => { if ($('updateModal')) $('updateModal').style.display = 'none' })
+if ($('updateModal')) $('updateModal').addEventListener('click', e => { if (e.target === $('updateModal')) $('updateModal').style.display = 'none' })
+api.on('update:available', info => { if (info && info.available) showUpdate(info) })
 
 let _pickerResolve = null
 let _pickerSel = new Set()

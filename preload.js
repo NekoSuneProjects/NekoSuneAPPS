@@ -45,6 +45,7 @@ window.electronAPI = {
   tonSaves: () => ipcRenderer.invoke('ton:saves'),
   tonSaveCode: ts => ipcRenderer.invoke('ton:saveCode', ts),
   tonSavesClear: () => ipcRenderer.invoke('ton:savesClear'),
+  tonResetAll: opts => ipcRenderer.invoke('ton:resetAll', opts),
   tonSaveImport: code => ipcRenderer.invoke('ton:saveImport', code),
   tonSaveDecode: arg => ipcRenderer.invoke('ton:saveDecode', arg),
   tonSaveDiff: arg => ipcRenderer.invoke('ton:saveDiff', arg),
@@ -52,6 +53,7 @@ window.electronAPI = {
   tonApplyUnlocks: arg => ipcRenderer.invoke('ton:applyUnlocks', arg),
   clipboardWrite: text => ipcRenderer.invoke('app:clipboard', text),
   openExternal: url => ipcRenderer.invoke('app:openExternal', url),
+  updateCheck: () => ipcRenderer.invoke('update:check'),
 
   // Manage the ToNSaveManager app (download/run/stop/update)
   tonMgrStatus: () => ipcRenderer.invoke('tonmgr:status'),

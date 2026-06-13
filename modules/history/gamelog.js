@@ -97,6 +97,13 @@ function clear () {
   persist()
 }
 
+// Delete only events of a given type (e.g. 'ton_round') — leaves other history intact.
+function clearType (type) {
+  if (!db) return
+  db.run('DELETE FROM events WHERE type = ?', [String(type)])
+  persist()
+}
+
 // Import history from an existing VRCX SQLite DB (best-effort — VRCX schema varies).
 async function importVrcx (filePath) {
   if (!SQL || !db) return { ok: false, error: 'History not initialised' }
@@ -123,4 +130,4 @@ async function importVrcx (filePath) {
 
 function close () { try { if (db) { fs.writeFileSync(dbPath, Buffer.from(db.export())) } } catch (_) {} }
 
-module.exports = { init, log, list, clear, close, importVrcx, upsertNotif, listNotifs, removeNotif, clearNotifs }
+module.exports = { init, log, list, clear, clearType, close, importVrcx, upsertNotif, listNotifs, removeNotif, clearNotifs }

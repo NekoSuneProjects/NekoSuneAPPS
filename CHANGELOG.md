@@ -3,6 +3,25 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.8] - 2026-06-13
+
+### Added
+- **Update checker** — on launch the app asks the GitHub Releases API for the latest
+  version and, if a newer one exists, shows an "Update available" dialog with the
+  release notes and two choices: **Install update** (opens the Windows installer
+  download) or **Remind me later** (dismisses; it checks again next launch).
+- **Reset all ToN data** — a button in the Terrors → Player data card clears every
+  board unlock (achievements/items/rounds), all terrors/maps seen, and the round
+  history, behind a confirmation. Save-code backups are kept (they have their own
+  Clear button). Lifetime stats live in ToNSaveManager and repopulate on connect.
+
+## [1.0.7] - 2026-06-13
+
+### Added
+- **Windows installers + release publishing** — the app now ships as an NSIS `.exe`
+  setup and an `.msi`, built in CI for Windows/macOS/Linux. Fixed the GitHub Actions
+  release job (write permission, publish on any tag, resilient to a failing OS leg).
+
 ## [1.0.6] - 2026-06-13
 
 ### Changed
