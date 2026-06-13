@@ -73,14 +73,36 @@ jobs:
     if: ${{ !cancelled() && startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+      - name: Build release notes from CHANGELOG
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "Extracting CHANGELOG notes for $VERSION"
+          # Pull the section for this version (everything between its ## [x.y.z] header
+          # and the next ## [ header) — gives the What's Added / Changed / Fixed lists.
+          awk -v ver="$VERSION" '
+            $0 ~ ("^## \\[" ver "\\]") { grab=1; next }
+            grab && /^## \[/ { exit }
+            grab { print }
+          ' CHANGELOG.md > NOTES.md
+          if [ ! -s NOTES.md ]; then printf "Release %s of NekoSuneAPPS.\n" "$VERSION" > NOTES.md; fi
+          {
+            printf "\n---\n## 📦 Downloads\n"
+            printf -- "- **Windows:** \`NekoSuneAPPS-Setup-%s.exe\` (installer) or \`.msi\`\n" "$VERSION"
+            printf -- "- **macOS:** \`.dmg\` / \`.zip\`   ·   **Linux:** \`.AppImage\` / \`.deb\`\n"
+            printf -- "\n> Installers are unsigned, so Windows SmartScreen may warn on first run — click *More info → Run anyway*.\n"
+          } >> NOTES.md
+          echo "----- release notes -----"; cat NOTES.md
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: artifacts/**/*
+          body_path: NOTES.md
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

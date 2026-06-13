@@ -84,6 +84,28 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 
 ---
 
+## 👻 Terrors of Nowhere
+
+- [ ] **Read ToN directly from the VRChat output log (make ToNSaveManager OPTIONAL).**
+  ToNSaveManager doesn't enable its WebSocket API by default, so live data needs manual
+  setup. Instead, tail VRChat's own log (`%LOCALAPPDATA%Low\VRChat\VRChat\output_log_*.txt`,
+  e.g. `output_log_2026-06-13_07-41-00.txt`) for ToN's debug lines and parse round type,
+  terror, location, alive/round-active, items, save codes (`[START]…[END]`), and the
+  TRACKER achievement event — the same source ToNSaveManager reads. Reuse the existing log
+  tailer (`modules/vrchat/world/vrchatWorld.js`). Keep the WS path as an optional override;
+  fall back to log parsing when ToNSaveManager isn't running. **First step:** confirm the
+  exact ToN log line formats from a real log before writing the parser.
+- [ ] ToN UI: relabel the connect card so ToNSaveManager reads as **optional**, with the
+  log-based reader as the default once implemented.
+
+## ℹ️ About page
+
+- [x] About page — app info, NekoSuneVR creator, version, links, update check, contributors
+  auto-detected from the GitHub API.
+- [ ] **Deeper collaborator / collab-code auto-detection** — beyond GitHub contributors:
+  parse `Co-Authored-By:` trailers from git history and any in-source `@author`/credit
+  comment markers, and surface named collaborations on the About page.
+
 ## 🥽 Requested big features (next session)
 
 ### Avatars (own + others)

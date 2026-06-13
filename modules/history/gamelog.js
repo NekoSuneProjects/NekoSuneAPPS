@@ -34,8 +34,10 @@ async function init (userDataDir) {
   // Cap the events table so db.export() stays fast (keep most recent 8000).
   try { db.run('DELETE FROM events WHERE id NOT IN (SELECT id FROM events ORDER BY ts DESC LIMIT 8000)') } catch (_) {}
   db.run(`CREATE TABLE IF NOT EXISTS notifications (
-    id TEXT PRIMARY KEY, ts INTEGER, type TEXT, sender TEXT, message TEXT, world TEXT, link TEXT
+    id TEXT PRIMARY KEY, ts INTEGER, type TEXT, sender TEXT, message TEXT, world TEXT, link TEXT, read INTEGER DEFAULT 0
   )`)
+  // Migrate older DBs that predate the read flag.
+  try { db.run('ALTER TABLE notifications ADD COLUMN read INTEGER DEFAULT 0') } catch (_) { /* column already exists */ }
   return true
 }
 
@@ -45,20 +47,32 @@ function notifExists (id) {
   const st = db.prepare('SELECT 1 FROM notifications WHERE id = :id'); st.bind({ ':id': id })
   const e = st.step(); st.free(); return e
 }
-// Returns true if this notification was NEW (not previously cached).
+// Returns true if this notification was NEW (not previously cached). Existing rows
+// keep their read flag (only the content is refreshed); new rows start unread.
 function upsertNotif (n) {
   if (!db || !n || !n.id) return false
   const isNew = !notifExists(n.id)
-  db.run('INSERT OR REPLACE INTO notifications (id,ts,type,sender,message,world,link) VALUES (?,?,?,?,?,?,?)',
-    [n.id, n.ts || Date.now(), n.type || '', n.sender || '', n.message || '', n.world || '', n.link || ''])
+  if (isNew) {
+    db.run('INSERT INTO notifications (id,ts,type,sender,message,world,link,read) VALUES (?,?,?,?,?,?,?,0)',
+      [n.id, n.ts || Date.now(), n.type || '', n.sender || '', n.message || '', n.world || '', n.link || ''])
+  } else {
+    db.run('UPDATE notifications SET ts=?,type=?,sender=?,message=?,world=?,link=? WHERE id=?',
+      [n.ts || Date.now(), n.type || '', n.sender || '', n.message || '', n.world || '', n.link || '', n.id])
+  }
   persist()
   return isNew
 }
 function listNotifs () {
   if (!db) return []
-  const st = db.prepare('SELECT id,ts,type,sender,message,world,link FROM notifications ORDER BY ts DESC LIMIT 100')
+  const st = db.prepare('SELECT id,ts,type,sender,message,world,link,read FROM notifications ORDER BY ts DESC LIMIT 100')
   const out = []; while (st.step()) out.push(st.getAsObject()); st.free(); return out
 }
+function unreadNotifCount () {
+  if (!db) return 0
+  const st = db.prepare('SELECT COUNT(*) AS c FROM notifications WHERE read = 0')
+  let c = 0; if (st.step()) c = st.getAsObject().c || 0; st.free(); return c
+}
+function markAllNotifsRead () { if (db) { db.run('UPDATE notifications SET read = 1'); persist() } }
 function removeNotif (id) { if (db) { db.run('DELETE FROM notifications WHERE id = ?', [id]); persist() } }
 function clearNotifs () { if (db) { db.run('DELETE FROM notifications'); persist() } }
 
@@ -130,4 +144,4 @@ async function importVrcx (filePath) {
 
 function close () { try { if (db) { fs.writeFileSync(dbPath, Buffer.from(db.export())) } } catch (_) {} }
 
-module.exports = { init, log, list, clear, clearType, close, importVrcx, upsertNotif, listNotifs, removeNotif, clearNotifs }
+module.exports = { init, log, list, clear, clearType, close, importVrcx, upsertNotif, listNotifs, unreadNotifCount, markAllNotifsRead, removeNotif, clearNotifs }

@@ -54,6 +54,8 @@ window.electronAPI = {
   clipboardWrite: text => ipcRenderer.invoke('app:clipboard', text),
   openExternal: url => ipcRenderer.invoke('app:openExternal', url),
   updateCheck: () => ipcRenderer.invoke('update:check'),
+  appVersion: () => ipcRenderer.invoke('app:version'),
+  appContributors: () => ipcRenderer.invoke('app:contributors'),
 
   // Manage the ToNSaveManager app (download/run/stop/update)
   tonMgrStatus: () => ipcRenderer.invoke('tonmgr:status'),
@@ -177,6 +179,8 @@ window.electronAPI = {
   notifDismiss: id => ipcRenderer.invoke('notif:dismiss', id),
   notifAccept: id => ipcRenderer.invoke('notif:accept', id),
   notifClear: () => ipcRenderer.invoke('notif:clear'),
+  notifUnreadCount: () => ipcRenderer.invoke('notif:unreadCount'),
+  notifMarkAllRead: () => ipcRenderer.invoke('notif:markAllRead'),
 
   // auto-greeter
   greeterSet: cfg => ipcRenderer.invoke('greeter:set', cfg),

@@ -323,6 +323,8 @@ ipcMain.handle('ton:dataRefresh', async () => {
 ipcMain.handle('ton:seen', () => ({ terrors: [...tonSeenTerrors], maps: [...tonSeenMaps] }))
 ipcMain.handle('app:openExternal', (e, url) => { if (/^https?:\/\//i.test(url || '')) shell.openExternal(url); return true })
 ipcMain.handle('update:check', () => updater.check(app.getVersion()))
+ipcMain.handle('app:version', () => app.getVersion())
+ipcMain.handle('app:contributors', () => updater.contributors())
 
 // Achievements auto-unlock from the live WS feed; all categories are click-to-toggle.
 const tonSetFor = cat => ({ achievements: tonUnlockAch, items: tonUnlockItems, rounds: tonUnlockRounds, terrors: tonSeenTerrors, locations: tonSeenMaps }[cat])
@@ -784,7 +786,9 @@ async function pollGroupAlerts () {
       const newest = r.posts[0]
       if (lastPostByGroup[gid] && lastPostByGroup[gid] !== newest.id) {
         gamelog.log('group', newest.title || 'Group post', newest.text || '', gid)
+        gamelog.upsertNotif({ id: 'grouppost_' + newest.id, ts: Date.now(), type: 'group', sender: newest.title || 'Group post', message: newest.text || '' })
         push('alert:group', { groupId: gid, title: '📣 ' + (newest.title || 'Group post'), text: newest.text })
+        push('notif:update')
       }
       lastPostByGroup[gid] = newest.id
     }
@@ -793,7 +797,9 @@ async function pollGroupAlerts () {
       const ne = ev.events[0]
       if (lastEventByGroup[gid] && lastEventByGroup[gid] !== ne.id) {
         gamelog.log('group', ne.title || 'Group event', 'New event', gid)
+        gamelog.upsertNotif({ id: 'groupevent_' + ne.id, ts: Date.now(), type: 'group', sender: '📅 ' + (ne.title || 'Event'), message: ne.description || 'New event' })
         push('alert:group', { groupId: gid, title: '📅 New event: ' + (ne.title || ''), text: ne.description || '' })
+        push('notif:update')
       }
       lastEventByGroup[gid] = ne.id
     }
@@ -840,6 +846,8 @@ ipcMain.handle('notif:list', () => gamelog.listNotifs())
 ipcMain.handle('notif:dismiss', async (e, id) => { await vrchatApi.hideNotification(id); gamelog.removeNotif(id); return true })
 ipcMain.handle('notif:accept', async (e, id) => { const r = await vrchatApi.acceptFriendRequest(id); if (r.ok) gamelog.removeNotif(id); return r })
 ipcMain.handle('notif:clear', () => { gamelog.clearNotifs(); return true })
+ipcMain.handle('notif:unreadCount', () => gamelog.unreadNotifCount())
+ipcMain.handle('notif:markAllRead', () => { gamelog.markAllNotifsRead(); return true })
 
 /* ------------------------------------------------------------------ */
 /* Weather                                                             */

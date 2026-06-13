@@ -47,4 +47,18 @@ async function check (currentVersion) {
   }
 }
 
-module.exports = { check, cmp, RELEASES_PAGE }
+// Auto-detect contributors/collaborators from the GitHub repo (for the About page).
+async function contributors () {
+  try {
+    const { data } = await axios.get(`https://api.github.com/repos/${REPO}/contributors?per_page=30`, {
+      timeout: 12000, headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'NekoSuneAPPS-About' }
+    })
+    if (!Array.isArray(data)) return { ok: true, contributors: [] }
+    const list = data
+      .filter(c => c.type === 'User' && !/\[bot\]$/i.test(c.login || ''))
+      .map(c => ({ login: c.login, url: c.html_url, avatar: c.avatar_url, commits: c.contributions }))
+    return { ok: true, contributors: list }
+  } catch (err) { return { ok: false, error: err.message, contributors: [] } }
+}
+
+module.exports = { check, cmp, contributors, RELEASES_PAGE }

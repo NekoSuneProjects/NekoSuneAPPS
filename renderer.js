@@ -1856,22 +1856,49 @@ function tickRailClock () { if ($('railClock')) $('railClock').textContent = new
 tickRailClock(); setInterval(tickRailClock, 15000)
 $('launchVrc').addEventListener('click', () => api.launchVRChat())
 
-/* ---------------- notifications flyout ---------------- */
+/* ---------------- notifications flyout (tabbed · unread badge) ---------------- */
 const notifPanel = $('notifPanel')
+let notifCache = [] // last fetched list (with read flags)
+let notifTab = 'friendRequest'
+// Bucket each notification into one of the four bell tabs.
+function notifCat (n) {
+  if (n.type === 'friendRequest') return 'friendRequest'
+  if (/invite/i.test(n.type || '')) return 'invite' // invite, requestInvite, inviteResponse…
+  if (n.type === 'group') return 'group'
+  return 'vrchat'
+}
 $('notifBell').addEventListener('click', e => {
   e.stopPropagation()
   const show = notifPanel.style.display === 'none'
   notifPanel.style.display = show ? 'block' : 'none'
-  if (show) loadNotifications()
+  if (show) loadNotifications().then(markNotifsReadOnView) // opening = reviewed → badge clears
 })
 document.addEventListener('click', e => {
   if (notifPanel.style.display !== 'none' && !notifPanel.contains(e.target) && !$('notifBell').contains(e.target)) notifPanel.style.display = 'none'
 })
 $('notifRefresh').addEventListener('click', loadNotifications)
-$('notifRefreshPage').addEventListener('click', loadNotifications)
-$('notifClearAll').addEventListener('click', async () => { await api.notifClear(); loadNotifications() })
+if ($('notifRefreshPage')) $('notifRefreshPage').addEventListener('click', loadNotifications)
+if ($('notifClearAll')) $('notifClearAll').addEventListener('click', async () => { await api.notifClear(); loadNotifications() })
+if ($('notifMarkRead')) $('notifMarkRead').addEventListener('click', () => markAllNotifsRead(true))
+if ($('notifMarkReadPage')) $('notifMarkReadPage').addEventListener('click', () => markAllNotifsRead(true))
 document.querySelector('[data-tab="notify"]').addEventListener('click', loadNotifications)
-function setNotifCount (n) { const c = $('notifCount'); if (n > 0) { c.style.display = 'flex'; c.textContent = n > 99 ? '99+' : String(n) } else c.style.display = 'none' }
+document.querySelectorAll('#notifPanel .ntab').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#notifPanel .ntab').forEach(x => x.classList.remove('active'))
+  b.classList.add('active'); notifTab = b.dataset.ntab; renderNotifList()
+}))
+
+function setNotifCount (n) { const c = $('notifCount'); if (!c) return; if (n > 0) { c.style.display = 'flex'; c.textContent = n > 99 ? '99+' : String(n) } else c.style.display = 'none' }
+async function refreshNotifBadge () { try { setNotifCount(await api.notifUnreadCount()) } catch (_) {} }
+// Mark everything read. rerender=true also clears the "unread" highlight immediately
+// (used by the buttons); on-view marking keeps highlights for the current glance.
+async function markAllNotifsRead (rerender) {
+  await api.notifMarkAllRead()
+  notifCache.forEach(n => { n.read = 1 })
+  setNotifCount(0)
+  if (rerender) renderNotifList(); else updateNotifTabCounts()
+}
+function markNotifsReadOnView () { if (notifCache.some(n => !n.read)) markAllNotifsRead(false) }
+
 function notifItemHtml (n) {
   const when = new Date(n.ts || Date.now()).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
   let title
@@ -1879,18 +1906,31 @@ function notifItemHtml (n) {
   else if (n.type === 'invite') title = `<b>${esc(n.sender)}</b> invited you${n.world ? ` to <b>${esc(n.world)}</b>` : ''}`
   else if (n.type === 'requestInvite') title = `<b>${esc(n.sender)}</b> requested an invite`
   else if (n.type === 'boop') title = `<b>${esc(n.sender)}</b> booped you 👉`
+  else if (n.type === 'group') title = `📣 <b>${esc(n.sender || 'Group')}</b>`
   else title = `<b>${esc(n.sender || n.type)}</b> ${esc(n.message || '')}`
   const sub = (n.message && n.type !== 'friendRequest' && n.type !== 'boop') ? `<div class="muted" style="font-size:.74rem">${esc(n.message)}</div>` : ''
   const accept = n.type === 'friendRequest' ? `<button class="btn nf-accept" data-id="${n.id}" style="padding:3px 9px;font-size:.72rem">Accept</button>` : ''
   const join = (n.link) ? `<a class="btn nf-join" href="${n.link}" target="_blank" style="padding:3px 9px;font-size:.72rem">Join</a>` : ''
-  return `<div class="notif-item"><div class="grow">${title}${sub}<div class="when">${when}</div></div>${accept}${join}<button class="btn ghost nf-dismiss" data-id="${n.id}" title="Dismiss" style="padding:3px 8px;font-size:.72rem">×</button></div>`
+  const unread = n.read ? '' : 'border-left:3px solid var(--accent,#7c5cff);padding-left:7px;'
+  return `<div class="notif-item" style="${unread}"><div class="grow">${title}${sub}<div class="when">${when}</div></div>${accept}${join}<button class="btn ghost nf-dismiss" data-id="${n.id}" title="Dismiss" style="padding:3px 8px;font-size:.72rem">×</button></div>`
+}
+function updateNotifTabCounts () {
+  const cats = { friendRequest: 0, invite: 0, vrchat: 0, group: 0 }
+  notifCache.forEach(n => { if (!n.read) cats[notifCat(n)]++ })
+  document.querySelectorAll('#notifPanel .ntab').forEach(b => {
+    const span = b.querySelector('.ntab-c'); if (span) span.textContent = cats[b.dataset.ntab] ? `(${cats[b.dataset.ntab]})` : ''
+  })
+}
+function renderNotifList () {
+  updateNotifTabCounts()
+  const items = notifCache.filter(n => notifCat(n) === notifTab)
+  if ($('notifList')) $('notifList').innerHTML = items.length ? items.map(notifItemHtml).join('') : '<div class="muted">Nothing here.</div>'
+  if ($('notifPageList')) $('notifPageList').innerHTML = notifCache.length ? notifCache.map(notifItemHtml).join('') : '<div class="muted">No notifications.</div>'
 }
 async function loadNotifications () {
-  const list = await api.notifList()
-  setNotifCount(list.length)
-  const html = list.length ? list.map(notifItemHtml).join('') : '<div class="muted">No notifications.</div>'
-  if ($('notifList')) $('notifList').innerHTML = html
-  if ($('notifPageList')) $('notifPageList').innerHTML = html
+  notifCache = await api.notifList()
+  renderNotifList()
+  refreshNotifBadge()
 }
 // Delegated accept/dismiss for notification items (flyout + page).
 document.addEventListener('click', async e => {
@@ -2247,6 +2287,38 @@ if ($('updateLater')) $('updateLater').addEventListener('click', () => { if ($('
 if ($('updateModal')) $('updateModal').addEventListener('click', e => { if (e.target === $('updateModal')) $('updateModal').style.display = 'none' })
 api.on('update:available', info => { if (info && info.available) showUpdate(info) })
 
+/* ---------------- About page ---------------- */
+// Open any element with data-ext="https://…" in the external browser.
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-ext]'); if (!b) return
+  e.preventDefault(); api.openExternal(b.dataset.ext)
+})
+let _aboutLoaded = false
+async function loadAbout () {
+  try { const v = await api.appVersion(); setText('aboutVersion', `version ${v}`) } catch (_) {}
+  if (_aboutLoaded) return
+  _aboutLoaded = true
+  // Contributors (auto-detected from GitHub)
+  try {
+    const r = await api.appContributors()
+    const el = $('aboutContributors'); if (el) {
+      if (r && r.ok && r.contributors.length) {
+        el.innerHTML = r.contributors.map(c =>
+          `<a href="#" data-ext="${c.url}" title="${c.commits} commits" style="display:inline-flex;align-items:center;gap:6px;margin:3px 8px 3px 0;text-decoration:none;color:var(--text)">
+             <img src="${c.avatar}" referrerpolicy="no-referrer" style="width:22px;height:22px;border-radius:50%" onerror="this.style.display='none'"/> ${esc(c.login)}</a>`).join('')
+      } else el.textContent = r && r.error ? 'Could not load (offline?).' : 'Just NekoSuneVR so far.'
+    }
+  } catch (_) { if ($('aboutContributors')) setText('aboutContributors', 'Could not load contributors.') }
+}
+if ($('aboutCheckUpdate')) $('aboutCheckUpdate').addEventListener('click', async () => {
+  const el = $('aboutUpdate'); if (el) el.textContent = 'Checking…'
+  const r = await api.updateCheck()
+  if (!r || !r.ok) { if (el) el.textContent = 'Could not check (offline?).'; return }
+  if (r.available) { if (el) el.innerHTML = `🎉 v${r.latest} is available!`; showUpdate(r) } else if (el) el.textContent = `✓ You're up to date (v${r.current}).`
+})
+const aboutBtn = document.querySelector('[data-tab="about"]')
+if (aboutBtn) aboutBtn.addEventListener('click', loadAbout)
+
 let _pickerResolve = null
 let _pickerSel = new Set()
 async function pickFriends (title) {
@@ -2393,7 +2465,7 @@ function toast (html, ms = 6000) {
   $('toastWrap').appendChild(t)
   setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300) }, ms)
 }
-api.on('alert:group', s => { toast(`<b>📣 Group post</b><br>${esc(s.title || '')}${s.text ? '<br>' + esc(String(s.text).slice(0, 120)) : ''}`); setNotifCount((parseInt($('notifCount').textContent, 10) || 0) + 1) })
+api.on('alert:group', s => { toast(`<b>📣 Group post</b><br>${esc(s.title || '')}${s.text ? '<br>' + esc(String(s.text).slice(0, 120)) : ''}`); refreshNotifBadge() })
 
 api.on('discord:update', s => {
   discordConnected = !!s.connected

@@ -3,6 +3,27 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.12] - 2026-06-13
+
+### Added
+- **Custom sidebar icons.** The nav rail now uses a full set of custom icons (one per
+  tab) instead of emoji — much clearer. Icons live in `assets/icons/<tab>.png` and are
+  swapped in automatically; a missing file just keeps the emoji.
+- **About page** — a new tab with the app version, what NekoSuneAPPS is, that it's made
+  by **NekoSuneVR**, links (GitHub, repository, releases, issues), a **Check for updates**
+  button, and a **Contributors** list auto-detected from the GitHub repository.
+
+### Changed
+- **Notifications reworked.** The bell badge now counts **unread only** (not every cached
+  item — fixes the count staying at e.g. "16" after you'd reviewed them). The bell opens a
+  **tabbed popup** — 👋 Requests · 📨 Invites · 🔔 Alerts · 📣 Groups — each tab showing its
+  unread count. **✓ Mark all read** clears the badge, and opening the bell marks them read.
+  Group announcements/events now appear in the Groups tab.
+- **ToNSaveManager is now labelled optional.** Reading ToN directly from VRChat's log
+  (so it works without ToNSaveManager's WebSocket) is on the roadmap (see TODO).
+- **Richer GitHub release notes** — releases now include the changelog's Added/Changed/
+  Fixed sections and a downloads list, not just the compare link.
+
 ## [1.0.11] - 2026-06-13
 
 ### Added

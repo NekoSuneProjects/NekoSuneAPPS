@@ -217,6 +217,7 @@
       <button class="navbtn" data-tab="tools"><span class="ico">🧩</span><span class="lbl">Tools</span></button>
       <button class="navbtn" data-tab="settings"><span class="ico">⚙️</span><span class="lbl">Settings</span></button>
       <button class="navbtn" data-tab="docs"><span class="ico">📖</span><span class="lbl">Docs / Setup</span></button>
+      <button class="navbtn" data-tab="about"><span class="ico">ℹ️</span><span class="lbl">About</span></button>
       <button class="navbtn" data-tab="log"><span class="ico">📜</span><span class="lbl">OSC Log</span></button>
       <div style="flex:1"></div>
       <div class="railclock" id="railClock">--:--</div>
@@ -236,7 +237,18 @@
 
       <!-- Notifications flyout -->
       <div id="notifPanel" class="notif-panel" style="display:none">
-        <div class="notif-head"><b>Notifications</b><button id="notifRefresh" class="btn ghost" style="padding:3px 9px;font-size:.74rem">↻</button></div>
+        <div class="notif-head"><b>Notifications</b>
+          <div style="display:flex;gap:6px">
+            <button id="notifMarkRead" class="btn ghost" style="padding:3px 9px;font-size:.72rem">✓ Mark all read</button>
+            <button id="notifRefresh" class="btn ghost" style="padding:3px 9px;font-size:.74rem">↻</button>
+          </div>
+        </div>
+        <div class="notif-tabs" style="display:flex;gap:4px;margin-top:8px;flex-wrap:wrap">
+          <button class="btn ghost ntab active" data-ntab="friendRequest" style="padding:3px 8px;font-size:.7rem">👋 Requests <span class="ntab-c"></span></button>
+          <button class="btn ghost ntab" data-ntab="invite" style="padding:3px 8px;font-size:.7rem">📨 Invites <span class="ntab-c"></span></button>
+          <button class="btn ghost ntab" data-ntab="vrchat" style="padding:3px 8px;font-size:.7rem">🔔 Alerts <span class="ntab-c"></span></button>
+          <button class="btn ghost ntab" data-ntab="group" style="padding:3px 8px;font-size:.7rem">📣 Groups <span class="ntab-c"></span></button>
+        </div>
         <div id="notifList" class="muted" style="margin-top:8px">Not loaded — log in on the VRChat tab.</div>
       </div>
 
@@ -450,7 +462,8 @@
           </div>
           <div class="card">
             <h3>👻 Terrors of Nowhere <span class="pill" id="tonState">off</span></h3>
-            <label class="switch"><input type="checkbox" id="enableTon"> Connect to ToNSaveManager</label>
+            <div class="muted" style="font-size:.72rem;margin-bottom:6px">ToNSaveManager is <b>optional</b> — it gives the richest live data. Reading ToN directly from VRChat's log (so it works without it) is on the roadmap.</div>
+            <label class="switch"><input type="checkbox" id="enableTon"> Connect to ToNSaveManager <span class="muted">(optional)</span></label>
             <label style="margin-top:8px">WebSocket port</label>
             <input type="number" id="tonPort" value="11398" min="1" max="65535" />
             <div id="tonOut" class="muted" style="margin-top:10px">—</div>
@@ -840,7 +853,7 @@
       <section id="notify" class="tabpanel">
         <div class="card">
           <h3>🔔 Notifications <span class="muted" style="font-size:.72rem">(cached until you act / dismiss)</span></h3>
-          <div class="row"><button class="btn" id="notifRefreshPage">Refresh</button><button class="btn danger" id="notifClearAll">Clear all</button></div>
+          <div class="row"><button class="btn" id="notifRefreshPage">Refresh</button><button class="btn ghost" id="notifMarkReadPage">✓ Mark all read</button><button class="btn danger" id="notifClearAll">Clear all</button></div>
           <div id="notifPageList" class="muted" style="margin-top:10px">No notifications.</div>
         </div>
       </section>
@@ -1160,6 +1173,49 @@
           <h3>🔋 VR gear battery — does it work without VR?</h3>
           <div class="muted" style="line-height:1.8">
             <b>No.</b> VR battery reads your <b>SteamVR / OpenVR devices</b> (headset, controllers, trackers). With no VR headset and SteamVR not running there are no devices to report, so it stays <b>"unavailable"</b>. It is only useful while you're in VR with SteamVR running — desktop-only users can leave it off.
+          </div>
+        </div>
+      </section>
+
+      <!-- ABOUT -->
+      <section id="about" class="tabpanel">
+        <div class="card" style="text-align:center">
+          <img src="assets/logo.png" alt="NekoSuneAPPS" style="width:92px;height:92px;border-radius:22px;object-fit:cover" />
+          <h2 style="margin:10px 0 2px">NekoSuneAPPS</h2>
+          <div class="muted" id="aboutVersion" style="font-size:.82rem">version —</div>
+          <p class="muted" style="font-size:.86rem;max-width:560px;margin:10px auto 0">
+            A VRChat OSC companion — chatbox, status, social suite, component stats, heart rate,
+            AudioLink, Now Playing, Terrors of Nowhere tools, and more. Everything runs on your own
+            PC; nothing is collected.
+          </p>
+        </div>
+        <div class="grid cols-2">
+          <div class="card">
+            <h3>👤 Created by NekoSuneVR</h3>
+            <p class="muted" style="font-size:.84rem">Designed, built and maintained by <b>NekoSuneVR</b>.</p>
+            <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:8px">
+              <button class="btn ghost" data-ext="https://github.com/NekoSuneVR">🐙 NekoSuneVR on GitHub</button>
+              <button class="btn ghost" data-ext="https://github.com/NekoSuneProjects/NekoSuneAPPS">📦 Repository</button>
+              <button class="btn ghost" data-ext="https://github.com/NekoSuneProjects/NekoSuneAPPS/releases">⬇ Releases</button>
+              <button class="btn ghost" data-ext="https://github.com/NekoSuneProjects/NekoSuneAPPS/issues">🐞 Report an issue</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>🔄 Updates</h3>
+            <div class="muted" id="aboutUpdate" style="font-size:.84rem">—</div>
+            <button class="btn" id="aboutCheckUpdate" style="margin-top:10px">Check for updates</button>
+          </div>
+          <div class="card">
+            <h3>🤝 Contributors &amp; collaborators</h3>
+            <div class="muted" style="font-size:.78rem;margin-bottom:6px">Auto-detected from the GitHub repository.</div>
+            <div id="aboutContributors" class="muted" style="font-size:.84rem">Loading…</div>
+          </div>
+          <div class="card">
+            <h3>⚖️ License &amp; credits</h3>
+            <div class="muted" style="font-size:.84rem">
+              See <button class="btn ghost" data-ext="https://github.com/NekoSuneProjects/NekoSuneAPPS/blob/main/LICENSE" style="padding:2px 8px;font-size:.74rem">LICENSE</button>.
+              Not affiliated with VRChat, Discord, or any third party. All trademarks belong to their owners.
+            </div>
           </div>
         </div>
       </section>
