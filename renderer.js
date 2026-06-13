@@ -797,6 +797,13 @@ if ($('tonImport')) $('tonImport').addEventListener('click', async () => { const
 
 api.on('ton:round', () => { loadTonRoundHistory(); loadTonPlayer() })
 
+// Achievements auto-decoded from a captured save code (log or ToNSaveManager) — refresh the board.
+api.on('ton:unlocksUpdated', async s => {
+  await loadTonUnlocks()
+  if (tonCat === 'achievements') renderTonBoard()
+  setText('tonCacheInfo', `🏆 ${(s && s.added) || 0} achievement(s) marked from your latest save`)
+})
+
 // Live achievement unlock from the game (WS TRACKER event) — light it up instantly.
 api.on('ton:achievement', name => {
   tonUnlock.achievements.add(name); tonUnlock.achievements.add(String(name).toLowerCase())

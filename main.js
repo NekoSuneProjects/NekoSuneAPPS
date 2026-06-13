@@ -42,6 +42,7 @@ const { startTon, stopTon, getTonState } = require('./modules/integrations/tonMo
 const tonData = require('./modules/integrations/tonData')
 const tonSaveCodec = require('./modules/integrations/tonSaveCodec')
 const tonUnlockDecoder = require('./modules/integrations/tonUnlockDecoder')
+const { startTonLog, stopTonLog } = require('./modules/integrations/tonLogReader')
 const updater = require('./modules/integrations/updater')
 const tonManager = require('./modules/integrations/tonManager')
 const vrNotify = require('./modules/integrations/vrNotify')
@@ -173,7 +174,7 @@ app.on('activate', () => {
 app.on('before-quit', () => {
   stopComponentStats(); stopNetworkStats(); stopPulsoid(); stopHyperate(); stopWindowActivity(); stopTon()
   disconnectTikTok(); stopTwitch(); stopKick(); stopDiscord(); stopVrBattery(); stopVrcWorld(); stopAfk()
-  stopWeather(); stopVrcStatusPoll(); stopBot(); pawprints.tickCommit(); stopFriendDiff(); stopGreeter(); gamelog.close(); photoRelay.stop(); stopGroupAlerts(); stopNotifPoll(); crashGuard.stop(); vrcTools.stopVideoCacher()
+  stopWeather(); stopVrcStatusPoll(); stopBot(); pawprints.tickCommit(); stopFriendDiff(); stopGreeter(); gamelog.close(); photoRelay.stop(); stopGroupAlerts(); stopNotifPoll(); crashGuard.stop(); vrcTools.stopVideoCacher(); stopTonLog()
 })
 
 /* ------------------------------------------------------------------ */
@@ -285,29 +286,54 @@ function tonRecordSeen (s) {
     }, 3000)
   }
 }
-function onTonUpdate (s) { tonRecordSeen(s); push('ton:update', s) }
+let tonWsConnected = false
+function onTonUpdate (s) { tonWsConnected = !!s.connected; tonRecordSeen(s); push('ton:update', s) }
+
+// Persist a finished round to the offline history and push it live.
+function tonOnRound (rec) {
+  gamelog.log('ton_round', rec.roundType || 'Round',
+    JSON.stringify({ terror: rec.terror, map: rec.map, result: rec.result, dur: rec.durationSec }), rec.map || '')
+  push('ton:round', rec)
+}
+// A captured save code (from ToNSaveManager OR the VRChat log): back it up AND
+// auto-decode the achievements it contains, marking them on the board. This is how
+// achievements stay current without ToNSaveManager — the save code is the source.
+function tonHandleSaveCode (code) {
+  const rec = tonAddSave(code)
+  try {
+    const boardNames = (tonData.get().achievements || []).map(a => a.name)
+    const dec = tonUnlockDecoder.decodeAchievements(code, { boardNames })
+    if (dec && dec.ok && Array.isArray(dec.matched) && dec.matched.length) {
+      let added = 0
+      dec.matched.forEach(n => { if (!tonUnlockAch.has(n)) { tonUnlockAch.add(n); added++ } })
+      if (added) { settings.set('tonUnlockAch', [...tonUnlockAch]); push('ton:unlocksUpdated', { added, unlocked: dec.unlockedCount }) }
+    }
+  } catch (_) { /* decode is best-effort */ }
+  if (rec) push('ton:save', { ts: rec.ts, length: code.length })
+}
 
 ipcMain.handle('ton:start', (e, opts) => {
   startTon(onTonUpdate, {
     ...(opts || {}),
-    // Persist each finished round to the offline history (sql.js gamelog) and push live.
-    onRound: rec => {
-      gamelog.log('ton_round', rec.roundType || 'Round',
-        JSON.stringify({ terror: rec.terror, map: rec.map, result: rec.result, dur: rec.durationSec }), rec.map || '')
-      push('ton:round', rec)
-    },
+    onRound: tonOnRound,
     // Live achievement unlock from the game — mark it, persist, alert, tell renderer.
     onAchievement: name => {
       if (!tonUnlockAch.has(name)) { tonUnlockAch.add(name); settings.set('tonUnlockAch', [...tonUnlockAch]) }
       push('ton:achievement', name)
       if (settings.get('tonNotify', true)) vrNotify.notify('🏆 ToN Achievement Unlocked', name, settings.get('tonNotifyMode', 'auto'), tonArtIcon('ach', name))
     },
-    // The game's save code — keep a dated backup history.
-    onSave: code => { const rec = tonAddSave(code); if (rec) push('ton:save', { ts: rec.ts, length: code.length }) }
+    onSave: tonHandleSaveCode
+  })
+  // Always read the VRChat log too (ToNSaveManager optional): captures save codes and,
+  // when the WebSocket isn't connected, drives the live round/map/death state.
+  startTonLog({
+    onSave: tonHandleSaveCode,
+    onRound: rec => { if (!tonWsConnected) tonOnRound(rec) },
+    onUpdate: s => { if (!tonWsConnected) { tonRecordSeen(s); push('ton:update', s) } }
   })
   return true
 })
-ipcMain.handle('ton:stop', () => { stopTon(); return true })
+ipcMain.handle('ton:stop', () => { stopTon(); stopTonLog(); return true })
 ipcMain.handle('ton:get', () => getTonState())
 ipcMain.handle('ton:history', (e, limit) => gamelog.list({ type: 'ton_round', limit: limit || 200 }).map(r => {
   let d = {}; try { d = JSON.parse(r.detail || '{}') } catch (_) {}

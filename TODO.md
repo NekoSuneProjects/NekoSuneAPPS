@@ -86,17 +86,21 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 
 ## 👻 Terrors of Nowhere
 
-- [ ] **Read ToN directly from the VRChat output log (make ToNSaveManager OPTIONAL).**
-  ToNSaveManager doesn't enable its WebSocket API by default, so live data needs manual
-  setup. Instead, tail VRChat's own log (`%LOCALAPPDATA%Low\VRChat\VRChat\output_log_*.txt`,
-  e.g. `output_log_2026-06-13_07-41-00.txt`) for ToN's debug lines and parse round type,
-  terror, location, alive/round-active, items, save codes (`[START]…[END]`), and the
-  TRACKER achievement event — the same source ToNSaveManager reads. Reuse the existing log
-  tailer (`modules/vrchat/world/vrchatWorld.js`). Keep the WS path as an optional override;
-  fall back to log parsing when ToNSaveManager isn't running. **First step:** confirm the
-  exact ToN log line formats from a real log before writing the parser.
-- [ ] ToN UI: relabel the connect card so ToNSaveManager reads as **optional**, with the
-  log-based reader as the default once implemented.
+- [x] **Read ToN directly from the VRChat output log (ToNSaveManager now OPTIONAL).**
+  `modules/integrations/tonLogReader.js` tails the newest `output_log_*.txt` and parses
+  save codes (`[START]…[END]`), round type + map (`This round is taking place at …`),
+  terror IDs (`Killers have been set - …`), deaths (`You died.`), round end
+  (`Verified Round End`), stuns and damage. Runs alongside the WS; drives live state when
+  the WS isn't connected. Captured save codes are auto-decoded to achievements and marked
+  on the board (so achievements stay current without ToNSaveManager).
+- [x] ToN UI: connect card relabelled — ToNSaveManager is **optional**; the log reader is
+  the default.
+- [ ] **Terror names from killer IDs** — the log gives killer IDs (`Killers have been set
+  - 31 0 0`), shown as `Terror #31`. Map IDs → names (ToN's terror index is fetched at
+  runtime, not static; cross-reference our cached terror data or fetch the index).
+- [ ] **Catch up historical rounds/saves** from the log on first read (currently the
+  initial full-log pass is suppressed to avoid flooding; consider importing the session's
+  save codes as backups).
 
 ## ℹ️ About page
 

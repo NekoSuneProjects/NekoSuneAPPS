@@ -3,6 +3,25 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.13] - 2026-06-13
+
+### Added
+- **Terrors of Nowhere works without ToNSaveManager.** A new log reader
+  (`tonLogReader.js`) tails VRChat's own output log and parses ToN's lines directly —
+  **save codes** (`[START]…[END]`), **round type + map** (`This round is taking place
+  at …`), **terror IDs**, **deaths**, **round end**, **stuns** and **damage**. Verified
+  against a real log: 16 rounds, 12 save codes, deaths/survivals/stuns all parsed.
+- **Achievements auto-update from captured saves.** Every save code captured (from the
+  log *or* ToNSaveManager) is auto-decoded and the unlocked achievements are marked on
+  the board — so your achievements stay current with no manual steps and no
+  ToNSaveManager. (ToN doesn't log achievements individually; the save code is the
+  source, and we decode it.)
+
+### Changed
+- ToNSaveManager is now genuinely **optional** — the log reader is the default source;
+  ToNSaveManager (when running) still adds the richest live data + lifetime stats and
+  takes over while its WebSocket is connected.
+
 ## [1.0.12] - 2026-06-13
 
 ### Added
