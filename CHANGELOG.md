@@ -3,6 +3,14 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.14] - 2026-06-13
+
+### Fixed
+- **Update dialog now renders Markdown.** The "Update available" release notes were
+  showing raw `### Added`, `**bold**` and `` `code` `` text. Added a lightweight
+  Markdown renderer (headings, bold, inline code, lists, links, dividers) so the notes
+  display formatted, and raised the notes length so they're not cut off mid-section.
+
 ## [1.0.13] - 2026-06-13
 
 ### Added

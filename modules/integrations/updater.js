@@ -38,7 +38,7 @@ async function check (currentVersion) {
       available: cmp(latest, currentVersion) > 0,
       current: currentVersion,
       latest,
-      notes: String(data.body || '').slice(0, 600),
+      notes: String(data.body || '').slice(0, 4000),
       url: data.html_url || RELEASES_PAGE,
       installerUrl: installer ? installer.browser_download_url : (data.html_url || RELEASES_PAGE)
     }

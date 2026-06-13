@@ -98,9 +98,12 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 - [ ] **Terror names from killer IDs** — the log gives killer IDs (`Killers have been set
   - 31 0 0`), shown as `Terror #31`. Map IDs → names (ToN's terror index is fetched at
   runtime, not static; cross-reference our cached terror data or fetch the index).
+- [ ] **Lifetime stats from the log** — the log only has the *current session*, so
+  all-time rounds/deaths/etc. still need ToNSaveManager or a decoded save code. Session
+  counters work from the log; consider deriving lifetime totals from a decoded save.
 - [ ] **Catch up historical rounds/saves** from the log on first read (currently the
-  initial full-log pass is suppressed to avoid flooding; consider importing the session's
-  save codes as backups).
+  initial full-log pass is suppressed to avoid flooding history; consider importing the
+  session's past save codes as backups on startup).
 
 ## ℹ️ About page
 

@@ -2275,13 +2275,31 @@ $('confirmNo').addEventListener('click', () => _confirmEnd(false))
 $('confirmModal').addEventListener('click', e => { if (e.target === $('confirmModal')) _confirmEnd(false) })
 
 /* ---------------- update available ---------------- */
+// Minimal Markdown -> HTML for release notes (headings, bold, code, lists, links).
+function mdToHtml (md) {
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const inline = s => esc(s)
+    .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+    .replace(/`([^`]+)`/g, '<code style="background:rgba(255,255,255,.08);padding:1px 4px;border-radius:4px">$1</code>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="#" data-ext="$2" style="color:var(--accent,#7c5cff)">$1</a>')
+  return String(md || '').split(/\r?\n/).map(raw => {
+    const line = raw.trim()
+    if (!line) return ''
+    let m = line.match(/^#{1,6}\s+(.*)$/)
+    if (m) return `<div style="font-weight:700;margin:10px 0 2px">${inline(m[1])}</div>`
+    m = line.match(/^[-*]\s+(.*)$/)
+    if (m) return `<div style="margin-left:6px">• ${inline(m[1])}</div>`
+    if (/^---+$/.test(line)) return '<hr style="border:none;border-top:1px solid var(--border);margin:8px 0">'
+    return `<div>${inline(line)}</div>`
+  }).join('')
+}
 let _updateInfo = null
 function showUpdate (info) {
   _updateInfo = info
   if (!$('updateModal')) return
   setText('updateText', `You're on v${info.current}. Version v${info.latest} is available on GitHub.`)
   if ($('updateNotes')) {
-    if (info.notes) { $('updateNotes').textContent = info.notes; $('updateNotes').style.display = 'block' } else { $('updateNotes').style.display = 'none' }
+    if (info.notes) { $('updateNotes').innerHTML = mdToHtml(info.notes); $('updateNotes').style.display = 'block' } else { $('updateNotes').style.display = 'none' }
   }
   $('updateModal').style.display = 'flex'
 }
