@@ -16,7 +16,8 @@ program.**
   live data lines.
 - **Status presets** — templated lines with `{tokens}` (time, song, cpu, gpu, ram, hr,
   net, followers, window, `{weather}`, `{players}`, …).
-- **AudioLink** — Low/Bass/Mid/Treble audio spectrum sent over OSC.
+- **AudioLink** — Low/Bass/Mid/Treble audio spectrum sent over OSC as custom avatar
+  parameters (see [Avatar parameters](#-audiolink-avatar-parameters) below).
 - **Now Playing** — reads your Windows media session; supports KAT and chatbox posting.
 - **Discord Rich Presence** — shows your VRChat **world**, **❤️ heart rate** and **🎵 now
   playing**, with a one-click **Join World** button and a **VRChat Profile** button.
@@ -50,6 +51,38 @@ program.**
 - **Component / Network stats**, **Window activity**.
 - **Stopwatch**, **Calculator**, **Auto-AFK** (idle detection + custom message).
 - **Startup** — launch on login, start minimized, per-feature auto-start.
+
+---
+
+## 🔊 AudioLink avatar parameters
+
+NekoSuneAPPS analyzes your audio output into 4 bands and sends them to VRChat over OSC
+(`127.0.0.1:9000`) every audio frame as **custom avatar parameters**. To react to them,
+add each one to your avatar's **Expression Parameters** and **Animator Controller**. The
+avatar parameter name is the part after `/avatar/parameters/`.
+
+| Parameter (exact, case-sensitive) | Type | Range | Meaning |
+| --- | --- | --- | --- |
+| `VRCOSC/NekoSuneApps/Audiolink/Low` | Float | 0.0 – 0.92 | Band 0 level |
+| `VRCOSC/NekoSuneApps/Audiolink/Bass` | Float | 0.0 – 0.92 | Band 1 level |
+| `VRCOSC/NekoSuneApps/Audiolink/Mid` | Float | 0.0 – 0.92 | Band 2 level |
+| `VRCOSC/NekoSuneApps/Audiolink/Treble` | Float | 0.0 – 0.92 | Band 3 level |
+| `VRCOSC/NekoSuneApps/Audiolink/Volume` | Float | 0.0 – 0.92 | Average of the 4 bands |
+| `VRCOSC/NekoSuneApps/Audiolink/Peak` | Float | 0.0 – 0.92 | Max of the 4 bands |
+| `VRCOSC/NekoSuneApps/Audiolink/Beat` | Bool | 0 / 1 | `true` while Peak > 0.65 |
+
+Notes:
+
+- **Max value is 0.92, not 1.0** — output is clamped, so map your animations to a
+  `0 → 0.92` range.
+- `Beat` is sent as a float `1.0`/`0.0`; define it as **Bool** (VRChat coerces it) or
+  Float if you want to fade.
+- `/` is allowed in VRChat parameter names — type the names exactly.
+- Mark the params **synced** if other players should see the reaction (≈49 bits total),
+  or leave them **local** to save parameter memory — OSC drives them on your client either
+  way.
+- Enable OSC in VRChat: **Radial Menu → Options → OSC → Enabled**. The app's OSC-out port
+  must match VRChat's listen port (default **9000**).
 
 ---
 

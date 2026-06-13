@@ -23,6 +23,7 @@ config.local.json
 settings.local.json
 **/credentials*.json
 *.token
+ton_re/
 
 # Local runtime / persisted data (electron-store lives in AppData, but just in case)
 config.json

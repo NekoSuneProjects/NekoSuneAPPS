@@ -610,11 +610,14 @@ if ($('tonPort')) $('tonPort').addEventListener('change', e => {
 const tonEsc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
 let tonCacheData = null
 let tonCat = 'achievements'
+let tonFilter = 'all' // 'all' | 'unlocked' | 'locked'
 let tonSeenData = { terrors: [], maps: [] }
 // Unlock state per category (Sets hold both exact + lowercased names for matching).
 let tonUnlock = { achievements: new Set(), items: new Set(), rounds: new Set(), terrors: new Set(), locations: new Set() }
 const tonToSet = arr => { const s = new Set(); (arr || []).forEach(x => { s.add(x); s.add(String(x).toLowerCase()) }); return s }
 const tonIsUnlocked = (cat, name) => { const s = tonUnlock[cat]; return !!s && (s.has(name) || s.has(String(name).toLowerCase())) }
+// Locked/unlocked filter — true when an entry should be shown for the current filter.
+const tonPassesFilter = (cat, name) => tonFilter === 'all' || (tonFilter === 'unlocked' ? tonIsUnlocked(cat, name) : !tonIsUnlocked(cat, name))
 
 // Local cached icon (downloaded) with the remote URL as fallback; grayed when locked.
 function tonImg (e, unlocked, size) {
@@ -640,8 +643,10 @@ function renderTonBoard () {
   const unlockedTotal = all.filter(e => tonIsUnlocked(tonCat, e.name)).length
   const rowOpen = (key, extra, title) => `<div class="tonItem" data-cat="${tonCat}" data-key="${tonEsc(key)}"${title ? ` title="${tonEsc(title)}"` : ''} style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line,#222);cursor:pointer;${extra || ''}">`
   let html = ''
+  let shown = 0
   if (tonCat === 'achievements') {
-    const list = all.filter(a => !q || `${a.name} ${a.unlock} ${a.flavor}`.toLowerCase().includes(q))
+    const list = all.filter(a => tonPassesFilter('achievements', a.name) && (!q || `${a.name} ${a.unlock} ${a.flavor}`.toLowerCase().includes(q)))
+    shown = list.length
     html = list.map(a => {
       const u = tonIsUnlocked('achievements', a.name)
       return rowOpen(a.name, u ? '' : 'opacity:.85', a.tip) +
@@ -650,7 +655,8 @@ function renderTonBoard () {
          <div class="muted" style="font-size:.74rem"><b>How to unlock:</b> ${tonEsc(a.unlock || a.flavor || '—')}</div></div></div>`
     }).join('')
   } else if (tonCat === 'terrors') {
-    const list = all.filter(t => !q || t.name.toLowerCase().includes(q))
+    const list = all.filter(t => tonPassesFilter('terrors', t.name) && (!q || t.name.toLowerCase().includes(q)))
+    shown = list.length
     html = '<div style="display:flex;flex-wrap:wrap;gap:8px">' + list.map(t => {
       const u = tonIsUnlocked('terrors', t.name)
       return `<div class="tonItem" data-cat="terrors" data-key="${tonEsc(t.name)}" title="${tonEsc(t.name)}${u ? ' (encountered — click to toggle)' : ' (click if you have met it)'}" style="width:80px;text-align:center;cursor:pointer;${u ? '' : 'opacity:.65'}">
@@ -658,25 +664,29 @@ function renderTonBoard () {
         <div style="font-size:.68rem;margin-top:2px">${u ? '✓ ' : '🔒 '}${tonEsc(t.name)}</div></div>`
     }).join('') + '</div>'
   } else if (tonCat === 'items') {
-    const list = all.filter(i => !q || `${i.name} ${i.type}`.toLowerCase().includes(q))
+    const list = all.filter(i => tonPassesFilter('items', i.name) && (!q || `${i.name} ${i.type}`.toLowerCase().includes(q)))
+    shown = list.length
     html = list.map(i => {
       const u = tonIsUnlocked('items', i.name)
       return rowOpen(i.name, u ? '' : 'opacity:.7') + `<span style="flex:0 0 auto">${u ? '✓' : '🔒'}</span><b style="font-size:.82rem;flex:1">${tonEsc(i.name)}</b><span class="pill" style="font-size:.68rem">${tonEsc(i.type)}</span></div>`
     }).join('')
   } else if (tonCat === 'locations') {
-    const list = all.filter(l => !q || l.name.toLowerCase().includes(q))
+    const list = all.filter(l => tonPassesFilter('locations', l.name) && (!q || l.name.toLowerCase().includes(q)))
+    shown = list.length
     html = list.map(l => {
       const u = tonIsUnlocked('locations', l.name)
       return rowOpen(l.name, u ? '' : 'opacity:.7') + `${tonSwatch(l.colors, u)}<b style="font-size:.82rem;flex:1">${u ? '✓ ' : '🔒 '}${tonEsc(l.name)}</b>${u ? '<span class="pill" style="font-size:.68rem">visited</span>' : ''}</div>`
     }).join('')
   } else if (tonCat === 'rounds') {
-    const list = all.filter(r => !q || r.name.toLowerCase().includes(q))
+    const list = all.filter(r => tonPassesFilter('rounds', r.name) && (!q || r.name.toLowerCase().includes(q)))
+    shown = list.length
     html = list.map(r => {
       const u = tonIsUnlocked('rounds', r.name)
       return rowOpen(r.name, u ? '' : 'opacity:.7') + `${tonSwatch(r.colors, u)}<b style="font-size:.82rem">${u ? '✓ ' : '🔒 '}${tonEsc(r.name)}</b></div>`
     }).join('')
   }
-  const header = `<div class="muted" style="font-size:.72rem;margin-bottom:6px">${unlockedTotal}/${total} unlocked · click an entry to toggle ${tonCat === 'terrors' || tonCat === 'locations' ? '(auto-marked from live play)' : ''}</div>`
+  const filtered = tonFilter !== 'all' || q
+  const header = `<div class="muted" style="font-size:.72rem;margin-bottom:6px">${unlockedTotal}/${total} unlocked${filtered ? ` · showing ${shown}` : ''} · click an entry to toggle ${tonCat === 'terrors' || tonCat === 'locations' ? '(auto-marked from live play)' : ''}</div>`
   board.innerHTML = header + (html || '<div class="muted">No matches.</div>')
 }
 
@@ -740,6 +750,12 @@ document.querySelectorAll('#tonref .tonCat').forEach(b => b.addEventListener('cl
   tonCat = b.dataset.toncat
   renderTonBoard()
 }))
+document.querySelectorAll('#tonref .tonFilter').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#tonref .tonFilter').forEach(x => x.classList.remove('active'))
+  b.classList.add('active')
+  tonFilter = b.dataset.tonfilter
+  renderTonBoard()
+}))
 if ($('tonSearch')) $('tonSearch').addEventListener('input', renderTonBoard)
 if ($('tonRefresh')) $('tonRefresh').addEventListener('click', async () => {
   setText('tonCacheInfo', 'Updating cached data…')
@@ -763,10 +779,19 @@ async function loadTonSaves () {
   const list = await api.tonSaves()
   const el = $('tonSavesList'); if (!el) return
   setPill('tonSaveState', list.length > 0, `${list.length} saved`)
-  if (!list.length) { el.textContent = 'No saves captured yet — they appear when the game saves.'; return }
+  tonFillDiffSelects(list)
+  if (!list.length) { el.textContent = 'No saves captured yet — they appear when the game saves, or paste one above to import.'; return }
   el.innerHTML = list.map(s => `<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;padding:3px 0;border-bottom:1px solid var(--line,#222)">
       <span>💾 ${new Date(s.ts).toLocaleString()} <span class="muted">· ${s.length} chars</span></span>
       <button class="btn ghost tonSaveCopy" data-ts="${s.ts}" style="padding:2px 8px;font-size:.72rem">Copy</button></div>`).join('')
+}
+// Populate the A/B decode/diff pickers. Default A = newest, B = next-newest
+// (so "Diff A → B" reads newest vs the one before it).
+function tonFillDiffSelects (list) {
+  const opts = (list || []).map(s => `<option value="${s.ts}">${new Date(s.ts).toLocaleString()} · ${s.length}c</option>`).join('')
+  const a = $('tonDiffA'); const b = $('tonDiffB')
+  if (a) { a.innerHTML = opts; if (list && list[0]) a.value = String(list[0].ts) }
+  if (b) { b.innerHTML = opts; if (list && list[1]) b.value = String(list[1].ts) }
 }
 if ($('tonSavesList')) $('tonSavesList').addEventListener('click', async ev => {
   const b = ev.target.closest('.tonSaveCopy'); if (!b) return
@@ -775,6 +800,116 @@ if ($('tonSavesList')) $('tonSavesList').addEventListener('click', async ev => {
 })
 if ($('tonSavesClear')) $('tonSavesClear').addEventListener('click', async () => { await api.tonSavesClear(); loadTonSaves(); if ($('tonSaveView')) $('tonSaveView').value = '' })
 api.on('ton:save', s => { loadTonSaves(); setText('tonCacheInfo', `💾 Save backed up · ${new Date(s.ts).toLocaleTimeString()}`) })
+
+// Import a pasted save code (from ToNSaveManager, another PC, a friend, …).
+if ($('tonSaveImportBtn')) $('tonSaveImportBtn').addEventListener('click', async () => {
+  const code = ($('tonSaveImport') ? $('tonSaveImport').value : '').trim()
+  const msg = $('tonSaveImportMsg')
+  if (!code) { if (msg) msg.textContent = 'Paste a code first.'; return }
+  const r = await api.tonSaveImport(code)
+  if (r && r.ok) {
+    if (msg) msg.textContent = r.duplicate ? `Already saved · ${r.length} chars` : `✓ Imported · ${r.length} chars`
+    if ($('tonSaveImport')) $('tonSaveImport').value = ''
+    loadTonSaves()
+  } else {
+    if (msg) msg.textContent = `✗ ${(r && r.error) || 'not a valid save code'}`
+  }
+})
+
+// Structural decode of save A — exact records → fields, values kept as strings.
+if ($('tonDecodeBtn')) $('tonDecodeBtn').addEventListener('click', async () => {
+  const out = $('tonDecodeOut'); if (!out) return
+  const ts = Number($('tonDiffA') ? $('tonDiffA').value : 0)
+  if (!ts) { out.textContent = 'No save selected.'; return }
+  const d = await api.tonSaveDecode({ ts })
+  if (!d || !d.ok) { out.textContent = `Could not decode (${(d && d.error) || 'error'}).`; return }
+  const CAP = 200
+  const shown = d.records.slice(0, CAP)
+  out.textContent =
+    `${d.recordCount} records · ${d.fieldCount} fields · ${d.length} chars\n` +
+    `kinds: ${Object.entries(d.counts).map(([k, v]) => `${k}=${v}`).join(' · ')}\n` +
+    '(fields are UNLABELED — proprietary format, no public schema)\n\n' +
+    JSON.stringify(shown) +
+    (d.records.length > CAP ? `\n\n… showing first ${CAP} of ${d.records.length} records` : '')
+})
+
+// Diff save A → B: which fields changed (the route to mapping fields to meaning).
+if ($('tonDiffBtn')) $('tonDiffBtn').addEventListener('click', async () => {
+  const out = $('tonDecodeOut'); if (!out) return
+  const tsA = Number($('tonDiffA') ? $('tonDiffA').value : 0)
+  const tsB = Number($('tonDiffB') ? $('tonDiffB').value : 0)
+  if (!tsA || !tsB) { out.textContent = 'Pick two saves.'; return }
+  if (tsA === tsB) { out.textContent = 'Pick two different saves for A and B.'; return }
+  const r = await api.tonSaveDiff({ tsA, tsB })
+  if (!r || !r.ok) { out.textContent = `Could not diff (${(r && r.error) || 'error'}).`; return }
+  const CAP = 400
+  const head = `${r.changeCount} field(s) changed  (A: ${r.fieldsA} fields → B: ${r.fieldsB} fields)` +
+    `${r.structureChanged ? '  · ⚠ structure differs' : ''}\n\n`
+  const lines = r.changes.slice(0, CAP)
+    .map(c => `[rec ${c.record}, field ${c.field}]  ${c.a === null ? '∅' : c.a}  →  ${c.b === null ? '∅' : c.b}`)
+    .join('\n')
+  out.textContent = head + (lines || 'No differences.') +
+    (r.changes.length > CAP ? `\n\n… +${r.changes.length - CAP} more` : '')
+})
+
+// Decode achievement unlocks from a save → preview, verify bit order, apply to board.
+let tonUnlockOrder = 'lsb'
+let tonDecodedMatched = null // canonical board names from the last decode, ready to apply
+document.querySelectorAll('#tonref .tonOrder').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#tonref .tonOrder').forEach(x => x.classList.remove('active'))
+  b.classList.add('active')
+  tonUnlockOrder = b.dataset.order
+}))
+if ($('tonDecodeUnlockBtn')) $('tonDecodeUnlockBtn').addEventListener('click', async () => {
+  const sum = $('tonUnlockSummary'); const prev = $('tonUnlockPreview')
+  const ts = Number($('tonDiffA') ? $('tonDiffA').value : 0)
+  if (!ts) { if (sum) sum.textContent = 'No save selected (pick save A above).'; return }
+  const r = await api.tonDecodeUnlocks({ ts, order: tonUnlockOrder })
+  tonDecodedMatched = null
+  if ($('tonApplyUnlockBtn')) $('tonApplyUnlockBtn').disabled = true
+  if (!r || !r.ok) { if (sum) sum.textContent = `Could not decode (${(r && r.error) || 'error'}).`; if (prev) prev.innerHTML = ''; return }
+  tonDecodedMatched = r.matched
+  if (sum) {
+    sum.innerHTML = `<b>${r.unlockedCount}/${r.total}</b> achievements unlocked · order <b>${r.order.toUpperCase()}</b> · ` +
+      `${r.matched.length} match the board${r.unmatched.length ? ` · ${r.unmatched.length} name mismatch` : ''}. ` +
+      'If these names aren\'t the achievements you really have, switch LSB/MSB and decode again.'
+  }
+  if (prev) {
+    prev.innerHTML = r.preview.map(p =>
+      `<div style="padding:2px 0;${p.onBoard ? '' : 'opacity:.5'}">${p.onBoard ? '✓' : '·'} ${tonEsc(p.name)}${p.onBoard ? '' : ' <span class="muted">(not on board)</span>'}</div>`
+    ).join('')
+  }
+  if ($('tonApplyUnlockBtn')) $('tonApplyUnlockBtn').disabled = !r.matched.length
+})
+if ($('tonApplyUnlockBtn')) $('tonApplyUnlockBtn').addEventListener('click', async () => {
+  if (!tonDecodedMatched || !tonDecodedMatched.length) return
+  const r = await api.tonApplyUnlocks({ names: tonDecodedMatched })
+  const sum = $('tonUnlockSummary')
+  if (r && r.ok) {
+    await loadTonUnlocks()
+    // jump to the achievements board so the user sees the result light up
+    document.querySelectorAll('#tonref .tonCat').forEach(x => x.classList.toggle('active', x.dataset.toncat === 'achievements'))
+    tonCat = 'achievements'
+    renderTonBoard()
+    if (sum) sum.innerHTML += `<br><b>✓ Applied — ${r.added} newly marked on the board.</b>`
+  } else if (sum) {
+    sum.innerHTML += `<br>✗ ${(r && r.error) || 'apply failed'}`
+  }
+})
+
+// Catch up the lifetime-stat milestone achievements from the latest ToNSaveManager stats.
+if ($('tonStatsCatchup')) $('tonStatsCatchup').addEventListener('click', async () => {
+  const s = await api.tonGet()
+  renderTonStats(s)
+  renderTonAchievements(s)
+  const done = TON_ACHIEVEMENTS.filter(a => (a.val(s) || 0) >= a.goal).length
+  const msg = $('tonStatsCatchupMsg')
+  if (msg) {
+    msg.textContent = (s.connected || s.rounds)
+      ? `✓ ${done}/${TON_ACHIEVEMENTS.length} milestones from lifetime stats`
+      : 'Connect to ToNSaveManager first to pull your stats'
+  }
+})
 
 // Manage the ToNSaveManager app (download / run / stop / update in the background).
 async function loadTonMgr () {

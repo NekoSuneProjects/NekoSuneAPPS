@@ -3,6 +3,39 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.5] - 2026-06-13
+
+### Added
+- **Locked / Unlocked filter on the Terrors reference board** — a new **All ·
+  ✓ Unlocked · 🔒 Locked** toggle filters every category (achievements, terrors,
+  items, locations, rounds) by unlock state. Combines with the existing search
+  (names + unlock hints), and the header shows a live "showing N" count while a
+  filter or search is active. Active category/filter buttons are now highlighted.
+- **AudioLink avatar parameter reference** — the AudioLink tab and `FEATURES.md`
+  now document the exact OSC avatar parameters the app sends (Low/Bass/Mid/Treble/
+  Volume/Peak floats `0.0–0.92` + `Beat` bool) and how to add them to an avatar.
+- **Import a ToN save code** — paste a `[START]…[END]` code (from ToNSaveManager,
+  another PC, or a friend) into the Save backups panel to store it alongside the
+  auto-captured backups. Codes are validated and `[START]/[END]` + whitespace are
+  stripped automatically.
+- **Save decode / diff (structural)** — a new lossless decoder turns a save code
+  into its exact record→field structure (values kept as strings so big bit-packed
+  integers and leading zeros survive), and **diffs two saves** to list exactly which
+  fields changed. The format is proprietary with no public schema, so fields are
+  intentionally **left unlabeled** — diffing is the supported way to work out what
+  each field means. The app does **not** guess/auto-mark board unlocks from a save.
+- **Catch up from stats** — a one-click button recomputes the lifetime-stat
+  milestone achievements from the latest ToNSaveManager stats snapshot.
+- **Decode achievement unlocks → catch up board** — reverse-engineered the save
+  format enough to read the **achievement bitfield** (200 unlocks packed into one
+  big integer) out of an imported save. The Save backups panel can decode it,
+  **preview** the unlocked achievements with an **LSB/MSB bit-order toggle** to
+  verify against your real unlocks, then **Apply to board** to light up the matching
+  achievements on the reference board. Only achievements that match a board entry
+  are marked — nothing is guessed, and you confirm the order before applying. (Other
+  unlock categories aren't reliably identifiable from a single save; use Save diff to
+  reverse-engineer those.)
+
 ## [1.0.4] - 2026-06-10
 
 ### Added

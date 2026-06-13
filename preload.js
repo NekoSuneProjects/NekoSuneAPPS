@@ -45,6 +45,11 @@ window.electronAPI = {
   tonSaves: () => ipcRenderer.invoke('ton:saves'),
   tonSaveCode: ts => ipcRenderer.invoke('ton:saveCode', ts),
   tonSavesClear: () => ipcRenderer.invoke('ton:savesClear'),
+  tonSaveImport: code => ipcRenderer.invoke('ton:saveImport', code),
+  tonSaveDecode: arg => ipcRenderer.invoke('ton:saveDecode', arg),
+  tonSaveDiff: arg => ipcRenderer.invoke('ton:saveDiff', arg),
+  tonDecodeUnlocks: arg => ipcRenderer.invoke('ton:decodeUnlocks', arg),
+  tonApplyUnlocks: arg => ipcRenderer.invoke('ton:applyUnlocks', arg),
   clipboardWrite: text => ipcRenderer.invoke('app:clipboard', text),
   openExternal: url => ipcRenderer.invoke('app:openExternal', url),
 

@@ -150,6 +150,7 @@
     .btn { border:none; border-radius:10px; padding:9px 14px; font-weight:600; cursor:pointer; color:#fff; background:linear-gradient(135deg,var(--accent),var(--accent2)); transition:.15s; }
     .btn:hover { filter:brightness(1.1); }
     .btn.ghost { background:var(--panel2); color:var(--text); border:1px solid var(--border); }
+    .btn.ghost.active { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; border-color:transparent; }
     .btn.danger { background:var(--bad); }
     .row { display:flex; gap:10px; align-items:center; }
     .switch { display:flex; align-items:center; gap:10px; background:var(--panel2); border:1px solid var(--border); border-radius:10px; padding:10px 12px; }
@@ -302,6 +303,26 @@
             <span>Low</span><span>Bass</span><span>Mid</span><span>Treble</span>
           </div>
           <button class="btn" id="toggleAudio" style="width:100%; margin-top:12px">Start Audio</button>
+          <details style="margin-top:12px">
+            <summary class="muted" style="cursor:pointer">Avatar parameters (add these to your avatar)</summary>
+            <div class="muted" style="font-size:.78rem; line-height:1.7; margin-top:6px">
+              Sent over OSC to VRChat (<code>127.0.0.1:9000</code>) every audio frame. Add each as
+              an <b>Expression&nbsp;Parameter</b> + Animator parameter. The avatar parameter name is
+              the part after <code>/avatar/parameters/</code>. Floats range <b>0.0&nbsp;–&nbsp;0.92</b>
+              (not 1.0 — output is clamped).<br><br>
+              <b>Float</b> <code>VRCOSC/NekoSuneApps/Audiolink/Low</code> — band 0<br>
+              <b>Float</b> <code>VRCOSC/NekoSuneApps/Audiolink/Bass</code> — band 1<br>
+              <b>Float</b> <code>VRCOSC/NekoSuneApps/Audiolink/Mid</code> — band 2<br>
+              <b>Float</b> <code>VRCOSC/NekoSuneApps/Audiolink/Treble</code> — band 3<br>
+              <b>Float</b> <code>VRCOSC/NekoSuneApps/Audiolink/Volume</code> — average of the 4 bands<br>
+              <b>Float</b> <code>VRCOSC/NekoSuneApps/Audiolink/Peak</code> — max of the 4 bands<br>
+              <b>Bool</b> <code>VRCOSC/NekoSuneApps/Audiolink/Beat</code> — true while Peak&nbsp;&gt;&nbsp;0.65<br><br>
+              Names are case-sensitive; <code>/</code> is allowed in VRChat parameter names. Mark the
+              params <b>synced</b> if other players should see the reaction (≈49 bits), or leave them
+              <b>local</b> to save parameter memory. Enable OSC in VRChat (Radial&nbsp;Menu →
+              Options → OSC → Enabled).
+            </div>
+          </details>
         </div>
         <div class="grid cols-2">
           <div class="card">
@@ -433,6 +454,10 @@
               <summary class="muted" style="cursor:pointer">Stats &amp; achievements</summary>
               <div id="tonStatsGrid" style="font-size:.8rem; margin-top:8px"></div>
               <div id="tonAchievements" style="margin-top:10px"></div>
+              <div class="row" style="gap:6px;margin-top:8px;align-items:center">
+                <button class="btn ghost" id="tonStatsCatchup">🔄 Catch up from stats</button>
+                <span class="muted" id="tonStatsCatchupMsg" style="font-size:.72rem"></span>
+              </div>
             </details>
             <div class="muted" style="font-size:.72rem; margin-top:6px">In ToNSaveManager, open <b>Settings → WebSocket API</b>, enable it (and "WebTracker compatibility"). Live round type, terror, map, alive status and lifetime stats become <code>{ton*}</code> chatbox tokens.</div>
           </div>
@@ -476,6 +501,12 @@
             <button class="btn ghost" id="tonRefresh" style="margin-left:auto" title="Update the cached data from the source sites">↻ Refresh</button>
           </div>
           <input id="tonSearch" placeholder="Search names &amp; unlock hints…" style="margin-bottom:8px" />
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;align-items:center">
+            <span class="muted" style="font-size:.72rem">Show:</span>
+            <button class="btn ghost tonFilter active" data-tonfilter="all">All</button>
+            <button class="btn ghost tonFilter" data-tonfilter="unlocked">✓ Unlocked</button>
+            <button class="btn ghost tonFilter" data-tonfilter="locked">🔒 Locked</button>
+          </div>
           <div id="tonBoard" style="max-height:540px;overflow:auto">Loading…</div>
         </div>
         <div class="grid cols-2">
@@ -495,9 +526,51 @@
           <div class="card">
             <h3>💾 Save backups <span class="pill" id="tonSaveState">—</span></h3>
             <div class="muted" style="font-size:.74rem">Auto-captured from the game's save code, with date/time. Click <b>Copy</b> to put a code on your clipboard, then paste it in-game to restore.</div>
+            <textarea id="tonSaveImport" rows="2" placeholder="Paste a [START]…[END] save code here to import it…" style="margin-top:8px;width:100%;font-family:monospace;font-size:.66rem"></textarea>
+            <div class="row" style="gap:6px;margin-top:6px;align-items:center">
+              <button class="btn ghost" id="tonSaveImportBtn">⬆ Import code</button>
+              <span class="muted" id="tonSaveImportMsg" style="font-size:.72rem"></span>
+            </div>
             <div id="tonSavesList" style="max-height:200px;overflow:auto;margin-top:8px;font-size:.8rem">—</div>
             <textarea id="tonSaveView" rows="3" placeholder="selected save code…" style="margin-top:8px;width:100%;font-family:monospace;font-size:.66rem" readonly></textarea>
             <button class="btn ghost" id="tonSavesClear" style="margin-top:8px">Clear backups</button>
+            <details style="margin-top:10px">
+              <summary class="muted" style="cursor:pointer">🔍 Decode / diff a save (structural)</summary>
+              <div class="muted" style="font-size:.72rem;margin:6px 0">
+                The save format is proprietary and obfuscated — there's <b>no public schema</b>, so fields
+                can't be named. This shows the exact structure (records → fields) losslessly, and can
+                <b>diff two saves</b> to reveal which fields changed — the way to work out what each field means.
+              </div>
+              <div class="row" style="gap:6px;flex-wrap:wrap;align-items:center">
+                <span class="muted" style="font-size:.72rem">A</span>
+                <select id="tonDiffA" style="flex:1;min-width:110px;font-size:.72rem"></select>
+                <span class="muted" style="font-size:.72rem">B</span>
+                <select id="tonDiffB" style="flex:1;min-width:110px;font-size:.72rem"></select>
+              </div>
+              <div class="row" style="gap:6px;margin-top:6px">
+                <button class="btn ghost" id="tonDecodeBtn">Decode A</button>
+                <button class="btn ghost" id="tonDiffBtn">Diff A → B</button>
+              </div>
+              <pre id="tonDecodeOut" style="max-height:240px;overflow:auto;font-size:.66rem;background:var(--panel2,#1a1a1a);padding:8px;border-radius:8px;margin-top:8px;white-space:pre-wrap;word-break:break-all">—</pre>
+            </details>
+            <details style="margin-top:10px">
+              <summary class="muted" style="cursor:pointer">🔓 Decode achievement unlocks → catch up board</summary>
+              <div class="muted" style="font-size:.72rem;margin:6px 0">
+                Reads the achievement bitfield from save <b>A</b> (picked above) and can light up those
+                achievements on your reference board. This is <b>reverse-engineered</b> — <b>verify the
+                preview first</b>: pick the bit order whose unlocked list matches your real achievements,
+                then Apply. Only achievements that exist on the board are marked; nothing is guessed.
+              </div>
+              <div class="row" style="gap:6px;align-items:center;flex-wrap:wrap">
+                <span class="muted" style="font-size:.72rem">Bit order:</span>
+                <button class="btn ghost tonOrder active" data-order="lsb">LSB</button>
+                <button class="btn ghost tonOrder" data-order="msb">MSB</button>
+                <button class="btn ghost" id="tonDecodeUnlockBtn">Decode A</button>
+                <button class="btn" id="tonApplyUnlockBtn" disabled>✓ Apply to board</button>
+              </div>
+              <div id="tonUnlockSummary" class="muted" style="font-size:.74rem;margin-top:6px"></div>
+              <div id="tonUnlockPreview" style="max-height:220px;overflow:auto;font-size:.72rem;margin-top:6px"></div>
+            </details>
           </div>
         </div>
       </section>

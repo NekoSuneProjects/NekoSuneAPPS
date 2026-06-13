@@ -40,6 +40,8 @@ const avatarDb = require('./modules/vrchat/avatars/avatarDb')
 const crashGuard = require('./modules/vrchat/tools/crashGuard')
 const { startTon, stopTon, getTonState } = require('./modules/integrations/tonModule')
 const tonData = require('./modules/integrations/tonData')
+const tonSaveCodec = require('./modules/integrations/tonSaveCodec')
+const tonUnlockDecoder = require('./modules/integrations/tonUnlockDecoder')
 const tonManager = require('./modules/integrations/tonManager')
 const vrNotify = require('./modules/integrations/vrNotify')
 
@@ -346,6 +348,53 @@ function tonAddSave (code) {
 ipcMain.handle('ton:saves', () => { tonLoadSaves(); return tonSaves.map(s => ({ ts: s.ts, length: (s.code || '').length, preview: (s.code || '').slice(0, 24) })) })
 ipcMain.handle('ton:saveCode', (e, ts) => { tonLoadSaves(); const s = tonSaves.find(x => x.ts === ts); return s ? s.code : '' })
 ipcMain.handle('ton:savesClear', () => { tonSaves = []; try { fs.writeFileSync(tonSavesFile(), '[]') } catch (_) {} return true })
+
+// Import a manually-pasted save code (e.g. from ToNSaveManager or another PC) and
+// keep it alongside the auto-captured backups. Validates it looks like a real code.
+ipcMain.handle('ton:saveImport', (e, code) => {
+  const clean = tonSaveCodec.sanitize(code)
+  if (!clean) return { ok: false, error: 'empty' }
+  if (!tonSaveCodec.isSaveCode(clean)) return { ok: false, error: 'not a save code' }
+  tonLoadSaves()
+  const dup = !!(tonSaves[0] && tonSaves[0].code === clean)
+  const rec = tonAddSave(clean) // null if identical to the most-recent backup
+  return { ok: true, duplicate: dup, length: clean.length, ts: rec ? rec.ts : (tonSaves[0] && tonSaves[0].ts) }
+})
+// Resolve a code from { ts } (a stored backup) or { code } (a raw string).
+function tonResolveCode (arg) {
+  if (arg && typeof arg === 'object') {
+    if (arg.code) return tonSaveCodec.sanitize(arg.code)
+    if (arg.ts) { tonLoadSaves(); const s = tonSaves.find(x => x.ts === Number(arg.ts)); return s ? s.code : '' }
+  }
+  return typeof arg === 'string' ? tonSaveCodec.sanitize(arg) : ''
+}
+// Lossless structural decode (fields are unlabeled — the format has no public schema).
+ipcMain.handle('ton:saveDecode', (e, arg) => {
+  const code = tonResolveCode(arg)
+  return code ? tonSaveCodec.decode(code) : { ok: false, error: 'not found' }
+})
+// Positional diff of two stored saves — reveals which fields changed between them.
+ipcMain.handle('ton:saveDiff', (e, { tsA, tsB } = {}) => {
+  const a = tonResolveCode({ ts: tsA })
+  const b = tonResolveCode({ ts: tsB })
+  if (!a || !b) return { ok: false, error: 'not found' }
+  return tonSaveCodec.diff(a, b)
+})
+// Decode the achievement unlocks from a save (reverse-engineered — for preview/verify).
+ipcMain.handle('ton:decodeUnlocks', (e, { ts, code, order } = {}) => {
+  const c = tonResolveCode(code ? { code } : { ts })
+  if (!c) return { ok: false, error: 'not found' }
+  const boardNames = (tonData.get().achievements || []).map(a => a.name)
+  return tonUnlockDecoder.decodeAchievements(c, { order, boardNames })
+})
+// Apply confirmed achievement names to the board (user-gated catch-up, not a guess).
+ipcMain.handle('ton:applyUnlocks', (e, { names } = {}) => {
+  if (!Array.isArray(names) || !names.length) return { ok: false, error: 'nothing to apply' }
+  let added = 0
+  names.forEach(n => { if (n && !tonUnlockAch.has(n)) { tonUnlockAch.add(n); added++ } })
+  if (added) settings.set('tonUnlockAch', [...tonUnlockAch])
+  return { ok: true, added, total: names.length }
+})
 ipcMain.handle('app:clipboard', (e, text) => { clipboard.writeText(String(text || '')); return true })
 
 // Manage the ToNSaveManager app itself (download / run / stop / update in background).
