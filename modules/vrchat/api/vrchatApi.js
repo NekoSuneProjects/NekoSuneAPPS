@@ -270,13 +270,24 @@ async function sendBoop (userId, emojiId) {
   return res.status === 200 ? { ok: true } : { ok: false, error: errOf(res, 'Boop failed') }
 }
 
-// Online user count (server activity).
+// Online user count (server activity). VRChat's /visits is the TOTAL across all
+// platforms; Steam's public API gives the Steam (PC desktop + PCVR) concurrent count
+// for VRChat (appid 438100), so Quest/other = total − steam — same method the public
+// VRChat metrics sites use. Steam needs no API key.
+const STEAM_APPID = 438100
 async function getOnlineCount () {
   loadCookies()
   const res = await axios.get(`${BASE}/visits`, Object.assign({ headers: baseHeaders() }, REQ))
   storeSetCookie(res)
-  if (res.status === 200) return { ok: true, count: Number(res.data) || 0 }
-  return { ok: false, error: errOf(res, 'Could not load online count') }
+  if (res.status !== 200) return { ok: false, error: errOf(res, 'Could not load online count') }
+  const total = Number(res.data) || 0
+  let steam = null
+  try {
+    const sr = await axios.get(`https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?appid=${STEAM_APPID}`, REQ)
+    if (sr.status === 200 && sr.data && sr.data.response && typeof sr.data.response.player_count === 'number') steam = sr.data.response.player_count
+  } catch (_) { /* Steam unreachable — show total only */ }
+  const quest = (steam != null) ? Math.max(0, total - steam) : null
+  return { ok: true, count: total, total, steam, quest }
 }
 // Group posts/announcements (for group alerts).
 async function getGroupPosts (groupId) {

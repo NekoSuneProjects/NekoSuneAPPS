@@ -2332,7 +2332,13 @@ document.querySelector('[data-tab="media"]').addEventListener('click', loadMedia
 
 /* ---------------- server status (online count) ---------------- */
 async function loadOnlineCount () {
-  try { const r = await api.vrchatOnline(); if (r.ok) setText('onlineCount', `🌐 ${r.count.toLocaleString()} online`) } catch (_) {}
+  try {
+    const r = await api.vrchatOnline(); if (!r.ok) return
+    let txt = `🌐 ${(r.total ?? r.count).toLocaleString()} total`
+    if (r.steam != null) txt += ` · 🖥️ ${r.steam.toLocaleString()} Steam`
+    if (r.quest != null) txt += ` · 🥽 ${r.quest.toLocaleString()} Quest`
+    setText('onlineCount', txt)
+  } catch (_) {}
 }
 setInterval(loadOnlineCount, 300000)
 

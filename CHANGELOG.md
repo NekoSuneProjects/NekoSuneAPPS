@@ -3,6 +3,14 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.11] - 2026-06-13
+
+### Added
+- **Online count by platform.** The top-bar count now reads **🌐 Total** (all platforms,
+  from VRChat) plus **🖥️ Steam** (PC desktop/PCVR, from Steam's public player-count API
+  for VRChat) and **🥽 Quest** (everything non-Steam = total − Steam: Quest standalone,
+  Meta Store, mobile). Same method the public VRChat metrics sites use; no extra keys.
+
 ## [1.0.10] - 2026-06-13
 
 ### Changed
