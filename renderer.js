@@ -11,6 +11,25 @@ const { DEFAULT_PRESETS } = require('./modules/vrchat/status/statusModule')
 const api = window.electronAPI
 const $ = id => document.getElementById(id)
 
+// Custom sidebar icons: for each nav button, try assets/icons/<data-tab>.png (then
+// .svg). If found, swap it in for the emoji; if not, the emoji stays. Lets icons be
+// added one at a time with no code changes.
+;(function loadNavIcons () {
+  document.querySelectorAll('.navbtn[data-tab]').forEach(btn => {
+    const ico = btn.querySelector('.ico'); if (!ico) return
+    const tab = btn.dataset.tab
+    const tryExt = exts => {
+      if (!exts.length) return
+      const src = `assets/icons/${tab}.${exts[0]}`
+      const img = new Image()
+      img.onload = () => { ico.style.backgroundImage = `url("${src}")`; ico.classList.add('has-img') }
+      img.onerror = () => tryExt(exts.slice(1))
+      img.src = src
+    }
+    tryExt(['png', 'svg'])
+  })
+})()
+
 // No credentials are shipped. Users enter their own Client / Application IDs
 // (see Docs / Setup). Never hardcode IDs, secrets, or tokens in the repo.
 const DEFAULT_TWITCH_CLIENT_ID = ''

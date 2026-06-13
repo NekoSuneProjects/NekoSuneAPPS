@@ -106,6 +106,10 @@
     .navbtn:hover { background:var(--panel); color:var(--text); }
     .navbtn.active { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; box-shadow:0 6px 18px -8px var(--accent); }
     .navbtn .ico { width:auto; }
+    /* Custom sidebar icons: drop a PNG/SVG into assets/icons/<tab>.(png|svg) and it
+       replaces the emoji automatically. Missing files just keep the emoji. */
+    .navbtn .ico.has-img { display:inline-block; width:26px; height:26px; font-size:0; line-height:0;
+      background-size:contain; background-repeat:no-repeat; background-position:center; }
     /* hover tooltip from the (hidden) label */
     .navbtn .lbl { display:none; }
     .navbtn:hover .lbl { display:block; position:absolute; left:56px; top:50%; transform:translateY(-50%);
