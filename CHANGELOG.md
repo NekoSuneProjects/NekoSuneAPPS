@@ -3,6 +3,16 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.9] - 2026-06-13
+
+### Changed
+- **Import a save → instant catch-up.** Pasting your save code and clicking **Import &
+  catch up** now automatically decodes your achievements and ticks them on the board in
+  one step — no manual decode/apply, and it jumps you to the achievements view with a
+  plain summary ("Imported from <name> — 13/200 achievements, 10 newly added"). The
+  technical decode/diff tools are tucked into clearly-labelled **Advanced (developer)**
+  sections you can ignore.
+
 ## [1.0.8] - 2026-06-13
 
 ### Added

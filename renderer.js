@@ -813,19 +813,39 @@ if ($('tonSavesList')) $('tonSavesList').addEventListener('click', async ev => {
 if ($('tonSavesClear')) $('tonSavesClear').addEventListener('click', async () => { await api.tonSavesClear(); loadTonSaves(); if ($('tonSaveView')) $('tonSaveView').value = '' })
 api.on('ton:save', s => { loadTonSaves(); setText('tonCacheInfo', `💾 Save backed up · ${new Date(s.ts).toLocaleTimeString()}`) })
 
-// Import a pasted save code (from ToNSaveManager, another PC, a friend, …).
+// Switch the board to the achievements view so freshly-applied unlocks are visible.
+function tonShowAchievements () {
+  document.querySelectorAll('#tonref .tonCat').forEach(x => x.classList.toggle('active', x.dataset.toncat === 'achievements'))
+  tonCat = 'achievements'
+  renderTonBoard()
+}
+
+// Import a pasted save code — then AUTOMATICALLY decode it and mark your achievements
+// on the board. One click does everything; the technical tools below are optional.
 if ($('tonSaveImportBtn')) $('tonSaveImportBtn').addEventListener('click', async () => {
   const code = ($('tonSaveImport') ? $('tonSaveImport').value : '').trim()
   const msg = $('tonSaveImportMsg')
   if (!code) { if (msg) msg.textContent = 'Paste a code first.'; return }
+  if (msg) msg.textContent = 'Reading save…'
   const r = await api.tonSaveImport(code)
-  if (r && r.ok) {
-    if (msg) msg.textContent = r.duplicate ? `Already saved · ${r.length} chars` : `✓ Imported · ${r.length} chars`
-    if ($('tonSaveImport')) $('tonSaveImport').value = ''
-    loadTonSaves()
-  } else {
-    if (msg) msg.textContent = `✗ ${(r && r.error) || 'not a valid save code'}`
+  if (!r || !r.ok) { if (msg) msg.textContent = `✗ ${(r && r.error) || 'not a valid save code'}`; return }
+  if ($('tonSaveImport')) $('tonSaveImport').value = ''
+  loadTonSaves()
+  // Auto-decode the achievements from the pasted code and apply matched ones.
+  const dec = await api.tonDecodeUnlocks({ code })
+  if (!dec || !dec.ok) {
+    if (msg) msg.textContent = `✓ Saved (${r.length} chars), but couldn't read achievements.`
+    return
   }
+  let added = 0
+  if (dec.matched && dec.matched.length) {
+    const ap = await api.tonApplyUnlocks({ names: dec.matched })
+    added = (ap && ap.added) || 0
+    await loadTonUnlocks()
+    tonShowAchievements()
+  }
+  const who = dec.name ? ` from ${dec.name}` : ''
+  if (msg) msg.textContent = `✓ Imported${who} — ${dec.unlockedCount}/${dec.total} achievements, ${added} newly added to your board.`
 })
 
 // Structural decode of save A — exact records → fields, values kept as strings.
