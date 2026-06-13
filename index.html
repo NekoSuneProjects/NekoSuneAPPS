@@ -556,15 +556,11 @@
             <details style="margin-top:10px">
               <summary class="muted" style="cursor:pointer">🔓 Decode achievement unlocks → catch up board</summary>
               <div class="muted" style="font-size:.72rem;margin:6px 0">
-                Reads the achievement bitfield from save <b>A</b> (picked above) and can light up those
-                achievements on your reference board. This is <b>reverse-engineered</b> — <b>verify the
-                preview first</b>: pick the bit order whose unlocked list matches your real achievements,
-                then Apply. Only achievements that exist on the board are marked; nothing is guessed.
+                Fully decodes save <b>A</b> (picked above) — unscrambles the real save format and reads
+                your exact achievement unlocks — then lights up those achievements on the reference board.
+                Deterministic (no guessing). Only achievements that exist on the board are marked.
               </div>
               <div class="row" style="gap:6px;align-items:center;flex-wrap:wrap">
-                <span class="muted" style="font-size:.72rem">Bit order:</span>
-                <button class="btn ghost tonOrder active" data-order="lsb">LSB ✓</button>
-                <button class="btn ghost tonOrder" data-order="msb">MSB</button>
                 <button class="btn ghost" id="tonDecodeUnlockBtn">Decode A</button>
                 <button class="btn" id="tonApplyUnlockBtn" disabled>✓ Apply to board</button>
               </div>

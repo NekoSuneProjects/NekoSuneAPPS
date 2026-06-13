@@ -381,11 +381,11 @@ ipcMain.handle('ton:saveDiff', (e, { tsA, tsB } = {}) => {
   return tonSaveCodec.diff(a, b)
 })
 // Decode the achievement unlocks from a save (reverse-engineered — for preview/verify).
-ipcMain.handle('ton:decodeUnlocks', (e, { ts, code, order } = {}) => {
+ipcMain.handle('ton:decodeUnlocks', (e, { ts, code } = {}) => {
   const c = tonResolveCode(code ? { code } : { ts })
   if (!c) return { ok: false, error: 'not found' }
   const boardNames = (tonData.get().achievements || []).map(a => a.name)
-  return tonUnlockDecoder.decodeAchievements(c, { order, boardNames })
+  return tonUnlockDecoder.decodeAchievements(c, { boardNames })
 })
 // Apply confirmed achievement names to the board (user-gated catch-up, not a guess).
 ipcMain.handle('ton:applyUnlocks', (e, { names } = {}) => {

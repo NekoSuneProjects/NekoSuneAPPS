@@ -3,6 +3,20 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.6] - 2026-06-13
+
+### Changed
+- **Real ToN save decoder (replaces the 1.0.5 bitfield heuristic).** The save format
+  was fully reverse-engineered from the decompiled world save engine: it's a four-layer
+  obfuscation onion — `_convert` (custom Base64 alphabet) → 8-char seed prefix →
+  scramble via Unity's `Random` (xorshift128, `Range(0,n)=next()%n`) → bytes + checksum
+  → a length-prefixed field schema. The app now **fully decodes** an imported save:
+  unscrambles it, verifies the checksum, and reads the **exact** achievement unlocks
+  (and the save owner's name) — deterministic, no bit-order guessing. "Decode A → Apply
+  to board" now lights up your true unlocks. The earlier 1.0.5 "achievement bitfield"
+  guess was a false lead (the digit-runs it read were scramble artifacts) and has been
+  removed.
+
 ## [1.0.5] - 2026-06-13
 
 ### Added

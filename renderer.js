@@ -852,30 +852,22 @@ if ($('tonDiffBtn')) $('tonDiffBtn').addEventListener('click', async () => {
     (r.changes.length > CAP ? `\n\n… +${r.changes.length - CAP} more` : '')
 })
 
-// Decode achievement unlocks from a save → preview, verify bit order, apply to board.
-let tonUnlockOrder = 'lsb'
+// Decode achievement unlocks from a save (full real decode) → preview → apply to board.
 let tonDecodedMatched = null // canonical board names from the last decode, ready to apply
-document.querySelectorAll('#tonref .tonOrder').forEach(b => b.addEventListener('click', () => {
-  document.querySelectorAll('#tonref .tonOrder').forEach(x => x.classList.remove('active'))
-  b.classList.add('active')
-  tonUnlockOrder = b.dataset.order
-}))
 if ($('tonDecodeUnlockBtn')) $('tonDecodeUnlockBtn').addEventListener('click', async () => {
   const sum = $('tonUnlockSummary'); const prev = $('tonUnlockPreview')
   const ts = Number($('tonDiffA') ? $('tonDiffA').value : 0)
   if (!ts) { if (sum) sum.textContent = 'No save selected (pick save A above).'; return }
-  const r = await api.tonDecodeUnlocks({ ts, order: tonUnlockOrder })
+  const r = await api.tonDecodeUnlocks({ ts })
   tonDecodedMatched = null
   if ($('tonApplyUnlockBtn')) $('tonApplyUnlockBtn').disabled = true
   if (!r || !r.ok) { if (sum) sum.textContent = `Could not decode (${(r && r.error) || 'error'}).`; if (prev) prev.innerHTML = ''; return }
   tonDecodedMatched = r.matched
   if (sum) {
-    const warn = r.orderLikelyWrong
-      ? '<span style="color:var(--bad,#e66)">⚠ This order marks an unreleased achievement as unlocked — it\'s the wrong order, switch it.</span> '
-      : ''
-    sum.innerHTML = `<b>${r.unlockedCount}/${r.total}</b> achievements unlocked · order <b>${r.order.toUpperCase()}</b> · ` +
-      `${r.matched.length} match the board${r.unmatched.length ? ` · ${r.unmatched.length} name mismatch` : ''}. ${warn}` +
-      (r.orderLikelyWrong ? '' : 'If these names aren\'t the achievements you really have, switch LSB/MSB and decode again.')
+    const who = r.name ? ` · save owner: <b>${tonEsc(r.name)}</b>` : ''
+    const chk = r.checksumOk ? '' : ' <span style="color:var(--bad,#e66)">⚠ checksum failed</span>'
+    sum.innerHTML = `<b>${r.unlockedCount}/${r.total}</b> achievements unlocked${who}${chk} · ` +
+      `${r.matched.length} match the board${r.unmatched.length ? ` · ${r.unmatched.length} name mismatch` : ''}.`
   }
   if (prev) {
     prev.innerHTML = r.preview.map(p =>
