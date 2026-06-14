@@ -3,6 +3,30 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.16] - 2026-06-14
+
+### Fixed
+- **Friends no longer all show as "offline".** The reconciled list was deriving
+  online/offline from each friend's `state` field, which VRChat's friends endpoint
+  doesn't reliably send. We now trust the API's online/offline buckets and tag each
+  friend with a reliable `online` flag.
+
+### Changed
+- **Right sidebar friends are now classified VRCX-style** from `location`, not `state`:
+  🟢 **Online** (in a world), 🌐 **Active** (on the website), ⚫ **Offline** — plus
+  Same World and your favorite-friend **categories**. The Friend Den distinguishes
+  Active vs Online the same way.
+
+### Added
+- **Community Ranks tab with the OG toggle.** A new "Community Ranks" tab exposes the
+  **Enable Community Ranks** switch and the **Show OG tiers (Veteran & Legend)** toggle,
+  a live rank card with the score breakdown, and a leaderboard.
+- **Clickable names in History.** Player join/leave (including everyone seen in a
+  world/lobby), friend add/remove, name changes and alerts now have clickable names —
+  click to open that user's profile (resolved by VRChat search).
+- **Previous display names on profiles.** The profile modal now shows a "Previously
+  known as" list, reconstructed from the local name-change history.
+
 ## [1.0.15] - 2026-06-14
 
 ### Fixed

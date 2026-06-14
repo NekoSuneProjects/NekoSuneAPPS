@@ -225,26 +225,41 @@ async function _getAllFriends () {
   const [on, off, me] = await Promise.all([getFriends(false), getFriends(true), fetchUser()])
   if (!on.ok && !off.ok) return { ok: false, error: on.error || off.error || 'Could not list friends' }
 
-  const byId = new Map()
-  for (const f of [...(on.friends || []), ...(off.friends || [])]) byId.set(f.id, f)
+  // TRUST THE BUCKETS, not each friend's `state` field — VRChat's friends endpoint
+  // doesn't reliably include `state`, so deriving online/offline from it marks
+  // everyone offline. The endpoint you asked (offline=false / =true) IS the answer.
+  const seen = new Set()
+  const online = []
+  const offline = []
+  for (const f of (on.friends || [])) { if (!seen.has(f.id)) { seen.add(f.id); online.push({ ...f, online: true }) } }
+  for (const f of (off.friends || [])) { if (!seen.has(f.id)) { seen.add(f.id); offline.push({ ...f, online: false }) } }
 
   // Reconcile: any id the account says is a friend but neither bucket returned.
   const wantIds = (me && me.ok && me.user && me.user.friendIds) || []
-  const missing = wantIds.filter(id => !byId.has(id))
+  const missing = wantIds.filter(id => !seen.has(id))
   let recovered = 0
   // Cap individual look-ups so a huge gap can't hammer the API; the rest still show.
   for (const id of missing.slice(0, 60)) {
     try {
       const r = await getUser(id)
-      if (r && r.ok && r.user) { byId.set(id, pickFriend(r.user)); recovered++ }
+      if (r && r.ok && r.user) {
+        const f = pickFriend(r.user)
+        // A recovered friend is "online" only if VRChat reports a live location/state.
+        const isOn = (f.location && f.location !== 'offline' && f.location !== 'traveling') || f.state === 'online' || f.state === 'active'
+        ;(isOn ? online : offline).push({ ...f, online: isOn })
+        seen.add(id); recovered++
+      }
     } catch (_) { /* skip — best effort */ }
   }
 
-  const friends = [...byId.values()]
+  const friends = [...online, ...offline]
   return {
     ok: true,
     friends,
+    online,
+    offline,
     total: friends.length,
+    onlineCount: online.length,
     expected: wantIds.length || friends.length,
     recovered,
     stillMissing: Math.max(0, missing.length - recovered)

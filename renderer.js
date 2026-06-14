@@ -1462,11 +1462,11 @@ async function loadFriends () {
   // The COMPLETE list (online + offline + reconciled stragglers) so nobody is missing.
   const r = await api.vrchatAllFriends()
   if (!r.ok) { el.textContent = 'Error: ' + (r.error || 'failed') + ' — log in on the VRChat tab.'; setText('friendCount', '0'); return }
-  const isOnline = f => f.state === 'online' || f.state === 'active'
+  const isOnline = f => f.online === true
   // Online first, then alphabetical — keeps the people you can actually join up top.
   const fr = r.friends.slice().sort((a, b) =>
     (isOnline(b) - isOnline(a)) || String(a.displayName || '').localeCompare(String(b.displayName || '')))
-  const onlineN = fr.filter(isOnline).length
+  const onlineN = r.onlineCount != null ? r.onlineCount : fr.filter(isOnline).length
   setText('friendCount', `${onlineN}/${fr.length}`)
   // Surface any friends VRChat's API still wouldn't return, so the count is honest.
   const prevNote = document.getElementById('fdMissingNote'); if (prevNote) prevNote.remove()
@@ -1474,10 +1474,11 @@ async function loadFriends () {
   if (!fr.length) { el.textContent = 'No friends found.'; return }
   _pageState.friendden = 0
   renderPaged(el, fr, 60, f => {
-    const dot = isOnline(f) ? (STATUS_DOT[String(f.status || '').toLowerCase()] || '🟢') : '⚫'
+    const st = friendState(f) // online (in-world) | active (website) | offline
+    const dot = st === 'offline' ? '⚫' : (st === 'active' ? '🌐' : (STATUS_DOT[String(f.status || '').toLowerCase()] || '🟢'))
     const name = String(f.displayName || '?').replace(/</g, '&lt;')
     const desc = f.statusDescription ? ' · ' + String(f.statusDescription).replace(/</g, '&lt;') : ''
-    const loc = isOnline(f) ? fmtLocation(f.location) : 'Offline'
+    const loc = st === 'active' ? 'On the website' : (st === 'offline' ? 'Offline' : fmtLocation(f.location))
     return `<div class="fd-friend" data-id="${f.id}" style="padding:3px 0;cursor:pointer">${dot} <b>${name}</b> ${langBadges(f.languages)} — ${loc}${desc}</div>`
   }, 'friendden', null, resolveWorldNames)
 }
@@ -1489,6 +1490,65 @@ function syncFriendAuto () {
 $('friendRefresh').addEventListener('click', loadFriends)
 $('friendAuto').addEventListener('change', () => { api.saveSetting('friendAuto', $('friendAuto').checked); syncFriendAuto() })
 document.querySelector('[data-tab="friendden"]').addEventListener('click', loadFriends)
+
+/* ---------------- Community Ranks (NekoSuneAPPS OG ranks) ---------------- */
+const RANK_BAR = [ // factor key -> label, for the breakdown bars
+  ['joinAge', 'VRChat join age'], ['yearsActive', 'Years active'], ['accountAge', 'App account age'],
+  ['worldUploads', 'World uploads'], ['avatarUploads', 'Avatar uploads'], ['creatorActivity', 'Creator activity'],
+  ['contributions', 'Contributions'], ['events', 'Event participation'], ['reputation', 'Reputation'],
+  ['recognition', 'Staff recognition']
+]
+function renderRankCard (r) {
+  const el = $('ranksCard')
+  if (!r || r.enabled === false) { el.textContent = 'Enable the feature to compute your rank.'; return }
+  if (!r.rank) { el.textContent = 'Could not compute a rank yet — log in on the VRChat tab, then Refresh.'; return }
+  const pct = Math.round((r.score / 1000) * 100)
+  const bars = RANK_BAR.map(([k, lbl]) => {
+    const v = Math.round((r.breakdown && r.breakdown[k]) || 0); const mx = (r.maxByFactor && r.maxByFactor[k]) || 1
+    return `<div style="margin:3px 0"><div class="row" style="justify-content:space-between;font-size:.72rem"><span>${lbl}</span><span class="muted">${v}/${mx}</span></div><div style="height:6px;background:var(--panel2);border-radius:4px;overflow:hidden"><div style="height:100%;width:${Math.round(v / mx * 100)}%;background:${r.rank.color}"></div></div></div>`
+  }).join('')
+  const pend = (r.eligibility && r.eligibility.pendingGates && r.eligibility.pendingGates.length)
+    ? `<div class="muted" style="font-size:.72rem;margin-top:8px">To reach the next tier: ${r.eligibility.pendingGates.map(esc).join(' · ')}</div>` : ''
+  const next = (r.eligibility && r.eligibility.nextRank)
+    ? `<div class="muted" style="font-size:.72rem">${r.eligibility.scoreToNext} pts to <b>${esc(r.eligibility.nextRank)}</b></div>` : ''
+  el.innerHTML =
+    `<div class="row" style="align-items:center;gap:12px">
+       <div style="width:64px;height:64px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;background:${r.rank.color}22;border:2px solid ${r.rank.color}">🏅</div>
+       <div style="min-width:0">
+         <div style="font-weight:800;font-size:1.05rem;color:${r.rank.color}">${esc(r.rank.shortLabel)}</div>
+         <div class="muted" style="font-size:.7rem">${esc(r.rank.label)}</div>
+         <div style="font-weight:700;margin-top:2px">${r.score} <span class="muted" style="font-weight:400">/ 1000</span></div>
+       </div>
+     </div>
+     <div style="height:8px;background:var(--panel2);border-radius:5px;overflow:hidden;margin:10px 0 4px"><div style="height:100%;width:${pct}%;background:${r.rank.color}"></div></div>
+     ${next}${pend}
+     <div style="margin-top:12px">${bars}</div>
+     <div class="muted" style="font-size:.66rem;margin-top:10px">${esc(r.disclaimer || '')}</div>`
+}
+async function loadRanksLeaderboard () {
+  const el = $('ranksLeaderboard')
+  const rows = await api.ranksLeaderboard(50)
+  if (!rows || !rows.length) { el.textContent = 'No ranked members yet.'; return }
+  el.innerHTML = rows.map(e => `<div class="row" style="justify-content:space-between;padding:3px 0"><span>#${e.position} <b>${esc(e.displayName)}</b></span><span class="muted">${esc(e.rank)} · ${e.score}</span></div>`).join('')
+}
+async function loadRanks () {
+  const cfg = await api.ranksConfig()
+  $('ranksEnabled').checked = !!cfg.enabled
+  $('ranksOgMode').checked = cfg.ogMode !== false
+  if (cfg.enabled) { renderRankCard(await api.ranksGet()); loadRanksLeaderboard() }
+  else renderRankCard({ enabled: false })
+}
+async function saveRanksCfg () {
+  const next = await api.ranksSetConfig({ enabled: $('ranksEnabled').checked, ogMode: $('ranksOgMode').checked })
+  $('ranksEnabled').checked = !!next.enabled; $('ranksOgMode').checked = next.ogMode !== false
+  if (next.enabled) { renderRankCard(await api.ranksGet()); loadRanksLeaderboard() }
+  else renderRankCard({ enabled: false })
+}
+$('ranksEnabled').addEventListener('change', saveRanksCfg)
+$('ranksOgMode').addEventListener('change', saveRanksCfg)
+$('ranksRefresh').addEventListener('click', async () => { $('ranksCard').textContent = 'Computing…'; renderRankCard(await api.ranksRefresh()); loadRanksLeaderboard() })
+api.on('ranks:update', r => { if ($('ranks') && $('ranks').offsetParent !== null) renderRankCard(r) })
+document.querySelector('[data-tab="ranks"]').addEventListener('click', loadRanks)
 
 /* ---------------- Event Scout (multi-group) ---------------- */
 let trackedGroups = []
@@ -1688,8 +1748,52 @@ async function loadHistory () {
   if (!rows || !rows.length) { el.textContent = 'No history yet — it fills as you use VRChat with the app open.'; return }
   el.innerHTML = rows.map(r => {
     const when = new Date(r.ts).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-    return `<div style="display:flex;gap:8px;padding:5px 0;border-top:1px solid var(--border)"><span>${HIST_ICON[r.type] || '•'}</span><div class="grow" style="min-width:0"><div><b>${esc(r.name || r.type)}</b> <span class="muted">${esc(r.detail || '')}</span></div><div class="muted" style="font-size:.72rem">${when}${r.world ? ' · ' + esc(r.world) : ''}</div></div></div>`
+    // Person-type rows: make the name clickable to open that user's profile.
+    const isPerson = HIST_PERSON_TYPES.has(r.type) && r.name
+    const nameHtml = isPerson
+      ? `<b class="hist-user" data-name="${esc(r.name)}" title="View profile" style="cursor:pointer;text-decoration:underline dotted">${esc(r.name)}</b>`
+      : `<b>${esc(r.name || r.type)}</b>`
+    return `<div style="display:flex;gap:8px;padding:5px 0;border-top:1px solid var(--border)"><span>${HIST_ICON[r.type] || '•'}</span><div class="grow" style="min-width:0"><div>${nameHtml} <span class="muted">${esc(r.detail || '')}</span></div><div class="muted" style="font-size:.72rem">${when}${r.world ? ' · ' + esc(r.world) : ''}</div></div></div>`
   }).join('')
+}
+// History event types whose `name` is a person (so the name resolves to a profile).
+const HIST_PERSON_TYPES = new Set(['join', 'leave', 'friend_add', 'friend_remove', 'name_change', 'alert'])
+// History only stores display names, not user ids — resolve the name via search,
+// then open the profile (exact match preferred, else the first result).
+async function openUserByName (name, anchorEl) {
+  if (!name) return
+  const old = anchorEl ? anchorEl.textContent : ''
+  if (anchorEl) anchorEl.textContent = '…'
+  try {
+    const r = await api.vrchatSearchUsers(name)
+    const users = (r && r.ok && r.users) || []
+    const exact = users.find(u => String(u.displayName || '').toLowerCase() === String(name).toLowerCase())
+    const pick = exact || users[0]
+    if (pick && pick.id) openUserModal(pick.id)
+    else if (anchorEl) { anchorEl.textContent = old; anchorEl.title = 'No VRChat user found by that name' }
+  } catch (_) { /* ignore */ }
+  finally { if (anchorEl && anchorEl.textContent === '…') anchorEl.textContent = old }
+}
+$('histList').addEventListener('click', e => {
+  const u = e.target.closest('.hist-user')
+  if (u && u.dataset.name) openUserByName(u.dataset.name, u)
+})
+// Reconstruct a user's previous display names from local name_change history.
+// Each name_change event stores the new name and `was "<old>"` in its detail, so
+// we walk the chain backwards from the current name. Returns ready-to-inject HTML.
+async function pastNamesBlock (currentName) {
+  if (!currentName) return ''
+  let events = []
+  try { events = await api.historyList({ type: 'name_change', limit: 5000 }) } catch (_) { return '' }
+  const prevOf = new Map() // newName(lower) -> old name (most recent change kept)
+  for (const e of (events || [])) {
+    const m = /was\s+"(.+)"\s*$/.exec(e.detail || '')
+    if (e.name && m) { const k = String(e.name).toLowerCase(); if (!prevOf.has(k)) prevOf.set(k, m[1]) }
+  }
+  const past = []; const seen = new Set(); let cur = String(currentName).toLowerCase()
+  while (prevOf.has(cur) && !seen.has(cur) && past.length < 20) { seen.add(cur); const old = prevOf.get(cur); past.push(old); cur = String(old).toLowerCase() }
+  if (!past.length) return ''
+  return `<div class="um-sec">Previously known as</div><div class="row" style="flex-wrap:wrap;gap:6px">${past.map(n => `<span class="tagchip" title="Former display name">🪪 ${esc(n)}</span>`).join('')}</div>`
 }
 $('histRefresh').addEventListener('click', loadHistory)
 $('histType').addEventListener('change', loadHistory)
@@ -1993,11 +2097,18 @@ let favFriendGroups = {} // friend id -> favorite group name
 let favGroupNames = {} // group name -> display name
 let myUserId = ''
 const rbCollapsed = { same: false, online: false, web: false, offline: true } // offline collapsed by default
+// VRCX-style state, derived from the API bucket (f.online) + location, NOT the
+// unreliable `state` field: online = in a world, active = on the website, offline.
+function friendState (f) {
+  if (!f.online) return 'offline'
+  if (!f.location || f.location === 'offline') return 'active' // online account, on the website
+  return 'online' // in a world / instance (incl. private / traveling)
+}
 function rbFriendRow (f) {
-  const onWeb = f.state === 'active' && (!f.location || f.location === 'offline')
-  const color = onWeb ? '#f59e0b' : (RB_COLOR[String(f.status || '').toLowerCase()] || '#6b7280')
+  const st = friendState(f)
+  const color = st === 'offline' ? '#6b7280' : (st === 'active' ? '#f59e0b' : (RB_COLOR[String(f.status || '').toLowerCase()] || '#22c55e'))
   const name = String(f.displayName || '?').replace(/</g, '&lt;')
-  const loc = (onWeb ? '🌐 On the website' : fmtLocation(f.location)).replace(/</g, '&lt;')
+  const loc = (st === 'active' ? '🌐 On the website' : (st === 'offline' ? '⚫ Offline' : fmtLocation(f.location))).replace(/</g, '&lt;')
   const ava = f.image ? `<img class="ava" src="${f.image}" referrerpolicy="no-referrer" loading="lazy" decoding="async" />` : '<div class="ava"></div>'
   return `<div class="rb-friend" data-id="${f.id}">${ava}<span class="dot" style="background:${color}"></span><div class="meta grow"><div class="nm">${name} ${langBadges(f.languages)}</div><div class="lo">${loc}</div></div></div>`
 }
@@ -2017,19 +2128,20 @@ function renderRightbar () {
   const match = f => !q || String(f.displayName || '').toLowerCase().includes(q)
   const online = (rbFriendsCache.online || []).filter(match)
   const offline = (rbFriendsCache.offline || []).filter(match)
-  const onWeb = f => f.state === 'active' && (!f.location || f.location === 'offline')
-  // Place each online friend in exactly one bucket (precedence: same world → fav
-  // lists [in-game only] → in-game → on web). Web/offline favs fall through.
+  // VRCX-style buckets. Precedence for online-account friends: same world → your
+  // favorite categories → in-game (Online) → website-only (Active).
   const same = []; const inGame = []; const web = []; const favBuckets = {}
   for (const f of online) {
-    if (onWeb(f)) { web.push(f); continue }
+    const st = friendState(f)
+    if (st === 'active') { web.push(f); continue } // on the website, not in a world
     if (myLoc && f.location === myLoc) { same.push(f); continue }
     if (favFriendIds.has(f.id)) { const g = favFriendGroups[f.id] || 'group_0'; (favBuckets[g] = favBuckets[g] || []).push(f) } else inGame.push(f)
   }
   let html = rbSection('same', '🏠 Same World', same)
+  // Your favorite-friend categories (the groups you set up in VRChat).
   for (const g of Object.keys(favBuckets).sort()) html += rbSection('fav:' + g, '⭐ ' + (favGroupNames[g] || 'Favorites'), favBuckets[g])
-  html += rbSection('online', '🟢 In-Game', inGame)
-  html += rbSection('web', '🌐 On Web', web)
+  html += rbSection('online', '🟢 Online — in a world', inGame)
+  html += rbSection('web', '🌐 Active — on the website', web)
   html += rbSection('offline', '⚫ Offline', offline)
   $('rbFriends').innerHTML = html
   resolveWorldNames($('rbFriends'))
@@ -2046,9 +2158,9 @@ async function loadRightbar () {
     $('rbAvatar').src = me.user.userIcon || me.user.currentAvatarThumbnailImageUrl || 'assets/vrchat.png'
   }
   if (all && all.ok) {
-    const isOnline = f => f.state === 'online' || f.state === 'active'
-    rbFriendsCache.online = all.friends.filter(isOnline)
-    rbFriendsCache.offline = all.friends.filter(f => !isOnline(f))
+    // Trust the API's online/offline buckets (see getAllFriends) — not per-friend state.
+    rbFriendsCache.online = all.online || all.friends.filter(f => f.online)
+    rbFriendsCache.offline = all.offline || all.friends.filter(f => !f.online)
   }
   try { const fav = await api.vrchatFavFriendIds(); if (fav.ok) { favFriendIds = new Set(fav.ids); favFriendGroups = fav.groups || {} } } catch (_) {}
   try { const fg = await api.vrchatFavGroups('friend'); if (fg.ok) { favGroupNames = {}; fg.groups.forEach(g => { favGroupNames[g.name] = g.displayName || g.name }) } } catch (_) {}
@@ -2148,11 +2260,14 @@ async function renderMTab (tab) {
     const noteBlock = (u.id !== myUserId)
       ? `<div class="um-sec">Your note</div><textarea id="umNote" rows="2" placeholder="Private note about this user">${esc(u.note || '')}</textarea><div class="row" style="margin-top:6px"><button class="btn ghost" id="umNoteSave" style="padding:4px 10px;font-size:.75rem">Save note</button><span class="muted" id="umNoteOut" style="font-size:.74rem"></span></div>`
       : ''
+    // Previous display names, reconstructed from the local name-change history.
+    const pastBlock = await pastNamesBlock(u.displayName)
     body.innerHTML =
       `<div class="rb-card">${umLocationLine(u)}${umJoinActions(u)}</div>` +
       (u.bio ? `<div class="um-bio">${esc(u.bio)}</div>` : '') +
       (links ? `<div class="row" style="flex-wrap:wrap;gap:8px">${links}</div>` : '') +
       (badges ? `<div class="um-sec">Badges</div><div class="badge-grid">${badges}</div>` : '') +
+      pastBlock +
       `<div class="um-sec">Info</div><div class="um-info">${rows.map(r => `<div><span>${esc(r[0])}</span><b>${esc(r[1])}</b></div>`).join('')}</div>` +
       noteBlock
     resolveWorldNames(body) // fill in the world name for a joinable instance
