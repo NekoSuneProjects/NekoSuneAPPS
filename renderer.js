@@ -510,6 +510,7 @@ api.on('window:update', s => {
   composer.update({ window: s.title, windowApp: s.app })
 })
 $('enableWindow').addEventListener('change', e => { setPill('winState', e.target.checked, 'on'); e.target.checked ? api.windowStart() : api.windowStop(); api.saveSetting('windowEnabled', e.target.checked) })
+$('winShowTitle').addEventListener('change', e => { composer.setWindowShowTitle(e.target.checked); api.saveSetting('windowShowTitle', e.target.checked); updatePreview() })
 
 // ToNSaveManager (Terrors of Nowhere)
 function tonPortVal () { const p = parseInt($('tonPort') && $('tonPort').value, 10); return Number.isFinite(p) && p > 0 ? p : 11398 }
@@ -2753,6 +2754,7 @@ async function init () {
   if (await api.getSetting('statsEnabled', false)) { $('enableStats').checked = true; setPill('statsState', true, 'on'); api.statsStart(5000) }
   if (await api.getSetting('netEnabled', false)) { $('enableNet').checked = true; setPill('netState', true, 'on'); api.netStart({ intervalMs: 5000 }) }
   if (await api.getSetting('windowEnabled', false)) { $('enableWindow').checked = true; setPill('winState', true, 'on'); api.windowStart() }
+  { const wt = await api.getSetting('windowShowTitle', false); $('winShowTitle').checked = wt; composer.setWindowShowTitle(wt) }
   if ($('tonPort')) $('tonPort').value = await api.getSetting('tonPort', 11398)
   if (await api.getSetting('tonEnabled', false)) { $('enableTon').checked = true; setPill('tonState', true, 'on'); tonStarted = true; api.tonStart({ port: tonPortVal() }) }
   $('tiktokUser').value = await api.getSetting('tiktokUser', '')

@@ -36,6 +36,7 @@ class ChatboxComposer {
     this.intervalMs = 4000
     this.rotationPosition = 'top' // 'top' | 'bottom'
     this.presets = []
+    this.windowShowTitle = false // false = app/process name only; true = full window title
 
     // per-source mode
     this.modes = {
@@ -84,6 +85,19 @@ class ChatboxComposer {
     if (pos === 'top' || pos === 'bottom') this.rotationPosition = pos
   }
 
+  setWindowShowTitle (on) { this.windowShowTitle = !!on }
+
+  // The window text to show, honoring the "full title" toggle. The title can be
+  // long, so cap it (the whole block is also capped to 144 in buildMessage).
+  windowText () {
+    const d = this.data
+    if (this.windowShowTitle && d.window) {
+      const t = d.window.length > 60 ? d.window.slice(0, 59) + '…' : d.window
+      return t
+    }
+    return d.windowApp || d.window || ''
+  }
+
   setPresets (presets) {
     this.presets = Array.isArray(presets) ? presets.filter(p => String(p).trim()) : []
   }
@@ -106,7 +120,7 @@ class ChatboxComposer {
       // heart rate
       hr: d.hr, hravg: d.hrAvg, hrmax: d.hrMax, hrmin: d.hrMin,
       // window / world
-      window: d.window || d.windowApp, world: d.world,
+      window: this.windowText(), world: d.world,
       // TikTok - separate data points
       tiktok: n(d.tiktokFollowers), tiktoklive: n(d.tiktokViewers),
       tiktoklikes: n(d.tiktokLikes), tiktokvideos: n(d.tiktokVideos), tiktoknew: n(d.tiktokNew),
@@ -145,7 +159,7 @@ class ChatboxComposer {
         if (d.hrMin) extra.push(`${d.hrMin} min`)
         return `💗 ${d.hr}${extra.length ? ' | ' + extra.join(' | ') : ' bpm'}`
       }
-      case 'window': return (d.windowApp || d.window) ? `🪟 ${d.windowApp || d.window}` : ''
+      case 'window': { const w = this.windowText(); return w ? `🪟 ${w}` : '' }
       case 'ton': {
         if (d.tonRoundActive) {
           const parts = [d.tonRound || 'Round', d.tonTerror].filter(Boolean)

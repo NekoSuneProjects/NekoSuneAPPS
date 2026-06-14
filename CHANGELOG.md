@@ -3,6 +3,14 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.23] - 2026-06-14
+
+### Added
+- **Window activity: "Show full window title" toggle.** The chatbox window line can
+  now show the full window title (e.g. "renderer.js - NekoSuneAPPS - Visual Studio
+  Code") instead of just the app name ("Code"). Off by default; toggle under Window
+  activity. Long titles are truncated so they fit the 144-char chatbox.
+
 ## [1.0.22] - 2026-06-14
 
 ### Added
