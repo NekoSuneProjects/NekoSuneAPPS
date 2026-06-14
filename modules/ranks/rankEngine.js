@@ -218,12 +218,6 @@ function seedFromVrcTags (tags) {
   return 50
 }
 
-// Accounts that reached top trust and are old enough to have actually held the
-// retired Veteran rank (it was removed ~2018) are treated as OG Veteran. Newer
-// trusted users are just "Trusted User" — which is what `system_trust_veteran`
-// really means in VRChat's API (it is NOT the old Veteran rank).
-const VETERAN_JOIN_MAX_YEAR = 2019
-
 // Year from a VRChat date_joined string ("YYYY-MM-DD"); 0 if unknown/unparseable.
 function joinYearOf (dateStr) {
   if (!dateStr) return 0
@@ -231,31 +225,29 @@ function joinYearOf (dateStr) {
   return m ? parseInt(m[1], 10) : 0
 }
 
-// ---- Friend/other-user rank ESTIMATE from VRChat trust tags --------------
-// We can't compute a full score for other people (no contribution/event data),
-// so we read VRChat's own trust + the grandfathered Legend tag.
-//
-// IMPORTANT mapping note: VRChat's trust tags max out at `system_trust_veteran`,
-// which displays as **Trusted User** — it is NOT the old Veteran rank, so we must
-// NOT label every trusted user "Veteran". The retired OG ranks are recovered as:
-//   • Legend  → an explicit legend tag (rare, grandfathered — e.g. Shadowriver)
-//   • Veteran → top trust AND an old account (joined on/before VETERAN_JOIN_MAX_YEAR)
-// opts: { ogMode:boolean, joinYear:number }
+// ---- Friend/other-user rank from VRChat trust tags -----------------------
+// This mirrors exactly how VRChat itself ranks users — the same thing the
+// OGTrustRanks mod surfaces in-game. That mod doesn't compute anything: it calls
+// VRChat's still-present internal APIUser.GetTrustRankEnum() /
+// GetFriendlyDetailedNameForSocialRank(), which keep producing Veteran & Legend.
+// VRChat only removed the on-screen DISPLAY, not the calculation, and it is driven
+// by these trust tags. So we map them the same way:
+//   system_trust_legend  → Legend      (rare — grandfathered legends, e.g. Shadowriver)
+//   system_trust_veteran → Veteran     (the real OG Veteran tier; common — by design)
+//   system_trust_trusted → Trusted User
+//   system_trust_known   → Known User
+//   system_trust_basic   → User
+//   (none)               → Visitor / New User
+// `system_trust_veteran` being common is correct: it IS the OG Veteran rank.
 function estimateFromTags (tags, opts = {}) {
   const t = new Set(tags || [])
   let key
-  if (t.has('system_legend') || t.has('system_trust_legend') || t.has('legend')) {
-    key = 'legend'
-  } else {
-    // Base VRChat trust rank (correct names — veteran tag = Trusted User).
-    if (t.has('system_trust_veteran')) key = 'trusted_user'
-    else if (t.has('system_trust_trusted')) key = 'known_user'
-    else if (t.has('system_trust_known')) key = 'user'
-    else if (t.has('system_trust_basic')) key = 'new_user'
-    else key = 'visitor'
-    // OG Veteran: only top-trust accounts old enough to have held the rank.
-    if (key === 'trusted_user' && opts.joinYear && opts.joinYear <= VETERAN_JOIN_MAX_YEAR) key = 'veteran'
-  }
+  if (t.has('system_trust_legend') || t.has('system_legend') || t.has('legend')) key = 'legend'
+  else if (t.has('system_trust_veteran')) key = 'veteran'
+  else if (t.has('system_trust_trusted')) key = 'trusted_user'
+  else if (t.has('system_trust_known')) key = 'known_user'
+  else if (t.has('system_trust_basic')) key = 'user'
+  else key = 'visitor'
 
   let r = RANKS.find(x => x.key === key)
   const isOg = r.og

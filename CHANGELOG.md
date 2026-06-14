@@ -3,6 +3,20 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.20] - 2026-06-14
+
+### Changed
+- **Trust ranks now mirror VRChat exactly (like the OGTrustRanks mod).** That mod
+  doesn't compute ranks itself — it calls VRChat's still-present internal
+  `APIUser.GetTrustRankEnum()` / `GetFriendlyDetailedNameForSocialRank()`, which keep
+  producing Veteran & Legend (VRChat only hid the display). Those are driven by trust
+  tags, so we map them the same way:
+  `system_trust_legend` → **Legend**, `system_trust_veteran` → **Veteran**,
+  `system_trust_trusted` → Trusted User, `system_trust_known` → Known User,
+  `system_trust_basic` → User. Reverted the 1.0.19 join-year gating — `system_trust_veteran`
+  genuinely IS the OG Veteran tier (so it's common by design), and **Legend** is reserved
+  for the grandfathered legend tag, so true legends like Shadowriver show Legend.
+
 ## [1.0.19] - 2026-06-14
 
 ### Fixed
