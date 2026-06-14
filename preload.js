@@ -239,7 +239,7 @@ window.electronAPI = {
 
   // community ranks (NekoSuneAPPS OG ranks — Veteran/Legend, opt-in)
   ranksConfig: () => ipcRenderer.invoke('ranks:config'),
-  ranksEstimate: tags => ipcRenderer.invoke('ranks:estimate', tags),
+  ranksEstimate: (tags, dateJoined) => ipcRenderer.invoke('ranks:estimate', { tags, dateJoined }),
   ranksSetConfig: cfg => ipcRenderer.invoke('ranks:setConfig', cfg),
   ranksGet: () => ipcRenderer.invoke('ranks:get'),
   ranksRefresh: () => ipcRenderer.invoke('ranks:refresh'),

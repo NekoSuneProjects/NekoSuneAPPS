@@ -3,6 +3,18 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.19] - 2026-06-14
+
+### Fixed
+- **Almost everyone showed as "Veteran".** VRChat's `system_trust_veteran` tag is
+  just its internal name for **Trusted User** — not the old Veteran rank — so mapping
+  it to Veteran promoted every trusted user. Corrected the trust mapping to real rank
+  names (top trust = Trusted User). Now:
+  - **Legend** comes from the grandfathered legend tag (`system_legend` /
+    `system_trust_legend`), so true legends (e.g. Shadowriver) show Legend.
+  - **Veteran** is reserved for top-trust accounts old enough to have actually held
+    it (joined ≤ 2019), so it's rare again — newer trusted users read as Trusted User.
+
 ## [1.0.18] - 2026-06-14
 
 ### Added

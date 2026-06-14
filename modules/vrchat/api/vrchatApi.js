@@ -194,7 +194,8 @@ function pickFriend (f) {
     languages: languagesFromTags(f.tags), // ['eng','jpn',...] → flag badges in the UI
     // Estimated NekoSuneAPPS Community Rank from VRChat trust tags (Veteran/Legend
     // show when earned). Renderer decides whether to display it (feature toggle).
-    communityRank: rankEngine.estimateFromTags(f.tags),
+    // Join year (when present) gates OG Veteran so not every trusted user is one.
+    communityRank: rankEngine.estimateFromTags(f.tags, { joinYear: rankEngine.joinYearOf(f.date_joined) }),
     image: f.userIcon || f.profilePicOverride || f.currentAvatarThumbnailImageUrl || ''
   }
 }

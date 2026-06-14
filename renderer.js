@@ -2264,7 +2264,7 @@ async function openUserModal (id) {
   // when earned). Only when the feature is enabled.
   if (ranksUi.enabled) {
     try {
-      const cr = await api.ranksEstimate(u.tags)
+      const cr = await api.ranksEstimate(u.tags, u.date_joined)
       const isOgShown = cr && (cr.key === 'veteran' || cr.key === 'legend')
       if (cr) { chips.push(`<span class="tagchip rank-pill${isOgShown ? ' rank-og' : ''}" title="Estimated from VRChat trust" style="border-color:${cr.color};color:${cr.color}">🏅 ${esc(cr.shortLabel)}</span>`); if (cr.vrcPlus) chips.push('<span class="tagchip" title="VRChat Plus supporter">✦ VRC+</span>') }
     } catch (_) {}
