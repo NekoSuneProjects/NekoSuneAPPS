@@ -2721,11 +2721,11 @@ function renderOverlay (state) {
   else { setText('overlayStatus', 'Overlay server is off'); $('overlayPreview').src = 'about:blank' }
 }
 async function applyOverlay () {
-  const s = { enabled: $('enableOverlay').checked, port: parseInt($('overlayPortInput').value, 10), style: $('overlayStyleSelect').value }
-  await api.saveSetting('overlayEnabled', s.enabled); await api.saveSetting('overlayPort', s.port); await api.saveSetting('overlayStyle', s.style)
+  const s = { enabled: $('enableOverlay').checked, port: parseInt($('overlayPortInput').value, 10), style: $('overlayStyleSelect').value, boxBg: $('overlayBgSelect').value }
+  await api.saveSetting('overlayEnabled', s.enabled); await api.saveSetting('overlayPort', s.port); await api.saveSetting('overlayStyle', s.style); await api.saveSetting('overlayBoxBg', s.boxBg)
   try { renderOverlay(await api.updateOverlaySettings(s)) } catch (err) { setText('overlayStatus', 'Overlay error: ' + err.message) }
 }
-;['enableOverlay', 'overlayStyleSelect', 'overlayPortInput'].forEach(id => $(id).addEventListener('change', applyOverlay))
+;['enableOverlay', 'overlayStyleSelect', 'overlayPortInput', 'overlayBgSelect'].forEach(id => $(id).addEventListener('change', applyOverlay))
 
 /* ---------------- boot ---------------- */
 async function init () {
@@ -2859,6 +2859,7 @@ async function init () {
   $('enableOverlay').checked = await api.getSetting('overlayEnabled', true)
   $('overlayPortInput').value = await api.getSetting('overlayPort', 39530)
   $('overlayStyleSelect').value = await api.getSetting('overlayStyle', 'default')
+  $('overlayBgSelect').value = await api.getSetting('overlayBoxBg', 'solid')
 
   if ($('enableReceive').checked) startOscReceiver(getRecvPort(), (a, args) => logLine(`IN  ${a} ${args.join(',')}`))
   if (katEnabled) startKat()

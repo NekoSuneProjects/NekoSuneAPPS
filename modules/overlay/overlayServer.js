@@ -10,12 +10,17 @@ const overlayStyles = [
   'youtube'
 ]
 
+// How the box behind the now-playing card is drawn:
+//  solid  = normal panel, thin = faint translucent panel, hidden = text-only (no box)
+const boxBackgrounds = ['solid', 'thin', 'hidden']
+
 let server = null
 let mediaProvider = null
 const options = {
   enabled: true,
   port: 39530,
-  style: 'default'
+  style: 'default',
+  boxBg: 'solid'
 }
 
 function isValidStyle (style) {
@@ -35,6 +40,10 @@ function normalizeOptions (nextOptions = {}) {
   if (isValidStyle(nextOptions.style)) {
     options.style = nextOptions.style
   }
+
+  if (boxBackgrounds.includes(nextOptions.boxBg)) {
+    options.boxBg = nextOptions.boxBg
+  }
 }
 
 function getOverlayUrl () {
@@ -46,7 +55,8 @@ function getOverlayState () {
     ...options,
     running: Boolean(server),
     url: getOverlayUrl(),
-    styles: overlayStyles
+    styles: overlayStyles,
+    boxBackgrounds
   }
 }
 
@@ -207,6 +217,17 @@ function createOverlayHtml () {
     .youtube .progress { background: #ff0000; }
     .bash { background: rgba(0, 0, 0, 0.88); border: 1px solid #22c55e; border-radius: 6px; padding: 12px 14px; font-family: Consolas, Monaco, monospace; color: #22c55e; box-shadow: 0 12px 30px rgba(0,0,0,0.32); }
     .bash .line { margin: 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    /* Box-background option: thin = faint panel, hidden = text only (no box). Works
+       across every style by overriding the section's background/border/shadow. */
+    .player.bg-thin { background: rgba(10, 12, 20, 0.32) !important; border-color: rgba(255,255,255,0.10) !important; box-shadow: none !important; backdrop-filter: blur(6px); }
+    .player.bg-hidden { background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
+    .default.bg-thin::before { opacity: 0.12 !important; }
+    .default.bg-hidden::before { display: none !important; }
+    /* Keep text legible with no box behind it (over arbitrary in-game backgrounds). */
+    .player.bg-hidden .song, .player.bg-hidden .artist, .player.bg-hidden .album,
+    .player.bg-hidden .status, .player.bg-hidden .time, .player.bg-thin .song {
+      text-shadow: 0 1px 3px rgba(0,0,0,0.92), 0 0 2px rgba(0,0,0,0.85);
+    }
     @media (max-width: 420px) {
       #overlay-root { padding: 10px; }
       .player { width: calc(100vw - 20px); }
@@ -221,8 +242,17 @@ function createOverlayHtml () {
   <main id="overlay-root" class="empty"></main>
   <script>
     const styles = ${JSON.stringify(overlayStyles)};
+    const boxBgOptions = ${JSON.stringify(boxBackgrounds)};
+    const configuredBoxBg = ${JSON.stringify(options.boxBg)};
     const root = document.getElementById('overlay-root');
     const params = new URLSearchParams(location.search);
+
+    // Box background: ?bg=solid|thin|hidden overrides the configured default.
+    function boxBgClass() {
+      const p = params.get('bg');
+      const v = boxBgOptions.includes(p) ? p : configuredBoxBg;
+      return (v && v !== 'solid') ? ' bg-' + v : '';
+    }
 
     function escapeHtml(value) {
       return String(value || '').replace(/[&<>"']/g, char => ({
@@ -289,12 +319,13 @@ function createOverlayHtml () {
 
       const style = getStyle(media);
       const data = sharedContent(media);
+      const bgCls = boxBgClass();
       root.className = '';
 
       if (style === 'bash') {
         const filled = Math.max(0, Math.min(Math.floor(data.percent / 5), 20));
         const bar = '='.repeat(filled) + '-'.repeat(20 - filled);
-        root.innerHTML = '<section class="player bash">' +
+        root.innerHTML = '<section class="player bash' + bgCls + '">' +
           '<div class="line">$ now-playing --song "' + data.song + '"</div>' +
           '<div class="line">$ artist: ' + data.artist + '</div>' +
           '<div class="line">$ status: ' + data.status.toLowerCase() + '</div>' +
@@ -304,7 +335,7 @@ function createOverlayHtml () {
       }
 
       if (style === 'youtube') {
-        root.innerHTML = '<section class="player youtube">' +
+        root.innerHTML = '<section class="player youtube' + bgCls + '">' +
           '<div class="thumb">' + (media.image ? '<img src="' + media.image + '" alt="">' : '<div class="fallback-art">' + data.song.slice(0, 1) + '</div>') + '</div>' +
           '<div class="progress-bar"><div class="progress" style="width:' + data.percent + '%"></div></div>' +
           '<div class="content"><div class="song">' + data.song + '</div><div class="artist">' + data.artist + '</div>' +
@@ -314,7 +345,7 @@ function createOverlayHtml () {
       }
 
       if (style === 'discord') {
-        root.innerHTML = '<section class="player discord">' +
+        root.innerHTML = '<section class="player discord' + bgCls + '">' +
           data.art +
           '<div class="content"><div class="song">' + data.song + '</div><div class="artist">' + data.artist + '</div>' +
           '<div class="status">' + (media.status === 'Playing' ? 'Now Playing' : data.status) + '</div>' +

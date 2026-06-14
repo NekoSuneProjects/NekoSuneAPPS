@@ -17,8 +17,8 @@ them one at a time.
 > background, centered, thick rounded strokes, consistent 2px-equivalent stroke weight,
 > no text, no drop shadow, no background shape, 256×256, modern UI app icon style. Subject:
 
-Generate all 30 with the SAME style sentence above so they match, only changing the
-"Subject:" part below.
+Generate all 32 with the SAME style sentence above so they match, only changing the
+"Subject:" part below. (`ranks.png` and `about.png` are the two currently missing.)
 
 ## Icons (file name → subject prompt)
 
@@ -54,6 +54,8 @@ Generate all 30 with the SAME style sentence above so they match, only changing 
 | `settings.png` | Settings | a gear / cog |
 | `docs.png` | Docs / Setup | an open book |
 | `log.png` | OSC Log | a scroll / lined document list |
+| `ranks.png` | Community Ranks | an award medal hanging from a ribbon |
+| `about.png` | About | a lowercase letter "i" information mark inside a circle |
 
 ## Tip
 Generate them as one set in a single batch with the master style prompt so the stroke

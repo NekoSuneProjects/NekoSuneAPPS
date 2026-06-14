@@ -126,7 +126,8 @@ async function configureOverlayServer () {
     await updateOverlaySettings({
       enabled: settings.get('overlayEnabled', true),
       port: settings.get('overlayPort', 39530),
-      style: settings.get('overlayStyle', 'default')
+      style: settings.get('overlayStyle', 'default'),
+      boxBg: settings.get('overlayBoxBg', 'solid')
     })
   } catch (error) {
     console.error('Overlay server failed:', error)

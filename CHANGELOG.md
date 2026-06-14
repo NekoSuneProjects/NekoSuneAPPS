@@ -3,6 +3,17 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.21] - 2026-06-14
+
+### Added
+- **Overlay box background toggle (Solid / Thin / Hidden).** The OBS now-playing
+  overlay can now thin or fully hide the box behind the card (text-only, with shadows
+  for legibility) — per style, with a `?bg=solid|thin|hidden` URL override too. Note:
+  this is the **OBS overlay**, not VRChat's in-game chatbox — VRChat renders the
+  chatbox itself and exposes no OSC control over its background.
+- Documented the two missing sidebar icons (`ranks.png`, `about.png`) in
+  `assets/icons/README.md` for generation.
+
 ## [1.0.20] - 2026-06-14
 
 ### Changed
