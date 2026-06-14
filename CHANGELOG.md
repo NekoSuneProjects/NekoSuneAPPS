@@ -3,6 +3,13 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.22] - 2026-06-14
+
+### Added
+- **Sidebar icons for the Community Ranks and About tabs** (`ranks.png`, `about.png`,
+  256×256 transparent PNGs matching the existing set) — they now replace the 🏅/ℹ️
+  emoji in the sidebar. The full icon set is complete.
+
 ## [1.0.21] - 2026-06-14
 
 ### Added
