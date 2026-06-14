@@ -998,8 +998,8 @@
         </div>
 
         <div class="card">
-          <h3>🪧 ToN Tablet OSC <span class="muted" style="font-size:.72rem">(drive the Terror Tablet from ToN tracking)</span></h3>
-          <div class="muted" style="font-size:.75rem;margin-bottom:8px">Forwards the core ToN state (round type, terror, map, item, alive) to your avatar's <code>ToN_</code> params. ToNSaveManager still drives the full terror-grid buffer. Needs the ToN connection on (Terrors tab).</div>
+          <h3>🪧 ToN Tablet OSC <span class="muted" style="font-size:.72rem">(drive Terror Tablet / Gridring from ToN tracking)</span></h3>
+          <div class="muted" style="font-size:.75rem;margin-bottom:8px">Forwards the core ToN state (round type, terror, map, item, alive, started) to your avatar's <code>ToN_</code> params — drives both the Terror Tablet and Gridring. ToNSaveManager still drives the full terror-grid buffer. Needs the ToN connection on (Terrors tab).</div>
           <label class="switch"><input type="checkbox" id="tonOscEnable"> Send ToN params to avatar</label>
           <div class="row" style="margin-top:8px"><button class="btn" id="tonOscRefresh" style="padding:4px 10px;font-size:.75rem">Resend now</button><button class="btn ghost" id="tonOscRaw" style="padding:4px 10px;font-size:.75rem">Show raw WS</button></div>
           <div id="tonOscOut" class="muted" style="margin-top:8px;font-size:.74rem;max-height:160px;overflow:auto;white-space:pre-wrap;font-family:Consolas,monospace"></div>

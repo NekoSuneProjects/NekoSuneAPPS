@@ -3,6 +3,13 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.25] - 2026-06-14
+
+### Added
+- **ToN Tablet OSC now also drives Gridring** (pluslatte Grid_Ring_2). Added the
+  `ToN_IsStarted` (round started) parameter; `ToN_RoundType` was already shared by
+  name, so the one proxy now drives both the Terror Tablet and Gridring at once.
+
 ## [1.0.24] - 2026-06-14
 
 ### Added

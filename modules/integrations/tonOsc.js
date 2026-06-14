@@ -29,7 +29,10 @@ const PARAMS = [
   { name: 'ToN_IsAlive', type: 'bool', get: s => !!s.alive },
   { name: 'ToN_Optedin', type: 'bool', get: s => !!s.optedIn },
   { name: 'ToN_IsSaboteur', type: 'bool', get: s => !!s.saboteur },
-  { name: 'ToN_RoundActive', type: 'bool', get: s => !!s.roundActive }
+  { name: 'ToN_RoundActive', type: 'bool', get: s => !!s.roundActive },
+  // Gridring (pluslatte Grid_Ring_2) uses ToN_IsStarted = round has started.
+  // Shared by name, so this drives the Terror Tablet AND Gridring at once.
+  { name: 'ToN_IsStarted', type: 'bool', get: s => !!s.roundActive }
 ]
 
 function setEnabled (on) {
