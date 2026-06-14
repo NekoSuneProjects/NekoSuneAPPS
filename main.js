@@ -38,7 +38,9 @@ const gamelog = require('./modules/history/gamelog')
 const photoRelay = require('./modules/integrations/photoRelay')
 const avatarDb = require('./modules/vrchat/avatars/avatarDb')
 const crashGuard = require('./modules/vrchat/tools/crashGuard')
-const { startTon, stopTon, getTonState } = require('./modules/integrations/tonModule')
+const { startTon, stopTon, getTonState, getTonRaw } = require('./modules/integrations/tonModule')
+const tonOsc = require('./modules/integrations/tonOsc')
+const osc = require('./modules/vrchat/osc/oscModule')
 const tonData = require('./modules/integrations/tonData')
 const tonSaveCodec = require('./modules/integrations/tonSaveCodec')
 const tonUnlockDecoder = require('./modules/integrations/tonUnlockDecoder')
@@ -149,6 +151,8 @@ app.whenReady().then(async () => {
   }
   tonData.init(app.getPath('userData')) // load/refresh the offline ToN reference cache
   tonManager.init(app.getPath('userData'))
+  // Restore the ToN Tablet OSC proxy (sends avatar params on each ToN update).
+  if (settings.get('tonOscEnabled', false)) { osc.setOscPort(settings.get('oscPort', 9000)); tonOsc.setEnabled(true) }
   // Auto-launch ToNSaveManager in the background on app start (downloads it first if missing).
   if (settings.get('tonAutoManager', false)) tonManager.ensureRunning().then(r => { if (r && r.ok) push('tonmgr:status', { installed: true, running: true }) }).catch(() => {})
   startVrcWorld(w => {
@@ -296,7 +300,7 @@ function tonRecordSeen (s) {
   }
 }
 let tonWsConnected = false
-function onTonUpdate (s) { tonWsConnected = !!s.connected; tonRecordSeen(s); push('ton:update', s) }
+function onTonUpdate (s) { tonWsConnected = !!s.connected; tonRecordSeen(s); if (tonOsc.isEnabled()) tonOsc.apply(s); push('ton:update', s) }
 
 // Persist a finished round to the offline history and push it live.
 function tonOnRound (rec) {
@@ -344,6 +348,20 @@ ipcMain.handle('ton:start', (e, opts) => {
 })
 ipcMain.handle('ton:stop', () => { stopTon(); stopTonLog(); return true })
 ipcMain.handle('ton:get', () => getTonState())
+
+/* ToN Tablet avatar OSC proxy (core params → ToN_ avatar parameters) */
+ipcMain.handle('tonOsc:get', () => ({ enabled: tonOsc.isEnabled(), params: tonOsc.preview(getTonState()) }))
+ipcMain.handle('tonOsc:set', (e, on) => {
+  osc.setOscPort(settings.get('oscPort', 9000)) // main has its own OSC socket; match the configured port
+  tonOsc.setEnabled(!!on)
+  settings.set('tonOscEnabled', !!on)
+  if (on) { tonOsc.resync(); tonOsc.apply(getTonState()) }
+  return { enabled: tonOsc.isEnabled(), params: tonOsc.preview(getTonState()) }
+})
+// Force a full re-send (e.g. after an avatar reload).
+ipcMain.handle('tonOsc:resync', () => { osc.setOscPort(settings.get('oscPort', 9000)); tonOsc.resync(); return tonOsc.apply(getTonState()) })
+// Raw recent WebSocket messages — for verifying the id mappings in-game.
+ipcMain.handle('tonOsc:raw', () => getTonRaw())
 ipcMain.handle('ton:history', (e, limit) => gamelog.list({ type: 'ton_round', limit: limit || 200 }).map(r => {
   let d = {}; try { d = JSON.parse(r.detail || '{}') } catch (_) {}
   return { ts: r.ts, roundType: r.name, terror: d.terror || '', map: d.map || r.world || '', result: d.result || '', durationSec: d.dur || 0 }

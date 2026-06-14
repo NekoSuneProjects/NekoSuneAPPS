@@ -35,10 +35,15 @@ const state = {
   // live round
   roundActive: false,
   roundType: '',
+  roundTypeId: 0, // numeric Value from ROUND_TYPE — forwarded raw to ToN_RoundType
   terror: '',
   terrorColor: 0,
+  terrorIds: [0, 0, 0], // numeric terror ids — forwarded raw to ToN_Terror1/2/3
   map: '',
+  mapId: 0, // numeric Value from LOCATION — forwarded raw to ToN_Map
+  season: 0, // numeric season id if ToNSaveManager sends one
   item: '',
+  itemId: 0, // numeric Value from ITEM — forwarded raw to ToN_Item
   alive: true,
   optedIn: false,
   saboteur: false,
@@ -94,6 +99,31 @@ const STATS_KEYS = {
   LobbyDamageTaken: 'sessionDamage'
 }
 
+// First finite number from a list of candidate fields (0 if none).
+function firstNumber (cands) {
+  for (const v of cands) { const n = Number(v); if (Number.isFinite(n)) return n }
+  return 0
+}
+// Extract up to 3 numeric terror ids from a TERRORS event, whatever shape it uses.
+function terrorIdArray (ev) {
+  for (const k of ['Ids', 'Values', 'Indexes', 'Indices']) {
+    if (Array.isArray(ev[k]) && ev[k].length) {
+      return [0, 1, 2].map(i => Number.isFinite(Number(ev[k][i])) ? Number(ev[k][i]) : 0)
+    }
+  }
+  const single = firstNumber([ev.Value, ev.Id, ev.Index])
+  return [single, 0, 0]
+}
+
+// Ring buffer of the most recent raw WS messages — powers the debug view so the
+// exact ToNSaveManager field names/values can be verified against the avatar.
+const rawLog = []
+function pushRaw (msg) {
+  rawLog.unshift({ at: Date.now(), msg })
+  if (rawLog.length > 60) rawLog.length = 60
+}
+function getTonRaw () { return rawLog.slice() }
+
 function applyEvent (ev) {
   if (!ev || typeof ev !== 'object') return
   switch (ev.Type) {
@@ -105,6 +135,8 @@ function applyEvent (ev) {
       // Prefer the readable name (DisplayName/Name like "Classic"/"Unbound") over
       // the numeric Value. "Intermission" (Command 0) is the between-rounds lobby.
       state.roundType = String(ev.DisplayName || ev.Name || ev.Value || '').trim()
+      // Raw numeric id forwarded straight to the avatar's ToN_RoundType (Int).
+      state.roundTypeId = firstNumber([ev.Value, ev.Command, ev.Id])
       break
     case 'TERRORS': {
       let name = ''
@@ -112,10 +144,20 @@ function applyEvent (ev) {
       if (!name && ev.DisplayName && ev.DisplayName !== '???') name = ev.DisplayName
       state.terror = name
       state.terrorColor = Number.isFinite(ev.DisplayColor) ? ev.DisplayColor : 0
+      // Raw terror ids → ToN_Terror1/2/3. Different ToNSaveManager builds expose
+      // these as an array (Ids/Values/Indexes) or a single Value; cover them all.
+      state.terrorIds = terrorIdArray(ev)
       break
     }
-    case 'LOCATION': state.map = String(ev.Name || '').trim(); break
-    case 'ITEM': state.item = String(ev.Name || '').trim(); break
+    case 'LOCATION':
+      state.map = String(ev.Name || '').trim()
+      state.mapId = firstNumber([ev.Value, ev.Index, ev.Id])
+      break
+    case 'ITEM':
+      state.item = String(ev.Name || '').trim()
+      state.itemId = firstNumber([ev.Value, ev.Index, ev.Id])
+      break
+    case 'SEASON': state.season = firstNumber([ev.Value, ev.Index, ev.Id]); break
     case 'INSTANCE': state.instance = String(ev.Value || '').trim(); break
     case 'STATS': {
       const key = STATS_KEYS[ev.Name]
@@ -172,6 +214,7 @@ function handleMessage (raw) {
   let msg
   try { msg = JSON.parse(raw) } catch { return }
   if (!msg || typeof msg !== 'object') return
+  pushRaw(msg)
   if (msg.Type === 'CONNECTED') {
     state.displayName = String(msg.DisplayName || '').trim()
     if (Array.isArray(msg.Args)) msg.Args.forEach(applyEvent)
@@ -243,4 +286,4 @@ function stopTon () {
 
 function getTonState () { return { ...state } }
 
-module.exports = { startTon, stopTon, getTonState }
+module.exports = { startTon, stopTon, getTonState, getTonRaw }

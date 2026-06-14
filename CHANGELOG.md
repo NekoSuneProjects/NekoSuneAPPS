@@ -3,6 +3,19 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.24] - 2026-06-14
+
+### Added
+- **ToN Tablet OSC proxy.** Forwards the core ToNSaveManager state the app already
+  tracks (round type, terror, map, item, alive/opted-in/saboteur) to the avatar's
+  `ToN_` parameters over OSC, so the Terror Tablet works driven by NekoSuneAPPS.
+  Numeric ids are forwarded raw from the WebSocket; ToNSaveManager still drives the
+  full 134-float terror-grid buffer. Includes a **"Show raw WS"** debug view to verify
+  the id mappings in-game. Toggle under OSC Control → ToN Tablet OSC.
+- **Emerald Sound System (rf_ESS) controls.** Audio-reactive `rf_ESS/Float` (follows
+  AudioLink volume) plus manual toggle buttons for `rf_ESS/Global/Have/Less/Set/Toggle`
+  and a manual Float slider. Under OSC Control → Emerald Sound System.
+
 ## [1.0.23] - 2026-06-14
 
 ### Added

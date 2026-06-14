@@ -128,7 +128,13 @@ function handleAudioLevels (levels) {
   const newBeat = peak > 0.65
   if (newBeat !== beatState) { beatState = newBeat; sendBeat(beatState ? 1 : 0) }
   sendOsc(levels)
+  // Emerald Sound System: drive rf_ESS/Float from the audio volume when enabled.
+  if (essAudioReactive) {
+    const vol = levels.reduce((a, b) => a + b, 0) / levels.length
+    sendParam('/avatar/parameters/rf_ESS/Float', Math.max(0, Math.min(1, vol)), 'float')
+  }
 }
+let essAudioReactive = false
 async function initAudio () {
   const sel = $('audioDeviceSelect')
   const deviceId = sel.value
@@ -1136,6 +1142,43 @@ $('paramSend').addEventListener('click', () => {
   else val = Number(raw) || 0
   try { sendParam(addr, val, type); setText('paramOut', `Sent ${type} ${addr} = ${val}`); logLine(`OUT ${addr} ${val}`) } catch (e) { setText('paramOut', 'Error: ' + e.message) }
 })
+
+/* ---------------- tools: ToN Tablet OSC ---------------- */
+function renderTonOscParams (params) {
+  if (!params || !params.length) { setText('tonOscOut', ''); return }
+  $('tonOscOut').textContent = params.map(p => `${p.name} = ${p.value}`).join('\n')
+}
+async function loadTonOsc () {
+  const st = await api.tonOscGet()
+  $('tonOscEnable').checked = !!st.enabled
+  renderTonOscParams(st.params)
+}
+$('tonOscEnable').addEventListener('change', async e => {
+  const st = await api.tonOscSet(e.target.checked)
+  renderTonOscParams(st.params)
+})
+$('tonOscRefresh').addEventListener('click', async () => { const sent = await api.tonOscResync(); renderTonOscParams(sent && sent.length ? sent : (await api.tonOscGet()).params) })
+$('tonOscRaw').addEventListener('click', async () => {
+  const raw = await api.tonOscRaw()
+  $('tonOscOut').textContent = (raw || []).slice(0, 25).map(r => {
+    const t = new Date(r.at).toLocaleTimeString()
+    return `${t}  ${JSON.stringify(r.msg)}`
+  }).join('\n') || 'No ToN WebSocket messages yet — connect ToNSaveManager and join a round.'
+})
+document.querySelector('[data-tab="osccontrol"]').addEventListener('click', loadTonOsc)
+
+/* ---------------- tools: Emerald Sound System (rf_ESS) ---------------- */
+function essSend (name, value, type) { try { sendParam('/avatar/parameters/rf_ESS/' + name, value, type) } catch (_) {} }
+$('essAudio').addEventListener('change', e => { essAudioReactive = e.target.checked; api.saveSetting('essAudioReactive', essAudioReactive); setText('essOut', essAudioReactive ? 'rf_ESS/Float follows audio.' : 'Audio-reactive off.') })
+$('essFloat').addEventListener('input', e => {
+  const v = Number(e.target.value)
+  setText('essFloatVal', v.toFixed(2))
+  if (!essAudioReactive) essSend('Float', v, 'float') // manual only matters when not audio-driven
+})
+document.querySelectorAll('.ess-bool').forEach(cb => cb.addEventListener('change', () => {
+  essSend(cb.dataset.ess, cb.checked, 'bool')
+  setText('essOut', `rf_ESS/${cb.dataset.ess} = ${cb.checked}`)
+}))
 
 /* ---------------- tools: Photo Relay ---------------- */
 function applyPhotoRelay () {
@@ -2862,6 +2905,7 @@ async function init () {
   $('overlayPortInput').value = await api.getSetting('overlayPort', 39530)
   $('overlayStyleSelect').value = await api.getSetting('overlayStyle', 'default')
   $('overlayBgSelect').value = await api.getSetting('overlayBoxBg', 'solid')
+  { const ea = await api.getSetting('essAudioReactive', false); essAudioReactive = ea; if ($('essAudio')) $('essAudio').checked = ea }
 
   if ($('enableReceive').checked) startOscReceiver(getRecvPort(), (a, args) => logLine(`IN  ${a} ${args.join(',')}`))
   if (katEnabled) startKat()
