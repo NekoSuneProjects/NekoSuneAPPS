@@ -3,6 +3,28 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.15] - 2026-06-14
+
+### Fixed
+- **Friends list no longer drops people.** VRChat's two paginated friend buckets
+  (online / offline) don't always add up to your real friend list. We now reconcile
+  against the authoritative account friend-id list and individually re-fetch any
+  stragglers (VRCX-style), so missing friends show up again. New `getAllFriends()`.
+- The left **Friend Den** now shows your **complete** list (was online-only) with
+  paging, online-first ordering, and an honest "online / total" count.
+
+### Added
+- **Spoken-language flag badges.** Friends' VRChat `language_*` tags are rendered as
+  flag emoji 🇯🇵🇬🇧🇰🇷 in the Friend Den, the right sidebar, and the profile modal so
+  you can tell at a glance which languages someone speaks. (50+ languages mapped.)
+- The **right sidebar** now lists **all** friends per group (paging cap removed; the
+  panel scrolls), using the same reconciled, complete friend list.
+- **NekoSuneAPPS Community Ranks** (opt-in) — an independent community reputation
+  system that brings back the spirit of the retired Veteran / Legend ranks. Off by
+  default; toggle via `communityRanks.enabled` (and `ogMode` to show/hide the OG
+  tiers). 0–1000 weighted scoring, anti-farming curves, SQLite-backed, with an
+  optional REST surface. See `docs/community-ranks-spec.md`.
+
 ## [1.0.14] - 2026-06-13
 
 ### Fixed

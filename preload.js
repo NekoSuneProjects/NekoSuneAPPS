@@ -114,6 +114,7 @@ window.electronAPI = {
   vrchatLogout: () => ipcRenderer.invoke('vrchat:logout'),
   vrchatAutoStatus: on => ipcRenderer.invoke('vrchat:autostatus', on),
   vrchatFriends: () => ipcRenderer.invoke('vrchat:friends'),
+  vrchatAllFriends: () => ipcRenderer.invoke('vrchat:allFriends'),
   vrchatGroups: () => ipcRenderer.invoke('vrchat:groups'),
   vrchatGroupEvents: groupId => ipcRenderer.invoke('vrchat:groupEvents', groupId),
   vrchatNotifications: () => ipcRenderer.invoke('vrchat:notifications'),
@@ -235,6 +236,15 @@ window.electronAPI = {
   // vr
   vrStart: () => ipcRenderer.invoke('vr:start'),
   vrStop: () => ipcRenderer.invoke('vr:stop'),
+
+  // community ranks (NekoSuneAPPS OG ranks — Veteran/Legend, opt-in)
+  ranksConfig: () => ipcRenderer.invoke('ranks:config'),
+  ranksSetConfig: cfg => ipcRenderer.invoke('ranks:setConfig', cfg),
+  ranksGet: () => ipcRenderer.invoke('ranks:get'),
+  ranksRefresh: () => ipcRenderer.invoke('ranks:refresh'),
+  ranksLeaderboard: limit => ipcRenderer.invoke('ranks:leaderboard', limit),
+  ranksContribution: payload => ipcRenderer.invoke('ranks:contribution', payload),
+  ranksHistory: () => ipcRenderer.invoke('ranks:history'),
 
   // event subscription (main -> renderer)
   on: (channel, cb) => ipcRenderer.on(channel, (_e, payload) => cb(payload)),

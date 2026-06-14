@@ -79,7 +79,13 @@ function pickUser (d) {
     displayName: d.displayName,
     status: d.status, // "join me" | "active" | "ask me" | "busy" | "offline"
     statusDescription: d.statusDescription,
-    state: d.state
+    state: d.state,
+    // Additive fields used by the Community Ranks module (join age + trust seed).
+    dateJoined: d.date_joined || null, // "YYYY-MM-DD"
+    tags: Array.isArray(d.tags) ? d.tags : [],
+    // The authoritative full friend-id list — used to reconcile the (sometimes
+    // incomplete) paginated friends endpoints. See getAllFriends().
+    friendIds: Array.isArray(d.friends) ? d.friends : []
   }
 }
 function errOf (res, fallback) {
@@ -160,6 +166,14 @@ function parseInstance (location) {
   }
 }
 
+// Pull the spoken-language codes out of a user's VRChat tags. VRChat stores these
+// as `language_xxx` tags (xxx = ISO 639-2/3 code, e.g. language_eng, language_jpn).
+function languagesFromTags (tags) {
+  return (Array.isArray(tags) ? tags : [])
+    .filter(t => typeof t === 'string' && t.startsWith('language_'))
+    .map(t => t.slice('language_'.length))
+}
+
 // ---- Friend Den: online friends + their location ----
 function pickFriend (f) {
   const inst = parseInstance(f.location)
@@ -176,6 +190,7 @@ function pickFriend (f) {
     joinable: inst.joinable,
     state: f.state, // "online" (in-game) | "active" (on website) | "offline"
     platform: f.platform,
+    languages: languagesFromTags(f.tags), // ['eng','jpn',...] → flag badges in the UI
     image: f.userIcon || f.profilePicOverride || f.currentAvatarThumbnailImageUrl || ''
   }
 }
@@ -197,6 +212,43 @@ async function _getFriends (offline = false) {
     if (res.data.length < 100) break
   }
   return { ok: true, friends: all.map(pickFriend) }
+}
+
+// The COMPLETE friend list. VRChat's two paginated buckets (online + offline)
+// don't always add up to your real friend list — a known gap that VRCX works
+// around by reconciling against the authoritative `auth/user.friends` id array
+// and fetching any stragglers individually. This does the same.
+function getAllFriends () { return _memo('friends:all', 120000, _getAllFriends) }
+async function _getAllFriends () {
+  loadCookies()
+  if (!cookies.auth) return { ok: false, error: 'Not logged in' }
+  const [on, off, me] = await Promise.all([getFriends(false), getFriends(true), fetchUser()])
+  if (!on.ok && !off.ok) return { ok: false, error: on.error || off.error || 'Could not list friends' }
+
+  const byId = new Map()
+  for (const f of [...(on.friends || []), ...(off.friends || [])]) byId.set(f.id, f)
+
+  // Reconcile: any id the account says is a friend but neither bucket returned.
+  const wantIds = (me && me.ok && me.user && me.user.friendIds) || []
+  const missing = wantIds.filter(id => !byId.has(id))
+  let recovered = 0
+  // Cap individual look-ups so a huge gap can't hammer the API; the rest still show.
+  for (const id of missing.slice(0, 60)) {
+    try {
+      const r = await getUser(id)
+      if (r && r.ok && r.user) { byId.set(id, pickFriend(r.user)); recovered++ }
+    } catch (_) { /* skip — best effort */ }
+  }
+
+  const friends = [...byId.values()]
+  return {
+    ok: true,
+    friends,
+    total: friends.length,
+    expected: wantIds.length || friends.length,
+    recovered,
+    stillMissing: Math.max(0, missing.length - recovered)
+  }
 }
 
 // ---- User profile (clicked from the friends panel) ----
@@ -702,7 +754,7 @@ function logout () { cookies = {}; currentUserId = ''; saveCookies(); invalidate
 
 module.exports = {
   login, verify2fa, fetchUser, mapStatus, isLoggedIn, logout,
-  getFriends, getUser, sendFriendRequest, requestInvite, unfriend, inviteUser, getUserGroups, getUserWorlds,
+  getFriends, getAllFriends, getUser, sendFriendRequest, requestInvite, unfriend, inviteUser, getUserGroups, getUserWorlds,
   getMutualFriends, getFavoriteWorlds, getFavoriteGroups, sendBoop, getMyAvatars, getMyWorlds, addFavorite, removeFavorite,
   searchUsers, searchWorlds, searchGroups, getWorld, getWorldName, getGroup, parseInstance,
   updateProfile, selectAvatar, deleteAvatar, createInstance, createGroupInstance, inviteSelf, groupInvite, isRateLimited,

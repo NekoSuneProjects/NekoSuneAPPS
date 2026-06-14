@@ -46,6 +46,7 @@ const { startTonLog, stopTonLog } = require('./modules/integrations/tonLogReader
 const updater = require('./modules/integrations/updater')
 const tonManager = require('./modules/integrations/tonManager')
 const vrNotify = require('./modules/integrations/vrNotify')
+const ranks = require('./modules/ranks')
 
 // Keep a stray error in any poller/network module from hard-crashing the app.
 process.on('uncaughtException', err => console.error('[uncaughtException]', err))
@@ -138,6 +139,13 @@ app.whenReady().then(async () => {
   // Track the current VRChat world from its log; feed it to the renderer and
   // (when connected) into the Discord presence.
   gamelog.init(app.getPath('userData')).catch(err => console.warn('gamelog init:', err.message))
+  // Community Ranks (NekoSuneAPPS OG ranks) — only spin up the store when the
+  // master toggle is on. Dormant DB is retained when off (it just isn't loaded).
+  if (settings.get('communityRanks', {}).enabled) {
+    ranks.init(app.getPath('userData'))
+      .then(ok => { if (ok) setTimeout(refreshSelfRank, 18000) }) // stagger after VRChat pollers
+      .catch(err => console.warn('ranks init:', err.message))
+  }
   tonData.init(app.getPath('userData')) // load/refresh the offline ToN reference cache
   tonManager.init(app.getPath('userData'))
   // Auto-launch ToNSaveManager in the background on app start (downloads it first if missing).
@@ -174,7 +182,7 @@ app.on('activate', () => {
 app.on('before-quit', () => {
   stopComponentStats(); stopNetworkStats(); stopPulsoid(); stopHyperate(); stopWindowActivity(); stopTon()
   disconnectTikTok(); stopTwitch(); stopKick(); stopDiscord(); stopVrBattery(); stopVrcWorld(); stopAfk()
-  stopWeather(); stopVrcStatusPoll(); stopBot(); pawprints.tickCommit(); stopFriendDiff(); stopGreeter(); gamelog.close(); photoRelay.stop(); stopGroupAlerts(); stopNotifPoll(); crashGuard.stop(); vrcTools.stopVideoCacher(); stopTonLog()
+  stopWeather(); stopVrcStatusPoll(); stopBot(); pawprints.tickCommit(); stopFriendDiff(); stopGreeter(); gamelog.close(); photoRelay.stop(); stopGroupAlerts(); stopNotifPoll(); crashGuard.stop(); vrcTools.stopVideoCacher(); stopTonLog(); ranks.close()
 })
 
 /* ------------------------------------------------------------------ */
@@ -622,6 +630,8 @@ ipcMain.handle('vrchat:autostatus', (e, on) => { if (on) startVrcStatusPoll(); e
 
 /* Friend Den / Event Scout / Pawprints / Auto-Greeter (VRChat API) */
 ipcMain.handle('vrchat:friends', () => vrchatApi.getFriends())
+// Complete friend list (online + offline + reconciled stragglers) — see getAllFriends.
+ipcMain.handle('vrchat:allFriends', () => vrchatApi.getAllFriends())
 ipcMain.handle('vrchat:groups', () => vrchatApi.getMyGroups())
 ipcMain.handle('vrchat:groupEvents', (e, groupId) => vrchatApi.getGroupEvents(groupId))
 ipcMain.handle('vrchat:notifications', () => vrchatApi.getNotifications())
@@ -963,3 +973,61 @@ ipcMain.handle('vr:stop', () => { stopVrBattery(); return true })
 /* ------------------------------------------------------------------ */
 ipcMain.handle('afk:start', (e, opts) => { startAfk(opts || {}, s => push('afk:update', s)); return true })
 ipcMain.handle('afk:stop', () => { stopAfk(); return true })
+
+/* ------------------------------------------------------------------ */
+/* Community Ranks — NekoSuneAPPS OG ranks (Veteran / Legend), opt-in  */
+/* These are independent community ranks, NOT official VRChat ranks.   */
+/* ------------------------------------------------------------------ */
+const ranksCfg = () => settings.get('communityRanks', { enabled: false, ogMode: true })
+// Sync the local user's facts from VRChat + history, then recompute their rank.
+async function refreshSelfRank () {
+  if (!ranks.isReady()) return null
+  try { await ranks.syncSelf() } catch (err) { console.warn('ranks sync:', err.message) }
+  return ranks.recompute(ranks.localNsaId(), { ogMode: ranksCfg().ogMode !== false })
+}
+// Ensure the store is up when the feature is toggled on at runtime (not just boot).
+async function ensureRanksReady () {
+  if (ranks.isReady()) return true
+  if (!ranksCfg().enabled) return false
+  return ranks.init(app.getPath('userData')).catch(() => false)
+}
+
+ipcMain.handle('ranks:config', () => ranksCfg())
+ipcMain.handle('ranks:setConfig', async (e, cfg = {}) => {
+  const cur = ranksCfg()
+  const next = { ...cur, ...cfg, enabled: !!(cfg.enabled ?? cur.enabled), ogMode: !!(cfg.ogMode ?? cur.ogMode) }
+  settings.set('communityRanks', next)
+  if (next.enabled) { await ensureRanksReady(); await refreshSelfRank(); push('ranks:update', ranks.getRank(ranks.localNsaId(), { ogMode: next.ogMode })) }
+  return next
+})
+// Current stored rank for the local user (no recompute unless first run).
+ipcMain.handle('ranks:get', async () => {
+  if (!(await ensureRanksReady())) return { enabled: false }
+  return ranks.getRank(ranks.localNsaId(), { ogMode: ranksCfg().ogMode !== false }) || { enabled: true, rank: null }
+})
+// Force a fresh sync + recompute (the "Refresh my rank" button).
+ipcMain.handle('ranks:refresh', async () => {
+  if (!(await ensureRanksReady())) return { enabled: false }
+  const r = await refreshSelfRank()
+  push('ranks:update', r)
+  return r
+})
+ipcMain.handle('ranks:leaderboard', async (e, limit) => {
+  if (!(await ensureRanksReady())) return []
+  return ranks.leaderboard(limit)
+})
+// Log a contribution for the local user (enters as 'pending' until verified).
+ipcMain.handle('ranks:contribution', async (e, { type, description, evidenceUrl } = {}) => {
+  if (!(await ensureRanksReady())) return { ok: false, error: 'disabled' }
+  const user = ranks.db.getUser(ranks.localNsaId()) || (await ranks.syncSelf())
+  if (!user) return { ok: false, error: 'no user' }
+  const points = require('./modules/ranks/rankApi').CONTRIB_POINTS[type]
+  if (points == null) return { ok: false, error: 'unknown type' }
+  const id = ranks.db.addContribution(user.id, { type, points, description, evidenceUrl, status: 'pending' })
+  return { ok: true, id, status: 'pending', provisionalPoints: points }
+})
+ipcMain.handle('ranks:history', async () => {
+  if (!(await ensureRanksReady())) return []
+  const user = ranks.db.getUser(ranks.localNsaId())
+  return user ? ranks.db.history(user.id, 50) : []
+})

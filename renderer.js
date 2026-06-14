@@ -1385,6 +1385,34 @@ function renderPaged (el, items, pageSize, itemHtml, key, wrapClass, afterRender
 
 /* ---------------- Friend Den ---------------- */
 const STATUS_DOT = { 'join me': '🔵', active: '🟢', 'ask me': '🟠', busy: '🔴', offline: '⚫' }
+// VRChat spoken-language tags (language_xxx) -> flag emoji + readable name, so the
+// friend lists can show at a glance which language(s) someone speaks.
+const LANG_FLAG = {
+  eng: ['🇬🇧', 'English'], jpn: ['🇯🇵', 'Japanese'], kor: ['🇰🇷', 'Korean'], zho: ['🇨🇳', 'Chinese'],
+  fra: ['🇫🇷', 'French'], deu: ['🇩🇪', 'German'], spa: ['🇪🇸', 'Spanish'], por: ['🇵🇹', 'Portuguese'],
+  rus: ['🇷🇺', 'Russian'], ita: ['🇮🇹', 'Italian'], nld: ['🇳🇱', 'Dutch'], pol: ['🇵🇱', 'Polish'],
+  swe: ['🇸🇪', 'Swedish'], nor: ['🇳🇴', 'Norwegian'], dan: ['🇩🇰', 'Danish'], fin: ['🇫🇮', 'Finnish'],
+  tha: ['🇹🇭', 'Thai'], vie: ['🇻🇳', 'Vietnamese'], ind: ['🇮🇩', 'Indonesian'], tur: ['🇹🇷', 'Turkish'],
+  ara: ['🇸🇦', 'Arabic'], heb: ['🇮🇱', 'Hebrew'], hin: ['🇮🇳', 'Hindi'], ukr: ['🇺🇦', 'Ukrainian'],
+  ces: ['🇨🇿', 'Czech'], hun: ['🇭🇺', 'Hungarian'], ron: ['🇷🇴', 'Romanian'], ell: ['🇬🇷', 'Greek'],
+  gre: ['🇬🇷', 'Greek'], slv: ['🇸🇮', 'Slovenian'], hrv: ['🇭🇷', 'Croatian'], bul: ['🇧🇬', 'Bulgarian'],
+  srp: ['🇷🇸', 'Serbian'], est: ['🇪🇪', 'Estonian'], lav: ['🇱🇻', 'Latvian'], lit: ['🇱🇹', 'Lithuanian'],
+  isl: ['🇮🇸', 'Icelandic'], gle: ['🇮🇪', 'Irish'], cym: ['🏴', 'Welsh'], afr: ['🇿🇦', 'Afrikaans'],
+  msa: ['🇲🇾', 'Malay'], zsm: ['🇲🇾', 'Malay'], fil: ['🇵🇭', 'Filipino'], tgl: ['🇵🇭', 'Tagalog'],
+  cat: ['🇪🇸', 'Catalan'], glg: ['🇪🇸', 'Galician'], eus: ['🏴', 'Basque'], mlt: ['🇲🇹', 'Maltese'],
+  sqi: ['🇦🇱', 'Albanian'], ase: ['🤟', 'ASL'], bfi: ['🤟', 'BSL'], tok: ['🌐', 'Toki Pona']
+}
+// Render up to 3 language flag badges from a list of VRChat language codes.
+function langBadges (languages) {
+  const codes = (languages || []).filter(Boolean)
+  if (!codes.length) return ''
+  const shown = codes.slice(0, 3).map(c => {
+    const m = LANG_FLAG[c] || ['🌐', c.toUpperCase()]
+    return `<span class="lang-badge" title="${m[1]}">${m[0]}</span>`
+  }).join('')
+  const extra = codes.length > 3 ? `<span class="lang-badge" title="${codes.length - 3} more">+${codes.length - 3}</span>` : ''
+  return `<span class="lang-badges">${shown}${extra}</span>`
+}
 // Parse a VRChat location string -> world/instance + access type (mirror of the
 // API helper, for places that only have the raw location string).
 function parseLoc (loc) {
@@ -1431,17 +1459,26 @@ async function resolveWorldNames (root) {
 }
 async function loadFriends () {
   const el = $('friendList'); el.textContent = 'Loading…'
-  const r = await api.vrchatFriends()
+  // The COMPLETE list (online + offline + reconciled stragglers) so nobody is missing.
+  const r = await api.vrchatAllFriends()
   if (!r.ok) { el.textContent = 'Error: ' + (r.error || 'failed') + ' — log in on the VRChat tab.'; setText('friendCount', '0'); return }
-  const fr = r.friends.sort((a, b) => String(a.displayName || '').localeCompare(String(b.displayName || '')))
-  setText('friendCount', String(fr.length))
-  if (!fr.length) { el.textContent = 'No online friends.'; return }
+  const isOnline = f => f.state === 'online' || f.state === 'active'
+  // Online first, then alphabetical — keeps the people you can actually join up top.
+  const fr = r.friends.slice().sort((a, b) =>
+    (isOnline(b) - isOnline(a)) || String(a.displayName || '').localeCompare(String(b.displayName || '')))
+  const onlineN = fr.filter(isOnline).length
+  setText('friendCount', `${onlineN}/${fr.length}`)
+  // Surface any friends VRChat's API still wouldn't return, so the count is honest.
+  const prevNote = document.getElementById('fdMissingNote'); if (prevNote) prevNote.remove()
+  if (r.stillMissing) { const note = document.createElement('div'); note.id = 'fdMissingNote'; note.className = 'muted'; note.style.cssText = 'font-size:.72rem;margin-bottom:4px'; note.textContent = `${r.stillMissing} friend(s) couldn't be loaded from VRChat right now.`; el.before(note) }
+  if (!fr.length) { el.textContent = 'No friends found.'; return }
   _pageState.friendden = 0
   renderPaged(el, fr, 60, f => {
-    const dot = STATUS_DOT[String(f.status || '').toLowerCase()] || '⚫'
+    const dot = isOnline(f) ? (STATUS_DOT[String(f.status || '').toLowerCase()] || '🟢') : '⚫'
     const name = String(f.displayName || '?').replace(/</g, '&lt;')
     const desc = f.statusDescription ? ' · ' + String(f.statusDescription).replace(/</g, '&lt;') : ''
-    return `<div class="fd-friend" data-id="${f.id}" style="padding:3px 0;cursor:pointer">${dot} <b>${name}</b> — ${fmtLocation(f.location)}${desc}</div>`
+    const loc = isOnline(f) ? fmtLocation(f.location) : 'Offline'
+    return `<div class="fd-friend" data-id="${f.id}" style="padding:3px 0;cursor:pointer">${dot} <b>${name}</b> ${langBadges(f.languages)} — ${loc}${desc}</div>`
   }, 'friendden', null, resolveWorldNames)
 }
 $('friendList').addEventListener('click', e => { const row = e.target.closest('.fd-friend'); if (row && row.dataset.id) openUserModal(row.dataset.id) })
@@ -1962,17 +1999,16 @@ function rbFriendRow (f) {
   const name = String(f.displayName || '?').replace(/</g, '&lt;')
   const loc = (onWeb ? '🌐 On the website' : fmtLocation(f.location)).replace(/</g, '&lt;')
   const ava = f.image ? `<img class="ava" src="${f.image}" referrerpolicy="no-referrer" loading="lazy" decoding="async" />` : '<div class="ava"></div>'
-  return `<div class="rb-friend" data-id="${f.id}">${ava}<span class="dot" style="background:${color}"></span><div class="meta grow"><div class="nm">${name}</div><div class="lo">${loc}</div></div></div>`
+  return `<div class="rb-friend" data-id="${f.id}">${ava}<span class="dot" style="background:${color}"></span><div class="meta grow"><div class="nm">${name} ${langBadges(f.languages)}</div><div class="lo">${loc}</div></div></div>`
 }
-const RB_CAP = 150
 function rbSection (key, title, friends) {
   if (!friends.length && key !== 'offline') return ''
   const collapsed = rbCollapsed[key]
-  let rows = ''
-  if (!collapsed) {
-    rows = friends.slice(0, RB_CAP).map(rbFriendRow).join('') || '<div class="muted" style="padding:4px 6px;font-size:.78rem">None</div>'
-    if (friends.length > RB_CAP) rows += `<div class="muted" style="padding:4px 6px;font-size:.72rem">+${friends.length - RB_CAP} more — use search to filter</div>`
-  }
+  // Sidebar shows ALL friends in the group (no paging cap) — paging only lives on
+  // the left-hand Friends menu.
+  const rows = collapsed
+    ? ''
+    : (friends.map(rbFriendRow).join('') || '<div class="muted" style="padding:4px 6px;font-size:.78rem">None</div>')
   return `<div class="rb-group rb-toggle" data-grp="${key}">${collapsed ? '▸' : '▾'} ${title} — ${friends.length}</div>${rows}`
 }
 function renderRightbar () {
@@ -2000,19 +2036,24 @@ function renderRightbar () {
 }
 async function loadRightbar () {
   if (!await api.vrchatIsLoggedIn()) { $('rbFriends').textContent = 'Log in on the VRChat tab.'; return }
-  const [frOn, frOff, me] = await Promise.all([api.vrchatFriends(false), api.vrchatFriends(true), api.vrchatStatus()])
+  // One reconciled call gets the WHOLE friend list (including the stragglers the
+  // paginated buckets drop), then we split it online/offline ourselves.
+  const [all, me] = await Promise.all([api.vrchatAllFriends(), api.vrchatStatus()])
   if (me && me.ok && me.user) {
     myUserId = me.user.id || ''
     setText('rbName', me.user.displayName || '—')
     setText('rbStatus', me.user.statusDescription || me.user.status || '')
     $('rbAvatar').src = me.user.userIcon || me.user.currentAvatarThumbnailImageUrl || 'assets/vrchat.png'
   }
-  if (frOn && frOn.ok) rbFriendsCache.online = frOn.friends
-  if (frOff && frOff.ok) rbFriendsCache.offline = frOff.friends
+  if (all && all.ok) {
+    const isOnline = f => f.state === 'online' || f.state === 'active'
+    rbFriendsCache.online = all.friends.filter(isOnline)
+    rbFriendsCache.offline = all.friends.filter(f => !isOnline(f))
+  }
   try { const fav = await api.vrchatFavFriendIds(); if (fav.ok) { favFriendIds = new Set(fav.ids); favFriendGroups = fav.groups || {} } } catch (_) {}
   try { const fg = await api.vrchatFavGroups('friend'); if (fg.ok) { favGroupNames = {}; fg.groups.forEach(g => { favGroupNames[g.name] = g.displayName || g.name }) } } catch (_) {}
-  if ((frOn && frOn.ok) || (frOff && frOff.ok)) renderRightbar()
-  else $('rbFriends').textContent = (frOn && frOn.error) || 'Could not load friends.'
+  if (all && all.ok) renderRightbar()
+  else $('rbFriends').textContent = (all && all.error) || 'Could not load friends.'
 }
 $('rbSearch').addEventListener('input', renderRightbar)
 setInterval(loadRightbar, 120000)
@@ -2079,6 +2120,9 @@ async function openUserModal (id) {
   if (u.last_platform) chips.push(`<span class="tagchip">${u.last_platform === 'standalonewindows' ? 'PC' : (u.last_platform === 'android' ? 'Quest' : u.last_platform)}</span>`)
   if ((u.tags || []).includes('system_supporter')) chips.push('<span class="tagchip">VRC+</span>')
   if (u.ageVerified || (u.tags || []).includes('system_age_verified')) chips.push('<span class="tagchip">18+</span>')
+  // Spoken languages, derived from the user's language_xxx tags → flag chips.
+  const umLangs = (u.tags || []).filter(t => typeof t === 'string' && t.startsWith('language_')).map(t => t.slice(9))
+  for (const c of umLangs) { const m = LANG_FLAG[c] || ['🌐', c.toUpperCase()]; chips.push(`<span class="tagchip" title="${m[1]}">${m[0]} ${m[1]}</span>`) }
   $('umTags').innerHTML = chips.join('')
   $('umAddFriend').textContent = u.isFriend ? '➖ Unfriend' : '➕ Add Friend'
   $('umAddFriend').classList.toggle('danger', !!u.isFriend)
