@@ -2108,7 +2108,9 @@ function rbFriendRow (f) {
   const st = friendState(f)
   const color = st === 'offline' ? '#6b7280' : (st === 'active' ? '#f59e0b' : (RB_COLOR[String(f.status || '').toLowerCase()] || '#22c55e'))
   const name = String(f.displayName || '?').replace(/</g, '&lt;')
-  const loc = (st === 'active' ? '🌐 On the website' : (st === 'offline' ? '⚫ Offline' : fmtLocation(f.location))).replace(/</g, '&lt;')
+  // fmtLocation returns safe HTML (the .wn world-name span, with its own escaping) —
+  // do NOT re-escape it or the span shows up as literal text.
+  const loc = st === 'active' ? '🌐 On the website' : (st === 'offline' ? '⚫ Offline' : fmtLocation(f.location))
   const ava = f.image ? `<img class="ava" src="${f.image}" referrerpolicy="no-referrer" loading="lazy" decoding="async" />` : '<div class="ava"></div>'
   return `<div class="rb-friend" data-id="${f.id}">${ava}<span class="dot" style="background:${color}"></span><div class="meta grow"><div class="nm">${name} ${langBadges(f.languages)}</div><div class="lo">${loc}</div></div></div>`
 }

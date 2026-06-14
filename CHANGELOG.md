@@ -3,6 +3,14 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.17] - 2026-06-14
+
+### Fixed
+- **Sidebar friends location showed raw HTML** (e.g. `<span class="wn" data-world="wrl…`).
+  The world-name span from `fmtLocation` was being double-escaped, so it rendered as
+  literal text instead of resolving to the world name. The location now displays
+  correctly again in the right friends list.
+
 ## [1.0.16] - 2026-06-14
 
 ### Fixed
