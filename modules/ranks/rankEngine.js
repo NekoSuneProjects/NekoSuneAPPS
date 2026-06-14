@@ -218,6 +218,42 @@ function seedFromVrcTags (tags) {
   return 50
 }
 
+// ---- Friend/other-user rank ESTIMATE from VRChat trust tags --------------
+// We can't compute a full score for other people (no contribution/event data),
+// but VRChat still exposes trust via account tags — and the top internal trust
+// tag is literally `system_trust_veteran` (what used to show as the Veteran rank).
+// So we map tags → a NekoSuneAPPS Community Rank so friends who earned it show a
+// Veteran/Legend badge. This is an ESTIMATE (flagged as such), read from VRChat.
+function estimateFromTags (tags, opts = {}) {
+  const t = new Set(tags || [])
+  let key = 'visitor'
+  if (t.has('system_trust_legend') || t.has('system_legend')) key = 'legend'
+  else if (t.has('system_trust_veteran')) key = 'veteran'        // top VRChat trust → OG Veteran
+  else if (t.has('system_trust_trusted')) key = 'trusted_user'
+  else if (t.has('system_trust_known')) key = 'known_user'
+  else if (t.has('system_trust_intermediate')) key = 'user'
+  else if (t.has('system_trust_basic')) key = 'new_user'
+
+  let r = RANKS.find(x => x.key === key)
+  const isOg = r.og
+  // When OG tiers are hidden, cap the visible label at Trusted User (same rule as
+  // resolveRank) — the underlying trust is unchanged.
+  if (opts.ogMode === false && r.og) r = RANKS.find(x => x.key === 'trusted_user')
+
+  return {
+    key: r.key,
+    shortLabel: r.label,
+    label: 'NekoSuneAPPS Community Rank: ' + r.label,
+    tier: r.tier,
+    color: r.color,
+    accent: r.accent,
+    isOg,                       // true when the *earned* tier is Veteran/Legend
+    estimated: true,            // derived from VRChat trust tags, not a full score
+    vrcPlus: t.has('system_supporter'), // VRC+ supporter (the monthly "boost")
+    moderator: t.has('admin_moderator')
+  }
+}
+
 module.exports = {
   MAX,
   RANKS,
@@ -226,6 +262,7 @@ module.exports = {
   veteranGates,
   legendGates,
   seedFromVrcTags,
+  estimateFromTags,
   TRUST_SEED,
   _internal: { sat, clamp, creatorScore }
 }

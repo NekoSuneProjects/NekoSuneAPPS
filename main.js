@@ -992,6 +992,9 @@ async function ensureRanksReady () {
   return ranks.init(app.getPath('userData')).catch(() => false)
 }
 
+// Estimate a community rank from any user's VRChat trust tags (pure; works even
+// when the feature is off — the renderer decides whether to display it).
+ipcMain.handle('ranks:estimate', (e, tags) => ranks.engine.estimateFromTags(tags || [], { ogMode: ranksCfg().ogMode !== false }))
 ipcMain.handle('ranks:config', () => ranksCfg())
 ipcMain.handle('ranks:setConfig', async (e, cfg = {}) => {
   const cur = ranksCfg()

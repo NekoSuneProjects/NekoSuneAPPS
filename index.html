@@ -68,6 +68,12 @@
     .lang-badges { display:inline-flex; gap:2px; vertical-align:middle; }
     .lang-badge { font-size:.82em; line-height:1; cursor:help; }
 
+    /* Estimated community-rank pill (Veteran / Legend etc.) on friends + profiles */
+    .rank-pill { display:inline-block; font-size:.64rem; font-weight:800; letter-spacing:.3px; padding:1px 6px; border:1px solid currentColor; border-radius:999px; vertical-align:middle; line-height:1.5; white-space:nowrap; }
+    .rank-pill.rank-og { box-shadow:0 0 6px -1px currentColor; }
+    @keyframes rankShimmer { 0%,100%{ opacity:1 } 50%{ opacity:.6 } }
+    .rank-pill.rank-og { animation:rankShimmer 2.4s ease-in-out infinite; }
+
     /* User profile modal */
     .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.6); backdrop-filter:blur(3px); z-index:200; display:flex; align-items:center; justify-content:center; padding:24px; }
     .modal-card { width:720px; max-width:96vw; max-height:92vh; overflow:auto; background:var(--panel); border:1px solid var(--border); border-radius:18px; position:relative; box-shadow:0 30px 80px -20px #000; }

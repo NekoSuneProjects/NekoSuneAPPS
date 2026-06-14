@@ -3,6 +3,17 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.18] - 2026-06-14
+
+### Added
+- **Friends' community rank from VRChat trust.** Friends now show an estimated
+  NekoSuneAPPS Community Rank read straight from their VRChat trust tags — so anyone
+  who earned it shows a **Veteran** (top trust, `system_trust_veteran`) or **Legend**
+  badge. Veteran/Legend pills appear in the right sidebar; Trusted-and-up in the
+  Friend Den; and the full estimated rank (plus a ✦ VRC+ supporter marker) in the
+  profile modal. Honours the OG-tiers toggle (hidden tiers cap at Trusted User).
+  Requires Community Ranks to be enabled.
+
 ## [1.0.17] - 2026-06-14
 
 ### Fixed

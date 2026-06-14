@@ -1413,6 +1413,25 @@ function langBadges (languages) {
   const extra = codes.length > 3 ? `<span class="lang-badge" title="${codes.length - 3} more">+${codes.length - 3}</span>` : ''
   return `<span class="lang-badges">${shown}${extra}</span>`
 }
+// Community-rank feature state, mirrored from main so friend lists know whether to
+// show rank badges and whether the OG tiers (Veteran/Legend) are visible.
+let ranksUi = { enabled: false, ogMode: true }
+const TRUSTED_COLOR = '#2DD4BF'
+// Resolve a friend's estimated community rank for display, applying the OG cap.
+function rankDisplay (cr) {
+  if (!cr) return null
+  if (cr.isOg && ranksUi.ogMode === false) return { label: 'Trusted User', color: TRUSTED_COLOR, tier: 4, isOg: false, vrcPlus: cr.vrcPlus }
+  return { label: cr.shortLabel, color: cr.color, tier: cr.tier, isOg: cr.isOg, vrcPlus: cr.vrcPlus }
+}
+// A compact rank pill. minTier filters out the common low tiers in dense lists
+// (default 5 = only Veteran/Legend); pass 0 to always show (e.g. the profile modal).
+function rankPill (cr, opts = {}) {
+  if (!ranksUi.enabled) return ''
+  const d = rankDisplay(cr); if (!d) return ''
+  if (d.tier < (opts.minTier != null ? opts.minTier : 5)) return ''
+  const og = d.isOg ? ' rank-og' : ''
+  return `<span class="rank-pill${og}" title="${esc(d.label)} — estimated from VRChat trust" style="border-color:${d.color};color:${d.color}">🏅 ${esc(d.label)}</span>`
+}
 // Parse a VRChat location string -> world/instance + access type (mirror of the
 // API helper, for places that only have the raw location string).
 function parseLoc (loc) {
@@ -1479,7 +1498,7 @@ async function loadFriends () {
     const name = String(f.displayName || '?').replace(/</g, '&lt;')
     const desc = f.statusDescription ? ' · ' + String(f.statusDescription).replace(/</g, '&lt;') : ''
     const loc = st === 'active' ? 'On the website' : (st === 'offline' ? 'Offline' : fmtLocation(f.location))
-    return `<div class="fd-friend" data-id="${f.id}" style="padding:3px 0;cursor:pointer">${dot} <b>${name}</b> ${langBadges(f.languages)} — ${loc}${desc}</div>`
+    return `<div class="fd-friend" data-id="${f.id}" style="padding:3px 0;cursor:pointer">${dot} <b>${name}</b> ${langBadges(f.languages)} ${rankPill(f.communityRank, { minTier: 4 })} — ${loc}${desc}</div>`
   }, 'friendden', null, resolveWorldNames)
 }
 $('friendList').addEventListener('click', e => { const row = e.target.closest('.fd-friend'); if (row && row.dataset.id) openUserModal(row.dataset.id) })
@@ -1531,8 +1550,14 @@ async function loadRanksLeaderboard () {
   if (!rows || !rows.length) { el.textContent = 'No ranked members yet.'; return }
   el.innerHTML = rows.map(e => `<div class="row" style="justify-content:space-between;padding:3px 0"><span>#${e.position} <b>${esc(e.displayName)}</b></span><span class="muted">${esc(e.rank)} · ${e.score}</span></div>`).join('')
 }
+// Refresh whatever friend surfaces are visible so rank badges appear/disappear live.
+function refreshFriendBadges () {
+  if (rbFriendsCache.online.length || rbFriendsCache.offline.length) renderRightbar()
+  if ($('friendden') && $('friendden').offsetParent !== null) loadFriends()
+}
 async function loadRanks () {
   const cfg = await api.ranksConfig()
+  ranksUi = { enabled: !!cfg.enabled, ogMode: cfg.ogMode !== false }
   $('ranksEnabled').checked = !!cfg.enabled
   $('ranksOgMode').checked = cfg.ogMode !== false
   if (cfg.enabled) { renderRankCard(await api.ranksGet()); loadRanksLeaderboard() }
@@ -1540,10 +1565,14 @@ async function loadRanks () {
 }
 async function saveRanksCfg () {
   const next = await api.ranksSetConfig({ enabled: $('ranksEnabled').checked, ogMode: $('ranksOgMode').checked })
+  ranksUi = { enabled: !!next.enabled, ogMode: next.ogMode !== false }
   $('ranksEnabled').checked = !!next.enabled; $('ranksOgMode').checked = next.ogMode !== false
   if (next.enabled) { renderRankCard(await api.ranksGet()); loadRanksLeaderboard() }
   else renderRankCard({ enabled: false })
+  refreshFriendBadges()
 }
+// Load the feature state at startup so badges show without opening the Ranks tab.
+api.ranksConfig().then(c => { ranksUi = { enabled: !!c.enabled, ogMode: c.ogMode !== false }; if (ranksUi.enabled) refreshFriendBadges() }).catch(() => {})
 $('ranksEnabled').addEventListener('change', saveRanksCfg)
 $('ranksOgMode').addEventListener('change', saveRanksCfg)
 $('ranksRefresh').addEventListener('click', async () => { $('ranksCard').textContent = 'Computing…'; renderRankCard(await api.ranksRefresh()); loadRanksLeaderboard() })
@@ -2112,7 +2141,7 @@ function rbFriendRow (f) {
   // do NOT re-escape it or the span shows up as literal text.
   const loc = st === 'active' ? '🌐 On the website' : (st === 'offline' ? '⚫ Offline' : fmtLocation(f.location))
   const ava = f.image ? `<img class="ava" src="${f.image}" referrerpolicy="no-referrer" loading="lazy" decoding="async" />` : '<div class="ava"></div>'
-  return `<div class="rb-friend" data-id="${f.id}">${ava}<span class="dot" style="background:${color}"></span><div class="meta grow"><div class="nm">${name} ${langBadges(f.languages)}</div><div class="lo">${loc}</div></div></div>`
+  return `<div class="rb-friend" data-id="${f.id}">${ava}<span class="dot" style="background:${color}"></span><div class="meta grow"><div class="nm">${name} ${langBadges(f.languages)} ${rankPill(f.communityRank, { minTier: 5 })}</div><div class="lo">${loc}</div></div></div>`
 }
 function rbSection (key, title, friends) {
   if (!friends.length && key !== 'offline') return ''
@@ -2231,6 +2260,15 @@ async function openUserModal (id) {
   $('umBanner').style.backgroundImage = bannerUrl ? `url("${bannerUrl}")` : ''
   const tr = trustRank(u.tags)
   const chips = [`<span class="tagchip" style="border-color:${tr.color};color:${tr.color}">${tr.label}</span>`]
+  // NekoSuneAPPS Community Rank, estimated from VRChat trust (shows Veteran/Legend
+  // when earned). Only when the feature is enabled.
+  if (ranksUi.enabled) {
+    try {
+      const cr = await api.ranksEstimate(u.tags)
+      const isOgShown = cr && (cr.key === 'veteran' || cr.key === 'legend')
+      if (cr) { chips.push(`<span class="tagchip rank-pill${isOgShown ? ' rank-og' : ''}" title="Estimated from VRChat trust" style="border-color:${cr.color};color:${cr.color}">🏅 ${esc(cr.shortLabel)}</span>`); if (cr.vrcPlus) chips.push('<span class="tagchip" title="VRChat Plus supporter">✦ VRC+</span>') }
+    } catch (_) {}
+  }
   if (u.last_platform) chips.push(`<span class="tagchip">${u.last_platform === 'standalonewindows' ? 'PC' : (u.last_platform === 'android' ? 'Quest' : u.last_platform)}</span>`)
   if ((u.tags || []).includes('system_supporter')) chips.push('<span class="tagchip">VRC+</span>')
   if (u.ageVerified || (u.tags || []).includes('system_age_verified')) chips.push('<span class="tagchip">18+</span>')

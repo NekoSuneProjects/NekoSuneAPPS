@@ -11,6 +11,7 @@
 
 const axios = require('axios')
 const settings = require('../../../settings')
+const rankEngine = require('../../ranks/rankEngine') // pure, no side effects — maps VRChat trust tags → community rank
 
 const BASE = 'https://api.vrchat.cloud/api/1'
 const UA = 'NekoSuneAPPS/1.0.0 nekosunevr@nekosunevr.co.uk'
@@ -191,6 +192,9 @@ function pickFriend (f) {
     state: f.state, // "online" (in-game) | "active" (on website) | "offline"
     platform: f.platform,
     languages: languagesFromTags(f.tags), // ['eng','jpn',...] → flag badges in the UI
+    // Estimated NekoSuneAPPS Community Rank from VRChat trust tags (Veteran/Legend
+    // show when earned). Renderer decides whether to display it (feature toggle).
+    communityRank: rankEngine.estimateFromTags(f.tags),
     image: f.userIcon || f.profilePicOverride || f.currentAvatarThumbnailImageUrl || ''
   }
 }
