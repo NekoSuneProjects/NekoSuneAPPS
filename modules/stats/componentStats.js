@@ -3,6 +3,7 @@
 // Runs in the MAIN process and pushes snapshots to a listener; the renderer turns
 // the snapshot into a chatbox line.
 
+const os = require('os')
 const si = require('systeminformation')
 const { acquireSiShell, releaseSiShell } = require('./siShell')
 
@@ -16,6 +17,28 @@ function round (value, digits = 0) {
   if (!Number.isFinite(value)) return 0
   const factor = 10 ** digits
   return Math.round(value * factor) / factor
+}
+
+// Native CPU load from os.cpus() deltas — works on every Windows PC with no WMI /
+// PowerShell / perf-counter dependency (systeminformation's currentLoad returns 0
+// on some locked-down / VM / broken-perf-counter machines). Returns null until it
+// has a baseline to diff against.
+let prevCpu = null
+function nativeCpuLoad () {
+  const cpus = os.cpus() || []
+  let idle = 0
+  let total = 0
+  for (const c of cpus) {
+    for (const k in c.times) total += c.times[k]
+    idle += c.times.idle
+  }
+  const prev = prevCpu
+  prevCpu = { idle, total }
+  if (!prev) return null
+  const idleDiff = idle - prev.idle
+  const totalDiff = total - prev.total
+  if (totalDiff <= 0) return null
+  return Math.max(0, Math.min(100, 100 - (idleDiff / totalDiff) * 100))
 }
 
 // graphics() and cpuTemperature() spawn external WMI/PowerShell queries on Windows
@@ -41,6 +64,7 @@ async function refreshSlow () {
 
 async function readSnapshot () {
   // Cheap reads every tick; expensive GPU/temp only every SLOW_EVERY ticks.
+  const osLoad = nativeCpuLoad() // native baseline-diff load (null on first tick)
   const [load, mem] = await Promise.all([
     si.currentLoad().catch(() => null),
     si.mem().catch(() => null)
@@ -48,12 +72,28 @@ async function readSnapshot () {
   if (tickCount % SLOW_EVERY === 0) await refreshSlow()
   tickCount++
 
+  // CPU: prefer systeminformation, but fall back to the native delta whenever si
+  // reports 0/unavailable (the "0% everything" case on some PCs).
+  const siLoad = Number(load?.currentLoad)
+  let cpuLoad = Number.isFinite(siLoad) && siLoad > 0 ? siLoad : (osLoad ?? 0)
+
+  // RAM: compute natively from os (always available); only use si if it looks valid.
+  const osTotal = os.totalmem()
+  const osUsed = osTotal - os.freemem()
+  let ramUsedBytes = osUsed
+  let ramTotalBytes = osTotal
+  if (mem && Number(mem.total) > 0) {
+    ramTotalBytes = mem.total
+    const active = Number(mem.active) || (mem.total - (Number(mem.available) || 0))
+    if (active > 0) ramUsedBytes = active
+  }
+
   const snapshot = {
-    cpuLoad: round(load?.currentLoad ?? 0),
+    cpuLoad: round(cpuLoad),
     cpuTemp: slowCache.cpuTemp,
-    ramUsedGb: mem ? round((mem.active ?? (mem.total - mem.available)) / 1024 ** 3, 1) : 0,
-    ramTotalGb: mem ? round(mem.total / 1024 ** 3, 1) : 0,
-    ramPct: mem ? round(((mem.active ?? (mem.total - mem.available)) / mem.total) * 100) : 0,
+    ramUsedGb: round(ramUsedBytes / 1024 ** 3, 1),
+    ramTotalGb: round(ramTotalBytes / 1024 ** 3, 1),
+    ramPct: round((ramUsedBytes / ramTotalBytes) * 100),
     gpuName: slowCache.gpuName,
     gpuLoad: slowCache.gpuLoad,
     gpuTemp: slowCache.gpuTemp,
@@ -83,6 +123,7 @@ async function tick () {
 function startComponentStats (listener, intervalMs = DEFAULT_INTERVAL_MS) {
   onUpdate = listener
   stopComponentStats()
+  prevCpu = null; nativeCpuLoad() // prime the native CPU baseline for the fallback
   acquireSiShell() // reuse one PowerShell for all WMI queries instead of spawning per call
   tick()
   pollTimer = setInterval(tick, Math.max(2000, intervalMs))

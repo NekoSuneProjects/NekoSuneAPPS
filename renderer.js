@@ -2551,6 +2551,21 @@ $('confirmYes').addEventListener('click', () => _confirmEnd(true))
 $('confirmNo').addEventListener('click', () => _confirmEnd(false))
 $('confirmModal').addEventListener('click', e => { if (e.target === $('confirmModal')) _confirmEnd(false) })
 
+// Electron has no window.prompt — use a modal. Returns the string, or null if cancelled.
+let _promptResolve = null
+function promptDialog (text, defaultValue = '') {
+  $('promptText').textContent = text || 'Enter a value'
+  $('promptInput').value = defaultValue
+  $('promptModal').style.display = 'flex'
+  setTimeout(() => { $('promptInput').focus(); $('promptInput').select() }, 30)
+  return new Promise(res => { _promptResolve = res })
+}
+function _promptEnd (v) { $('promptModal').style.display = 'none'; if (_promptResolve) _promptResolve(v); _promptResolve = null }
+$('promptOk').addEventListener('click', () => _promptEnd($('promptInput').value))
+$('promptCancel').addEventListener('click', () => _promptEnd(null))
+$('promptModal').addEventListener('click', e => { if (e.target === $('promptModal')) _promptEnd(null) })
+$('promptInput').addEventListener('keydown', e => { if (e.key === 'Enter') _promptEnd($('promptInput').value); if (e.key === 'Escape') _promptEnd(null) })
+
 /* ---------------- update available ---------------- */
 // Minimal Markdown -> HTML for release notes (headings, bold, code, lists, links).
 function mdToHtml (md) {
@@ -2665,7 +2680,7 @@ async function loadBioPresets () {
   $('peBioPreset').innerHTML = '<option value="">— bio prefabs —</option>' + ps.map((p, i) => `<option value="${i}">${esc(p.name)}</option>`).join('')
 }
 $('peBioSave').addEventListener('click', async () => {
-  const name = prompt('Bio prefab name:')
+  const name = await promptDialog('Bio prefab name:')
   if (!name) return
   const ps = await api.getSetting('bioPresets', [])
   ps.push({ name, bio: $('peBio').value })
@@ -2691,7 +2706,7 @@ async function loadStatusPresets () {
   $('pePreset').innerHTML = '<option value="">— saved presets —</option>' + presets.map((p, i) => `<option value="${i}">${esc(p.name)}</option>`).join('')
 }
 $('pePresetSave').addEventListener('click', async () => {
-  const name = prompt('Preset name:')
+  const name = await promptDialog('Preset name:')
   if (!name) return
   const presets = await api.getSetting('statusPresets', [])
   presets.push({ name, status: $('peStatus').value, desc: $('peStatusDesc').value })

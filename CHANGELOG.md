@@ -3,6 +3,18 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.27] - 2026-06-14
+
+### Fixed
+- **Component stats showing 0% for everything.** CPU and RAM are now read natively
+  from Node's `os` module (CPU via load deltas, RAM via total/free) instead of relying
+  on `systeminformation`'s WMI/PowerShell, which returns 0 on some locked-down / VM /
+  broken-perf-counter PCs. systeminformation is still used (with the native value as a
+  fallback) for the extras — CPU temp, GPU load/temp, VRAM.
+- **Status presets / bio prefabs wouldn't save.** The "Save current" buttons used
+  `window.prompt`, which Electron doesn't support (it silently returned null), so
+  nothing was saved. Added a proper in-app prompt dialog; naming and saving works now.
+
 ## [1.0.26] - 2026-06-14
 
 ### Fixed
