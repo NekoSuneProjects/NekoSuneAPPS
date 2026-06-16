@@ -171,12 +171,46 @@ function buildSong (m) {
   if (m.status && m.status !== 'Playing') return ''
   return [m.artist, m.title].filter(Boolean).join(' - ')
 }
+let npSourcesKey = '' // avoid rebuilding the dropdown every poll
+function syncNpSourceDropdown (sessions, preferred) {
+  const sel = $('nowPlayingSourceSelect'); if (!sel) return
+  const list = (sessions || []).filter(s => s && s.appId)
+  const key = list.map(s => s.appId + ':' + s.status).join('|') + '#' + (preferred || '')
+  if (key === npSourcesKey) return
+  npSourcesKey = key
+  const cur = sel.value
+  sel.innerHTML = '<option value="">Auto (recommended)</option>' +
+    list.map(s => `<option value="${esc(s.appId)}">${esc(s.source || s.appId)}${s.status ? ' · ' + esc(s.status) : ''}</option>`).join('')
+  // Keep the user's selection if still present, else reflect the saved preference.
+  const want = cur || (preferred ? (list.find(s => s.appId.toLowerCase().includes(preferred)) || {}).appId || '' : '')
+  sel.value = [...sel.options].some(o => o.value === want) ? want : ''
+}
 function renderNowPlaying (m) {
-  if (!m || !m.found) { setText('nowPlayingTitle', 'No media detected'); setText('nowPlayingMeta', 'No active session'); return }
+  syncNpSourceDropdown(m && m.sessions, m && m.preferredSource)
+  const diag = $('nowPlayingDiag')
+  if (!m || !m.found) {
+    setText('nowPlayingTitle', 'No media detected'); setText('nowPlayingMeta', 'No active session')
+    if (diag) {
+      const n = (m && m.sessions && m.sessions.length) || 0
+      diag.textContent = m && m.error
+        ? '⚠ ' + m.error
+        : (n ? `${n} source(s) seen but nothing playing — press play, or pick a source above.` : 'No media apps registered with Windows. Open Spotify and press play.')
+    }
+    return
+  }
+  if (diag) diag.textContent = ''
   setText('nowPlayingTitle', m.title || 'Unknown')
   setText('nowPlayingMeta', [m.artist, m.album, m.status].filter(Boolean).join(' · ') || 'Active')
   setText('nowPlayingSource', m.source || 'Windows')
 }
+async function initNowPlayingSources () {
+  try { const r = await api.nowPlayingSources(); syncNpSourceDropdown(r.sources, r.preferred) } catch (_) {}
+}
+$('nowPlayingSourceSelect').addEventListener('change', async e => {
+  await api.nowPlayingSetSource(e.target.value)
+  refreshNowPlaying()
+})
+$('nowPlayingRefreshSources').addEventListener('click', async () => { npSourcesKey = ''; await initNowPlayingSources(); refreshNowPlaying() })
 function startKat () {
   if (katText) return
   katText = new KatOscText({ oscPort: getSendPort() })
@@ -2784,6 +2818,7 @@ async function init () {
     const v = await api.getSetting(name, def); $(name + 'Slider').value = v; setText(name + 'Value', v)
   }
   katEnabled = await api.getSetting('katNowPlayingEnabled', false); $('enableKatNowPlaying').checked = katEnabled
+  initNowPlayingSources()
   chatboxNpEnabled = await api.getSetting('chatboxNowPlayingEnabled', false); $('enableChatboxNowPlaying').checked = chatboxNpEnabled
   $('presetsText').value = await api.getSetting('presets', DEFAULT_PRESETS.join('\n'))
   composer.setPresets($('presetsText').value.split('\n'))

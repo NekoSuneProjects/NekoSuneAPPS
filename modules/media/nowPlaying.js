@@ -7,6 +7,8 @@ const transientMissLimit = 3
 let cachedResult = null
 let cachedAt = 0
 let inFlight = null
+let preferredSource = '' // '' = Auto; else a substring of the app id (e.g. 'spotify')
+let lastSessions = [] // most recent list of available media sessions (for the picker)
 let stableMedia = null
 let stableMediaKey = ''
 let stableMediaSeenAt = 0
@@ -31,16 +33,31 @@ const MEDIA_SESSION_SCRIPT = [
   '[Windows.Storage.Streams.IRandomAccessStreamWithContentType, Windows.Storage.Streams, ContentType = WindowsRuntime] | Out-Null',
   '[Windows.Storage.Streams.DataReader, Windows.Storage.Streams, ContentType = WindowsRuntime] | Out-Null',
   '$manager = Await-WinRt ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager]::RequestAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager])',
-  '$session = $manager.GetCurrentSession()',
-  'foreach ($candidate in $manager.GetSessions()) {',
-  '  $playback = $candidate.GetPlaybackInfo()',
-  "  if ($playback.PlaybackStatus.ToString() -eq 'Playing') {",
-  '    $session = $candidate',
-  '    break',
-  '  }',
+  // Preferred source comes in via an env var (no string interpolation into the
+  // script -> no injection). Empty = Auto.
+  "$pref = ''",
+  'try { $pref = [string]$env:NP_SOURCE } catch {}',
+  '$sessions = @()',
+  'try { $sessions = @($manager.GetSessions()) } catch {}',
+  // Picker list: every session app id + its playback status (for the dropdown).
+  '$list = @()',
+  'foreach ($c in $sessions) {',
+  "  $st = 'Unknown'",
+  '  try { $st = $c.GetPlaybackInfo().PlaybackStatus.ToString() } catch {}',
+  '  $list += @{ appId = [string]$c.SourceAppUserModelId; status = $st }',
+  '}',
+  // Choose a session: preferred source -> any Playing -> system current -> first.
+  '$session = $null',
+  "if ($pref -ne '') {",
+  '  foreach ($c in $sessions) { if (([string]$c.SourceAppUserModelId).ToLower().Contains($pref.ToLower())) { $session = $c; break } }',
   '}',
   'if ($null -eq $session) {',
-  '  @{ found = $false } | ConvertTo-Json -Compress',
+  "  foreach ($c in $sessions) { try { if ($c.GetPlaybackInfo().PlaybackStatus.ToString() -eq 'Playing') { $session = $c; break } } catch {} }",
+  '}',
+  'if ($null -eq $session) { try { $session = $manager.GetCurrentSession() } catch {} }',
+  'if ($null -eq $session -and $sessions.Count -gt 0) { $session = $sessions[0] }',
+  'if ($null -eq $session) {',
+  '  @{ found = $false; sessions = @($list) } | ConvertTo-Json -Compress -Depth 4',
   '  exit 0',
   '}',
   '$props = Await-WinRt ($session.TryGetMediaPropertiesAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties])',
@@ -66,6 +83,7 @@ const MEDIA_SESSION_SCRIPT = [
   '}',
   '@{',
   '  found = $true',
+  '  sessions = @($list)',
   '  sourceAppId = $session.SourceAppUserModelId',
   '  status = $playback.PlaybackStatus.ToString()',
   '  title = $props.Title',
@@ -76,7 +94,7 @@ const MEDIA_SESSION_SCRIPT = [
   '  image = $image',
   '  imageMime = $imageMime',
   '  fetchedAt = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()',
-  '} | ConvertTo-Json -Compress'
+  '} | ConvertTo-Json -Compress -Depth 4'
 ].join('\n')
 
 function normalizeSourceName (sourceAppId) {
@@ -143,9 +161,21 @@ function getTransientCachedMedia (miss) {
   })
 }
 
+// Turn the raw session list from PowerShell into { appId, source, status } and
+// remember it so the UI dropdown can list sources even between songs.
+function normalizeSessions (raw) {
+  const arr = Array.isArray(raw) ? raw : (raw ? [raw] : [])
+  const sessions = arr
+    .filter(s => s && s.appId)
+    .map(s => ({ appId: s.appId, source: normalizeSourceName(s.appId), status: s.status || '' }))
+  if (sessions.length) lastSessions = sessions
+  return sessions
+}
+
 async function normalizeMedia (media) {
   const durationMs = Number(media.durationMs) || 0
   const progressMs = Math.max(0, Math.min(Number(media.progressMs) || 0, durationMs || Number.MAX_SAFE_INTEGER))
+  const sessions = normalizeSessions(media.sessions)
   const normalized = {
     found: Boolean(media.found),
     source: normalizeSourceName(media.sourceAppId),
@@ -159,6 +189,9 @@ async function normalizeMedia (media) {
     image: media.image || '',
     imageMime: media.imageMime || '',
     imageSource: media.image ? 'Windows media session' : '',
+    sessions: sessions.length ? sessions : lastSessions,
+    preferredSource,
+    error: media.error || '',
     fetchedAt: Number(media.fetchedAt) || Date.now()
   }
 
@@ -236,15 +269,24 @@ function getNowPlaying () {
       'powershell.exe',
       ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', MEDIA_SESSION_SCRIPT],
       {
-        timeout: 5000,
+        // Slower PCs need longer for the WinRT + PowerShell cold start; 5s was
+        // timing out and showing "No media detected" on otherwise-working systems.
+        timeout: 9000,
         windowsHide: true,
-        maxBuffer: 8 * 1024 * 1024
+        maxBuffer: 8 * 1024 * 1024,
+        // Preferred source passed safely via env (no script string interpolation).
+        env: { ...process.env, NP_SOURCE: preferredSource || '' }
       },
-      async (error, stdout) => {
+      async (error, stdout, stderr) => {
         if (error) {
+          // Surface the real reason (timeout, WinRT load failure, Constrained
+          // Language Mode, etc.) so the UI can show something actionable.
+          const detail = (stderr || '').toString().trim().split(/\r?\n/)[0]
+          const msg = error.killed ? 'Media detector timed out (slow PC or PowerShell blocked)'
+            : (detail || error.message)
           cachedResult = await resolveNowPlayingResult({
             found: false,
-            error: error.message
+            error: msg
           })
           cachedAt = Date.now()
           inFlight = null
@@ -271,6 +313,20 @@ function getNowPlaying () {
   return inFlight
 }
 
+// '' / 'auto' = Auto-pick; otherwise a substring of the app id (e.g. 'spotify').
+function setPreferredSource (value) {
+  const v = String(value || '').trim().toLowerCase()
+  preferredSource = (v === 'auto') ? '' : v
+  cachedResult = null // re-query immediately with the new preference
+  cachedAt = 0
+}
+function getPreferredSource () { return preferredSource }
+// The media sources seen most recently (for the UI dropdown).
+function getSources () { return lastSessions.slice() }
+
 module.exports = {
-  getNowPlaying
+  getNowPlaying,
+  setPreferredSource,
+  getPreferredSource,
+  getSources
 }

@@ -4,7 +4,7 @@ const fs = require('fs')
 const { spawn } = require('child_process')
 const settings = require('./settings')
 
-const { getNowPlaying } = require('./modules/media/nowPlaying')
+const { getNowPlaying, setPreferredSource, getPreferredSource, getSources } = require('./modules/media/nowPlaying')
 const {
   setMediaProvider,
   updateOverlaySettings,
@@ -124,6 +124,7 @@ function createWindow () {
 
 async function configureOverlayServer () {
   setMediaProvider(getNowPlaying)
+  setPreferredSource(settings.get('nowPlayingSource', '')) // restore the chosen media source
   try {
     await updateOverlaySettings({
       enabled: settings.get('overlayEnabled', true),
@@ -199,6 +200,8 @@ ipcMain.handle('getOscPort', () => settings.get('oscPort', 9000))
 ipcMain.on('updateOscPort', (e, port) => settings.set('oscPort', port))
 ipcMain.handle('saveOscPort', (e, port) => { settings.set('oscPort', port); return port })
 ipcMain.handle('getNowPlaying', () => getNowPlaying())
+ipcMain.handle('nowPlaying:sources', () => ({ sources: getSources(), preferred: getPreferredSource() }))
+ipcMain.handle('nowPlaying:setSource', (e, value) => { setPreferredSource(value); settings.set('nowPlayingSource', String(value || '')); return getPreferredSource() })
 ipcMain.handle('getOverlayState', () => getOverlayState())
 ipcMain.handle('updateOverlaySettings', (e, s) => updateOverlaySettings(s))
 

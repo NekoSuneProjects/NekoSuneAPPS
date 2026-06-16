@@ -380,6 +380,12 @@
             </div>
             <span class="pill" id="nowPlayingSource">Windows</span>
           </div>
+          <div class="row" style="margin-top:10px;align-items:center;gap:8px">
+            <label style="min-width:96px">Media source</label>
+            <select id="nowPlayingSourceSelect" style="flex:1"><option value="">Auto (recommended)</option></select>
+            <button class="btn ghost" id="nowPlayingRefreshSources" title="Re-scan sources" style="padding:4px 10px;font-size:.75rem">↻</button>
+          </div>
+          <div id="nowPlayingDiag" class="muted" style="margin-top:6px;font-size:.74rem"></div>
         </div>
         <div class="grid cols-2">
           <div class="card">

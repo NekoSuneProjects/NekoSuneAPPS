@@ -11,6 +11,8 @@ window.electronAPI = {
 
   // now playing / overlay
   getNowPlaying: () => ipcRenderer.invoke('getNowPlaying'),
+  nowPlayingSources: () => ipcRenderer.invoke('nowPlaying:sources'),
+  nowPlayingSetSource: value => ipcRenderer.invoke('nowPlaying:setSource', value),
   getOverlayState: () => ipcRenderer.invoke('getOverlayState'),
   updateOverlaySettings: s => ipcRenderer.invoke('updateOverlaySettings', s),
 

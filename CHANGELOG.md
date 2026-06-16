@@ -3,6 +3,22 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.26] - 2026-06-14
+
+### Fixed
+- **Now Playing not detecting on some PCs.** Two root causes addressed: the detector's
+  5s timeout was too short for slower PCs' WinRT/PowerShell cold start (raised to 9s),
+  and it effectively only surfaced a session when something was actively **Playing** —
+  paused tracks now detect too. The card also shows the real reason when it fails
+  (timeout / PowerShell blocked / no registered media apps) instead of a blank
+  "No active session".
+
+### Added
+- **Media source dropdown.** Pick which app Now Playing follows (Auto by default) —
+  fixes cases where someone else's audio/another app was being picked instead of
+  Spotify. Lists every media session Windows reports, with status, and remembers your
+  choice. Works on Windows 10 (1809+) and 11.
+
 ## [1.0.25] - 2026-06-14
 
 ### Added
