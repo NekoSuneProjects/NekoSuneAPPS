@@ -3,6 +3,18 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.28] - 2026-06-17
+
+### Added
+- **Heart rate avatar OSC parameters.** The heart-rate monitor now drives a set of
+  avatar parameters over OSC (configured port, default 9000):
+  - `HeartEchoes_Heart_Beat` (**int**) — live BPM.
+  - `isHRActive` (**bool**) — true while monitoring is turned on.
+  - `isHRConnected` (**bool**) — true when the provider (Pulsoid / HypeRate) has a live reading.
+  - `isHRBeat` (**bool**) — pulses true briefly on each beat, timed from the current BPM.
+  - `HeartBeatToggle` (**bool**) — flips state on each beat (for alternating animations).
+  All reset to 0/false when monitoring stops or the connection drops.
+
 ## [1.0.27] - 2026-06-14
 
 ### Fixed

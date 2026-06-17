@@ -226,12 +226,59 @@ ipcMain.handle('net:stop', () => { stopNetworkStats(); return true })
 /* ------------------------------------------------------------------ */
 let hrProvider = 'pulsoid'
 
+// Avatar OSC params driven by the heart-rate system.
+const HR_OSC = {
+  bpm: '/avatar/parameters/HeartEchoes_Heart_Beat', // int: live BPM
+  active: '/avatar/parameters/isHRActive',          // bool: monitoring turned on
+  connected: '/avatar/parameters/isHRConnected',    // bool: provider connected with a live reading
+  beat: '/avatar/parameters/isHRBeat',              // bool: pulses true on each beat
+  toggle: '/avatar/parameters/HeartBeatToggle'      // bool: flips state each beat
+}
+
+let hrLastBpm = 0
+let hrBeatTimer = null
+let hrPulseTimer = null
+let hrBeatToggle = false
+
+// Drive isHRBeat (a brief pulse) + HeartBeatToggle (alternates) once per beat,
+// re-reading hrLastBpm each tick so the rhythm tracks the latest reading.
+function scheduleHrBeat () {
+  if (hrBeatTimer) { clearTimeout(hrBeatTimer); hrBeatTimer = null }
+  if (!hrLastBpm || hrLastBpm <= 0) return
+  const interval = Math.max(250, Math.round(60000 / hrLastBpm)) // floor guards against absurd BPM
+  hrBeatTimer = setTimeout(() => {
+    hrBeatToggle = !hrBeatToggle
+    osc.sendParam(HR_OSC.toggle, hrBeatToggle, 'bool')
+    osc.sendParam(HR_OSC.beat, true, 'bool')
+    if (hrPulseTimer) clearTimeout(hrPulseTimer)
+    hrPulseTimer = setTimeout(() => osc.sendParam(HR_OSC.beat, false, 'bool'), Math.min(150, Math.floor(interval / 2)))
+    scheduleHrBeat()
+  }, interval)
+}
+
+function stopHrBeat () {
+  if (hrBeatTimer) { clearTimeout(hrBeatTimer); hrBeatTimer = null }
+  if (hrPulseTimer) { clearTimeout(hrPulseTimer); hrPulseTimer = null }
+  osc.sendParam(HR_OSC.beat, false, 'bool')
+}
+
 // Wrap the provider listener so every reading also feeds analytics + Discord.
 function onHr (s) {
   push('hr:update', s)
   hrAnalytics.record(s.bpm)
-  if (s.online && s.bpm) setVrcContext({ hrBpm: s.bpm })
-  else setVrcContext({ hrBpm: 0 })
+  const online = !!(s.online && s.bpm)
+  osc.sendParam(HR_OSC.connected, online, 'bool')
+  if (online) {
+    setVrcContext({ hrBpm: s.bpm })
+    osc.sendParam(HR_OSC.bpm, Math.round(s.bpm), 'int')
+    hrLastBpm = s.bpm
+    if (!hrBeatTimer) scheduleHrBeat() // start the beat loop; it reschedules itself off hrLastBpm
+  } else {
+    setVrcContext({ hrBpm: 0 })
+    osc.sendParam(HR_OSC.bpm, 0, 'int')
+    hrLastBpm = 0
+    stopHrBeat()
+  }
 }
 
 function stopHr () {
@@ -239,12 +286,19 @@ function stopHr () {
   const summary = hrAnalytics.end()
   if (summary) push('hr:sessions', hrAnalytics.list())
   setVrcContext({ hrBpm: 0 })
+  hrLastBpm = 0
+  stopHrBeat()
+  osc.sendParam(HR_OSC.bpm, 0, 'int')
+  osc.sendParam(HR_OSC.connected, false, 'bool')
+  osc.sendParam(HR_OSC.active, false, 'bool')
 }
 
 // cfg: { provider:'pulsoid'|'hyperate', token, apiKey, deviceId }
 ipcMain.handle('hr:start', (e, cfg) => {
   cfg = cfg || {}
   stopHr()
+  osc.setOscPort(settings.get('oscPort', 9000)) // mirror BPM to the configured OSC port
+  osc.sendParam(HR_OSC.active, true, 'bool')     // monitoring is now turned on
   hrProvider = cfg.provider === 'hyperate' ? 'hyperate' : 'pulsoid'
   hrAnalytics.begin(hrProvider)
   if (hrProvider === 'hyperate') startHyperate(cfg.apiKey, cfg.deviceId, onHr)
