@@ -3,6 +3,19 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.29] - 2026-06-18
+
+### Changed
+- **Manual chatbox messages now stay pinned.** Sending a message from
+  **💬 Send to VRChat chatbox** pins it for **1 minute 30 seconds** (overriding the
+  automated rotation), then the chatbox returns to automated status. A live status
+  line shows the countdown.
+
+### Added
+- **Chatbox message history.** A new **🕘 Message history** card lists your sent
+  messages with a **↻ Repost** button (re-pin without retyping), per-entry delete,
+  and **paging** (8 per page). History is persisted across app restarts.
+
 ## [1.0.28] - 2026-06-17
 
 ### Added

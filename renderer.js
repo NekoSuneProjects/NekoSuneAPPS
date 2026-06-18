@@ -40,7 +40,7 @@ let beatState = false
 let oscHistory = []
 const maxHistory = 100
 
-const composer = new ChatboxComposer({ sendChatboxMessage })
+const composer = new ChatboxComposer({ sendChatboxMessage, onHoldChange: () => updateHoldStatus() })
 
 /* ---------------- tabs + theme ---------------- */
 document.querySelectorAll('.navbtn').forEach(btn => {
@@ -286,11 +286,91 @@ $('enableReceive').addEventListener('change', async e => {
 $('clearLog').addEventListener('click', () => { logBuffer = []; logDirty = true; $('oscLogText').value = ''; oscHistory = []; updateOscGraph() })
 
 /* ---------------- chatbox composer ---------------- */
+// Manual message history (newest first). Persisted so reposts survive restarts.
+let chatHistory = []
+let chatHistPage = 0
+const CHAT_HIST_PAGE_SIZE = 8
+const CHAT_HIST_MAX = 100
+
+function postChatMessage (v) {
+  composer.sendNow(v)
+  logLine(`OUT chatbox: ${v}`)
+  // De-dupe an identical most-recent entry so reposting doesn't pile up copies.
+  if (!(chatHistory[0] && chatHistory[0].text === v)) {
+    chatHistory.unshift({ text: v, ts: Date.now() })
+    if (chatHistory.length > CHAT_HIST_MAX) chatHistory.length = CHAT_HIST_MAX
+    api.saveSetting('chatHistory', chatHistory)
+  }
+  chatHistPage = 0
+  renderChatHistory()
+  updateHoldStatus()
+}
+
 $('chatSend').addEventListener('click', () => {
   const v = $('chatInput').value.trim()
-  if (v) { composer.sendNow(v); logLine(`OUT chatbox: ${v}`); $('chatInput').value = '' }
+  if (v) { postChatMessage(v); $('chatInput').value = '' }
 })
 $('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('chatSend').click() })
+
+function renderChatHistory () {
+  const list = $('chatHistoryList'); const pager = $('chatHistoryPager')
+  if (!list) return
+  if (!chatHistory.length) {
+    list.innerHTML = '<div class="muted">No messages yet.</div>'
+    if (pager) pager.style.display = 'none'
+    return
+  }
+  const pages = Math.ceil(chatHistory.length / CHAT_HIST_PAGE_SIZE)
+  if (chatHistPage >= pages) chatHistPage = pages - 1
+  const start = chatHistPage * CHAT_HIST_PAGE_SIZE
+  const slice = chatHistory.slice(start, start + CHAT_HIST_PAGE_SIZE)
+  list.innerHTML = ''
+  slice.forEach((entry, i) => {
+    const idx = start + i
+    const row = document.createElement('div')
+    row.className = 'switch'; row.style.alignItems = 'center'; row.style.gap = '8px'
+    const when = new Date(entry.ts).toLocaleString()
+    const text = document.createElement('span')
+    text.style.flex = '1'; text.style.overflow = 'hidden'; text.style.textOverflow = 'ellipsis'; text.style.whiteSpace = 'nowrap'
+    text.title = `${entry.text}\n${when}`
+    text.textContent = entry.text
+    const repost = document.createElement('button')
+    repost.className = 'btn'; repost.textContent = '↻ Repost'
+    repost.addEventListener('click', () => postChatMessage(entry.text))
+    const del = document.createElement('button')
+    del.className = 'btn ghost'; del.textContent = '✕'; del.title = 'Remove'
+    del.addEventListener('click', () => {
+      chatHistory.splice(idx, 1); api.saveSetting('chatHistory', chatHistory); renderChatHistory()
+    })
+    row.appendChild(text); row.appendChild(repost); row.appendChild(del)
+    list.appendChild(row)
+  })
+  if (pager) {
+    pager.style.display = pages > 1 ? 'flex' : 'none'
+    setText('chatHistPageInfo', `Page ${chatHistPage + 1} / ${pages} · ${chatHistory.length} messages`)
+    $('chatHistPrev').disabled = chatHistPage === 0
+    $('chatHistNext').disabled = chatHistPage >= pages - 1
+  }
+}
+
+$('chatHistPrev').addEventListener('click', () => { if (chatHistPage > 0) { chatHistPage--; renderChatHistory() } })
+$('chatHistNext').addEventListener('click', () => { chatHistPage++; renderChatHistory() })
+$('chatHistClear').addEventListener('click', () => {
+  chatHistory = []; chatHistPage = 0; api.saveSetting('chatHistory', chatHistory); renderChatHistory()
+})
+
+// Live countdown of the manual-message pin; returns to automated when it ends.
+function updateHoldStatus () {
+  const el = $('chatHoldStatus'); if (!el) return
+  if (composer.holdActive()) {
+    const s = composer.holdRemaining()
+    const mm = Math.floor(s / 60); const ss = String(s % 60).padStart(2, '0')
+    el.textContent = `📌 Pinned: "${composer.holdText}" — ${mm}:${ss} until automated status resumes.`
+  } else {
+    el.textContent = 'Sent messages stay pinned for 1m 30s, then the chatbox returns to automated status.'
+  }
+}
+setInterval(updateHoldStatus, 1000)
 
 $('aiRun').addEventListener('click', async () => {
   const text = $('chatInput').value.trim()
@@ -2842,6 +2922,9 @@ async function init () {
   $('rotateInterval').value = await api.getSetting('rotateInterval', 4000)
   buildModeGrid(await api.getSetting('chatModes', null))
   updatePreview()
+  chatHistory = await api.getSetting('chatHistory', [])
+  renderChatHistory()
+  updateHoldStatus()
 
   // restore + auto-start the stat pollers that were left enabled
   if (await api.getSetting('statsEnabled', false)) { $('enableStats').checked = true; setPill('statsState', true, 'on'); api.statsStart(5000) }

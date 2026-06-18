@@ -281,6 +281,19 @@
             <button class="btn ghost" id="aiRun">✨ IntelliChat</button>
             <span class="muted" id="aiStatus"></span>
           </div>
+          <div class="muted" id="chatHoldStatus" style="margin-top:8px">Sent messages stay pinned for 1m 30s, then the chatbox returns to automated status.</div>
+        </div>
+
+        <div class="card">
+          <h3>🕘 Message history</h3>
+          <p class="muted">Your sent messages. Click <b>Repost</b> to pin one again without retyping.</p>
+          <div id="chatHistoryList"></div>
+          <div class="row" id="chatHistoryPager" style="margin-top:10px;align-items:center;gap:8px;display:none">
+            <button class="btn ghost" id="chatHistPrev">‹ Prev</button>
+            <span class="muted" id="chatHistPageInfo" style="flex:1;text-align:center"></span>
+            <button class="btn ghost" id="chatHistNext">Next ›</button>
+            <button class="btn ghost" id="chatHistClear">Clear</button>
+          </div>
         </div>
 
         <div class="card">

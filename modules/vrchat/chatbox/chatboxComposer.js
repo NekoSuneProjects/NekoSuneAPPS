@@ -21,6 +21,13 @@ const { resolveTokens, formatClock } = require('../status/statusModule')
 
 const MAX_CHATBOX = 144
 
+// How long a manually-sent message stays pinned in the chatbox before the
+// automated rotation takes over again (1 minute 30 seconds).
+const HOLD_MS = 90000
+// While pinned, re-send the text periodically so VRChat keeps showing it even
+// when the automated rotation loop isn't running.
+const HOLD_REFRESH_MS = 3000
+
 // Fixed render order for own-lines (top to bottom). The rotation line is placed
 // at the top by default (rotationPosition = 'top').
 const LINE_ORDER = [
@@ -29,14 +36,22 @@ const LINE_ORDER = [
 ]
 
 class ChatboxComposer {
-  constructor ({ sendChatboxMessage }) {
+  constructor ({ sendChatboxMessage, onHoldChange }) {
     this.send = sendChatboxMessage
+    this.onHoldChange = typeof onHoldChange === 'function' ? onHoldChange : null
     this.timer = null
     this.rotateIndex = 0
     this.intervalMs = 4000
     this.rotationPosition = 'top' // 'top' | 'bottom'
     this.presets = []
     this.windowShowTitle = false // false = app/process name only; true = full window title
+
+    // Manual-message pin: holdText is shown instead of the automated rotation
+    // until holdUntil passes, then the chatbox returns to automated status.
+    this.holdText = null
+    this.holdUntil = 0
+    this.holdTimer = null
+    this.holdMs = HOLD_MS
 
     // per-source mode
     this.modes = {
@@ -239,6 +254,13 @@ class ChatboxComposer {
   }
 
   tick () {
+    // While a manual message is pinned, keep showing it (no notify on refresh)
+    // instead of the automated rotation, until its hold window expires.
+    if (this.holdActive()) {
+      if (typeof this.send === 'function') this.send(this.holdText, false)
+      return
+    }
+    if (this.holdText) this.clearHold() // hold just expired -> resume automated
     const msg = this.buildMessage()
     if (msg && typeof this.send === 'function') this.send(msg, false)
   }
@@ -254,10 +276,42 @@ class ChatboxComposer {
     if (this.timer) { clearInterval(this.timer); this.timer = null }
   }
 
-  // One-off manual message (typed by the user), sent immediately with notify.
+  holdActive () { return !!this.holdText && Date.now() < this.holdUntil }
+
+  // Seconds left on the current pin (0 when not pinned).
+  holdRemaining () { return this.holdActive() ? Math.ceil((this.holdUntil - Date.now()) / 1000) : 0 }
+
+  // Clear the pin and let the chatbox return to automated status.
+  clearHold () {
+    this.holdText = null
+    this.holdUntil = 0
+    if (this.holdTimer) { clearInterval(this.holdTimer); this.holdTimer = null }
+    if (this.onHoldChange) this.onHoldChange(null)
+    // If the automated rotation loop is running it repaints on its next tick.
+    // If not, clear the box so the pinned text disappears instead of lingering.
+    if (!this.timer && typeof this.send === 'function') this.send('', false)
+  }
+
+  // Manual message (typed by the user): pin it for holdMs, sent immediately with
+  // notify, then the chatbox returns to automated status.
   sendNow (text) {
-    if (typeof this.send === 'function') this.send(String(text).slice(0, MAX_CHATBOX), true)
+    const t = String(text).slice(0, MAX_CHATBOX)
+    if (!t) return
+    this.holdText = t
+    this.holdUntil = Date.now() + this.holdMs
+    if (typeof this.send === 'function') this.send(t, true)
+    if (this.onHoldChange) this.onHoldChange(t)
+    // The automated loop refreshes the pin on its own tick. When it isn't
+    // running, drive a dedicated refresh timer so the pin survives the full
+    // hold window and then clears itself.
+    if (!this.timer) {
+      if (this.holdTimer) clearInterval(this.holdTimer)
+      this.holdTimer = setInterval(() => {
+        if (this.holdActive()) { if (typeof this.send === 'function') this.send(this.holdText, false) }
+        else this.clearHold()
+      }, HOLD_REFRESH_MS)
+    }
   }
 }
 
-module.exports = { ChatboxComposer, MAX_CHATBOX, LINE_ORDER }
+module.exports = { ChatboxComposer, MAX_CHATBOX, LINE_ORDER, HOLD_MS }
