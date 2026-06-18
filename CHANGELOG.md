@@ -3,6 +3,14 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.30] - 2026-06-18
+
+### Fixed
+- **Installer build was broken.** The packaging config pulled the `dist/` output and
+  `.git/` folder back into the app bundle, inflating `app.asar` past 2 GB and failing
+  the MSI build. The build now excludes `dist/`, `build-out/`, and `.git/`, producing
+  much smaller installers. (No app behavior change from 1.0.29.)
+
 ## [1.0.29] - 2026-06-18
 
 ### Changed

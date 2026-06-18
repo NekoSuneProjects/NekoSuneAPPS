@@ -1,6 +1,6 @@
 {
   "name": "nekosuneapps",
-  "version": "1.0.29",
+  "version": "1.0.30",
   "main": "main.js",
   "bin": "main.js",
   "scripts": {
@@ -26,7 +26,10 @@
     },
     "files": [
       "**/*",
-      "!node_modules/.cache"
+      "!node_modules/.cache",
+      "!dist/**",
+      "!build-out/**",
+      "!.git/**"
     ],
     "win": {
       "artifactName": "${productName}-Setup-${version}.${ext}",
