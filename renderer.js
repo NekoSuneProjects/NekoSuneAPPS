@@ -2414,7 +2414,14 @@ async function loadRightbar () {
     myUserId = me.user.id || ''
     setText('rbName', me.user.displayName || '—')
     setText('rbStatus', me.user.statusDescription || me.user.status || '')
-    $('rbAvatar').src = me.user.userIcon || me.user.currentAvatarThumbnailImageUrl || 'assets/vrchat.png'
+    const avatarUrl = me.user.userIcon || 'assets/vrchat.png'
+    $('rbAvatar').src = avatarUrl
+    const sa = $('sidebarAvatar')
+    if (sa) {
+      sa.src = avatarUrl
+      sa.title = me.user.displayName || ''
+      sa.style.display = ''
+    }
   }
   if (all && all.ok) {
     // Trust the API's online/offline buckets (see getAllFriends) — not per-friend state.
@@ -2434,9 +2441,11 @@ $('rbFriends').addEventListener('click', e => {
   const row = e.target.closest('.rb-friend')
   if (row && row.dataset.id) openUserModal(row.dataset.id)
 })
-// Click your own profile header to open your full profile.
+// Click your own profile header or sidebar avatar to open your full profile.
 const rbProfileEl = document.querySelector('.rb-profile')
 if (rbProfileEl) { rbProfileEl.style.cursor = 'pointer'; rbProfileEl.addEventListener('click', () => { if (myUserId) openUserModal(myUserId) }) }
+const sidebarAvatarEl = $('sidebarAvatar')
+if (sidebarAvatarEl) sidebarAvatarEl.addEventListener('click', () => { if (myUserId) openUserModal(myUserId) })
 
 /* ---------------- user profile modal ---------------- */
 function trustRank (tags) {

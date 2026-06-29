@@ -1,6 +1,6 @@
 {
   "name": "nekosuneapps",
-  "version": "1.0.32",
+  "version": "1.0.33",
   "main": "main.js",
   "bin": "main.js",
   "scripts": {

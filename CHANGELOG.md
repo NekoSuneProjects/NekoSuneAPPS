@@ -3,6 +3,27 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.33] - 2026-06-29
+
+### Fixed
+- **Sidebar nav buttons and launch button appeared squashed/oval after the
+  1.0.32 layout fix.** Changing the app to `height: 100vh` gave the sidebar
+  flex container a constrained height, causing CSS flex-shrink to compress items
+  (buttons are not explicitly `flex-shrink: 0`). Added `.sidebar > * { flex-shrink: 0 }`
+  so all children keep their declared size; the `flex:1` spacer (inline style)
+  retains `flex-shrink: 1` and collapses first, then the sidebar scrolls.
+- **User profile picture not appearing anywhere in the app.** `pickUser()` in
+  `vrchatApi.js` was not including the `userIcon` / `profilePicOverride` /
+  `currentAvatarThumbnailImageUrl` fields, so every avatar slot fell through to
+  the fallback app logo. Added `userIcon` to `pickUser()` using the same
+  priority order as the friends list renderer.
+
+### Added
+- **Your VRChat profile picture now shows at the bottom of the sidebar.** A small
+  circular avatar appears above the clock rail once you are logged into VRChat.
+  Clicking it opens your full profile card (same as clicking your profile in the
+  right panel). It updates alongside the rest of the rightbar every 120 seconds.
+
 ## [1.0.32] - 2026-06-29
 
 ### Fixed

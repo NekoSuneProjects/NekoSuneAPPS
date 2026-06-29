@@ -107,6 +107,9 @@
 
     /* Sidebar — slim icon rail (VRCNext-style) */
     .sidebar { background: var(--bg2); border-right: 1px solid var(--border); padding: 12px 0; display:flex; flex-direction:column; align-items:center; gap:4px; overflow-y:auto; overflow-x:visible; }
+    /* Prevent flex from compressing sidebar items when height is constrained.
+       The flex:1 spacer div uses inline style so it keeps flex-shrink:1 (inline > class). */
+    .sidebar > * { flex-shrink: 0; }
     .sidebar::-webkit-scrollbar { width:0; }
     .brand { display:flex; align-items:center; justify-content:center; padding: 4px 0 12px; }
     .brand h1 { display:none; }
@@ -126,7 +129,9 @@
     /* label spans hold text for JS tooltip — kept hidden in DOM */
     .navbtn .lbl { display:none; }
     .navlabel { font-size:0; line-height:0; width:36px; height:1px; background:var(--border); margin:8px 0; opacity:.6; padding:0; }
-    /* bottom rail: clock + launch */
+    /* bottom rail: user avatar + clock + launch */
+    .sidebar-avatar { width:38px; height:38px; border-radius:50%; object-fit:cover; cursor:pointer; border:2px solid var(--border); transition:border-color .15s; }
+    .sidebar-avatar:hover { border-color:var(--accent); }
     .railclock { font-size:.7rem; color:var(--muted); font-variant-numeric:tabular-nums; margin-top:6px; }
     .launchbtn { width:48px; height:48px; border-radius:50%; border:none; cursor:pointer; color:#fff; font-size:1.1rem; margin:8px 0 4px;
       background:linear-gradient(135deg,var(--accent),var(--accent2)); box-shadow:0 8px 22px -8px var(--accent); transition:.15s; }
@@ -231,6 +236,7 @@
       <button class="navbtn" data-tab="about"><span class="ico">ℹ️</span><span class="lbl">About</span></button>
       <button class="navbtn" data-tab="log"><span class="ico">📜</span><span class="lbl">OSC Log</span></button>
       <div style="flex:1"></div>
+      <img id="sidebarAvatar" class="sidebar-avatar" src="" alt="Your profile" title="" referrerpolicy="no-referrer" style="display:none">
       <div class="railclock" id="railClock">--:--</div>
       <button class="launchbtn" id="launchVrc" title="Launch VRChat">▶</button>
     </aside>
