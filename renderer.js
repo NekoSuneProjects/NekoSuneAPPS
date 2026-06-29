@@ -92,6 +92,38 @@ document.querySelectorAll('.navbtn').forEach(btn => {
   })
 })()
 
+// Sidebar hover tooltips — rendered as a body-level fixed div so they escape the
+// sidebar's overflow clipping (CSS overflow-y:auto forces overflow-x:auto per spec,
+// which clips absolutely-positioned children).
+;(function initSidebarTooltip () {
+  const tip = document.createElement('div')
+  tip.style.cssText = [
+    'position:fixed', 'pointer-events:none', 'z-index:9999',
+    'background:var(--panel2)', 'color:var(--text)',
+    'border:1px solid var(--border)', 'border-radius:9px',
+    'padding:5px 11px', 'font-size:.82rem', 'white-space:nowrap',
+    'box-shadow:0 8px 22px -10px #000',
+    'opacity:0', 'transition:opacity .12s', 'will-change:opacity'
+  ].join(';')
+  document.body.appendChild(tip)
+
+  const sidebar = document.querySelector('.sidebar')
+  sidebar.addEventListener('mouseover', e => {
+    const btn = e.target.closest('.navbtn')
+    if (!btn) return
+    const lbl = btn.querySelector('.lbl')
+    const text = lbl ? lbl.textContent.trim() : ''
+    if (!text) return
+    const r = btn.getBoundingClientRect()
+    tip.textContent = text
+    tip.style.left = (r.right + 8) + 'px'
+    tip.style.top = (r.top + r.height / 2) + 'px'
+    tip.style.transform = 'translateY(-50%)'
+    tip.style.opacity = '1'
+  })
+  sidebar.addEventListener('mouseleave', () => { tip.style.opacity = '0' })
+})()
+
 // Theme is auto-selected by date (seasonal) and is NOT user-switchable.
 // Default is green; seasons override it around the holiday.
 function easterDate (y) {

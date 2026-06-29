@@ -37,16 +37,17 @@
     /* Hide scrollbars everywhere but keep scrolling (tidy) */
     * { scrollbar-width: none; -ms-overflow-style: none; }
     *::-webkit-scrollbar { width: 0; height: 0; display: none; }
+    html { height: 100%; }
     body {
       margin: 0; font-family: 'Segoe UI', system-ui, sans-serif;
       background: radial-gradient(1200px 600px at 0% 0%, var(--bg2), var(--bg) 60%);
-      color: var(--text); min-height: 100vh; transition: background .3s, color .3s;
+      color: var(--text); height: 100%; overflow: hidden; transition: background .3s, color .3s;
     }
-    .app { display: grid; grid-template-columns: 76px 1fr 300px; min-height: 100vh; }
+    .app { display: grid; grid-template-columns: 76px 1fr 300px; height: 100vh; }
     @media (max-width: 900px){ .app { grid-template-columns: 76px 1fr; } .rightbar { display:none !important; } }
 
     /* Right friends panel (VRChat) */
-    .rightbar { background:var(--bg2); border-left:1px solid var(--border); padding:14px 12px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; max-height:100vh; }
+    .rightbar { background:var(--bg2); border-left:1px solid var(--border); padding:14px 12px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; }
     .rb-profile { display:flex; align-items:center; gap:10px; }
     .rb-profile img { width:42px; height:42px; border-radius:12px; object-fit:cover; background:var(--panel2); }
     .rb-profile .nm { font-weight:700; font-size:.92rem; }
@@ -122,11 +123,8 @@
        replaces the emoji automatically. Missing files just keep the emoji. */
     .navbtn .ico.has-img { display:inline-block; width:26px; height:26px; font-size:0; line-height:0;
       background-size:contain; background-repeat:no-repeat; background-position:center; }
-    /* hover tooltip from the (hidden) label */
+    /* label spans hold text for JS tooltip — kept hidden in DOM */
     .navbtn .lbl { display:none; }
-    .navbtn:hover .lbl { display:block; position:absolute; left:56px; top:50%; transform:translateY(-50%);
-      background:var(--panel2); color:var(--text); border:1px solid var(--border); padding:5px 11px; border-radius:9px;
-      white-space:nowrap; font-size:.82rem; z-index:60; box-shadow:0 8px 22px -10px #000; pointer-events:none; }
     .navlabel { font-size:0; line-height:0; width:36px; height:1px; background:var(--border); margin:8px 0; opacity:.6; padding:0; }
     /* bottom rail: clock + launch */
     .railclock { font-size:.7rem; color:var(--muted); font-variant-numeric:tabular-nums; margin-top:6px; }
