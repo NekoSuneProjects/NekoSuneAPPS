@@ -92,6 +92,38 @@ document.querySelectorAll('.navbtn').forEach(btn => {
   })
 })()
 
+// Sidebar hover tooltips — rendered as a body-level fixed div so they escape the
+// sidebar's overflow clipping (CSS overflow-y:auto forces overflow-x:auto per spec,
+// which clips absolutely-positioned children).
+;(function initSidebarTooltip () {
+  const tip = document.createElement('div')
+  tip.style.cssText = [
+    'position:fixed', 'pointer-events:none', 'z-index:9999',
+    'background:var(--panel2)', 'color:var(--text)',
+    'border:1px solid var(--border)', 'border-radius:9px',
+    'padding:5px 11px', 'font-size:.82rem', 'white-space:nowrap',
+    'box-shadow:0 8px 22px -10px #000',
+    'opacity:0', 'transition:opacity .12s', 'will-change:opacity'
+  ].join(';')
+  document.body.appendChild(tip)
+
+  const sidebar = document.querySelector('.sidebar')
+  sidebar.addEventListener('mouseover', e => {
+    const btn = e.target.closest('.navbtn')
+    if (!btn) return
+    const lbl = btn.querySelector('.lbl')
+    const text = lbl ? lbl.textContent.trim() : ''
+    if (!text) return
+    const r = btn.getBoundingClientRect()
+    tip.textContent = text
+    tip.style.left = (r.right + 8) + 'px'
+    tip.style.top = (r.top + r.height / 2) + 'px'
+    tip.style.transform = 'translateY(-50%)'
+    tip.style.opacity = '1'
+  })
+  sidebar.addEventListener('mouseleave', () => { tip.style.opacity = '0' })
+})()
+
 // Theme is auto-selected by date (seasonal) and is NOT user-switchable.
 // Default is green; seasons override it around the holiday.
 function easterDate (y) {
@@ -2382,7 +2414,14 @@ async function loadRightbar () {
     myUserId = me.user.id || ''
     setText('rbName', me.user.displayName || '—')
     setText('rbStatus', me.user.statusDescription || me.user.status || '')
-    $('rbAvatar').src = me.user.userIcon || me.user.currentAvatarThumbnailImageUrl || 'assets/vrchat.png'
+    const avatarUrl = me.user.userIcon || 'assets/vrchat.png'
+    $('rbAvatar').src = avatarUrl
+    const sa = $('sidebarAvatar')
+    if (sa) {
+      sa.src = avatarUrl
+      sa.title = me.user.displayName || ''
+      sa.style.display = ''
+    }
   }
   if (all && all.ok) {
     // Trust the API's online/offline buckets (see getAllFriends) — not per-friend state.
@@ -2402,9 +2441,11 @@ $('rbFriends').addEventListener('click', e => {
   const row = e.target.closest('.rb-friend')
   if (row && row.dataset.id) openUserModal(row.dataset.id)
 })
-// Click your own profile header to open your full profile.
+// Click your own profile header or sidebar avatar to open your full profile.
 const rbProfileEl = document.querySelector('.rb-profile')
 if (rbProfileEl) { rbProfileEl.style.cursor = 'pointer'; rbProfileEl.addEventListener('click', () => { if (myUserId) openUserModal(myUserId) }) }
+const sidebarAvatarEl = $('sidebarAvatar')
+if (sidebarAvatarEl) sidebarAvatarEl.addEventListener('click', () => { if (myUserId) openUserModal(myUserId) })
 
 /* ---------------- user profile modal ---------------- */
 function trustRank (tags) {
@@ -2738,10 +2779,12 @@ async function loadAbout () {
     const r = await api.appContributors()
     const el = $('aboutContributors'); if (el) {
       if (r && r.ok && r.contributors.length) {
-        el.innerHTML = r.contributors.map(c =>
-          `<a href="#" data-ext="${c.url}" title="${c.commits} commits" style="display:inline-flex;align-items:center;gap:6px;margin:3px 8px 3px 0;text-decoration:none;color:var(--text)">
-             <img src="${c.avatar}" referrerpolicy="no-referrer" style="width:22px;height:22px;border-radius:50%" onerror="this.style.display='none'"/> ${esc(c.login)}</a>`).join('')
-      } else el.textContent = r && r.error ? 'Could not load (offline?).' : 'Just NekoSuneVR so far.'
+        el.innerHTML = r.contributors.map(c => {
+          const tip = c.commits > 0 ? `${c.commits} commits` : 'Collaborator'
+          return `<a href="#" data-ext="${c.url}" title="${tip}" style="display:inline-flex;align-items:center;gap:6px;margin:3px 8px 3px 0;text-decoration:none;color:var(--text)">` +
+            `<img src="${c.avatar}" referrerpolicy="no-referrer" style="width:22px;height:22px;border-radius:50%" onerror="this.style.display='none'"/> ${esc(c.login)}</a>`
+        }).join('')
+      } else el.textContent = 'Could not load contributors.'
     }
   } catch (_) { if ($('aboutContributors')) setText('aboutContributors', 'Could not load contributors.') }
 }
@@ -2777,16 +2820,22 @@ $('pickerClose').addEventListener('click', () => _pickerEnd([]))
 $('pickerModal').addEventListener('click', e => { if (e.target === $('pickerModal')) _pickerEnd([]) })
 
 /* ---------------- profile editor (own) ---------------- */
+let _bioLoaded = false // true once the bio has been fetched from VRChat
 async function loadProfileEditor () {
   const me = await api.vrchatStatus()
   if (!me.ok) { setText('peOut', me.error || 'Log in on the VRChat tab.'); return }
   $('peStatus').value = me.user.status || 'active'
   $('peStatusDesc').value = me.user.statusDescription || ''
-  if (me.user.bio != null) $('peBio').value = me.user.bio
+  if (me.user.bio != null) { $('peBio').value = me.user.bio; _bioLoaded = true }
   setText('peOut', '')
 }
 $('peLoad').addEventListener('click', loadProfileEditor)
 $('peSave').addEventListener('click', async () => {
+  // Never send bio unless it was loaded first — sending an empty string wipes the bio.
+  if (!_bioLoaded) {
+    setText('peOut', 'Please click "Load" first so your bio is fetched before saving.')
+    return
+  }
   setText('peOut', 'Saving…')
   const r = await api.vrchatUpdateProfile({ status: $('peStatus').value, statusDescription: $('peStatusDesc').value, bio: $('peBio').value })
   setText('peOut', r.ok ? '✅ Profile updated' : 'Error: ' + (r.error || 'failed'))

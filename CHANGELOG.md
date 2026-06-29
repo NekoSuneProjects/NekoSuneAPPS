@@ -3,9 +3,59 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.33] - 2026-06-29
+
+### Fixed
+- **Sidebar nav buttons and launch button appeared squashed/oval after the
+  1.0.32 layout fix.** Changing the app to `height: 100vh` gave the sidebar
+  flex container a constrained height, causing CSS flex-shrink to compress items
+  (buttons are not explicitly `flex-shrink: 0`). Added `.sidebar > * { flex-shrink: 0 }`
+  so all children keep their declared size; the `flex:1` spacer (inline style)
+  retains `flex-shrink: 1` and collapses first, then the sidebar scrolls.
+- **User profile picture not appearing anywhere in the app.** `pickUser()` in
+  `vrchatApi.js` was not including the `userIcon` / `profilePicOverride` /
+  `currentAvatarThumbnailImageUrl` fields, so every avatar slot fell through to
+  the fallback app logo. Added `userIcon` to `pickUser()` using the same
+  priority order as the friends list renderer.
+
+### Added
+- **Your VRChat profile picture now shows at the bottom of the sidebar.** A small
+  circular avatar appears above the clock rail once you are logged into VRChat.
+  Clicking it opens your full profile card (same as clicking your profile in the
+  right panel). It updates alongside the rest of the rightbar every 120 seconds.
+
+## [1.0.32] - 2026-06-29
+
+### Fixed
+- **Sidebar scrolled off-screen when the main content area was tall.** The app
+  layout used `min-height: 100vh` so the entire page could grow and scroll as one
+  unit, pushing the sidebar out of view. Changed to a fixed `height: 100vh` layout
+  with `overflow: hidden` on the body so the sidebar and main panel each scroll
+  independently and the sidebar stays pinned at all times.
+- **Sidebar button tooltips were invisible.** Tooltip labels were rendered as
+  `position: absolute` children inside the sidebar, but the CSS spec forces
+  `overflow-x` to `auto` whenever `overflow-y` is non-`visible`, so the sidebar
+  clipped them silently. Replaced with a JavaScript tooltip that appends to `body`
+  and uses `position: fixed`, so it appears correctly beside any button regardless
+  of the sidebar's overflow setting.
+
+### Added
+- **Sidebar tooltips.** Hovering any nav button now shows a floating label with
+  the button's name (e.g. "Friend Den", "History", "OSC Control"). The tooltip
+  uses a body-level fixed element so it is never clipped by the sidebar.
+
 ## [1.0.31] - 2026-06-29
 
 ### Fixed
+- **Discord Rich Presence staying blue after a VRChat status change.** The
+  profile update handler never notified Discord — it relied on the 60-second
+  poll, so RPC stayed stale until the next cycle. Now immediately calls
+  `setVrcContext()` with the new mapped status as soon as the update succeeds.
+- **Saving your profile wiped your VRChat bio.** `pickUser()` never included
+  the `bio` field, so the profile editor textarea was always empty on load.
+  Clicking Save then sent `bio: ""` to VRChat, clearing it silently. Fixed by
+  including `bio` in the user object and blocking Save if the profile hasn't
+  been loaded first.
 - **Friend Den showing friends as unfriended and re-friended repeatedly.** The friend
   diff tracker was using VRChat's raw paginated API buckets, which silently drop friends
   mid-transition between online and offline states, causing false unfriend/refriend
