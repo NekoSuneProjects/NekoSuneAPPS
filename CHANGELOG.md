@@ -6,6 +6,11 @@ This project follows [Semantic Versioning](https://semver.org/).
 ## [1.0.31] - 2026-06-29
 
 ### Fixed
+- **Saving your profile wiped your VRChat bio.** `pickUser()` never included
+  the `bio` field, so the profile editor textarea was always empty on load.
+  Clicking Save then sent `bio: ""` to VRChat, clearing it silently. Fixed by
+  including `bio` in the user object and blocking Save if the profile hasn't
+  been loaded first.
 - **Friend Den showing friends as unfriended and re-friended repeatedly.** The friend
   diff tracker was using VRChat's raw paginated API buckets, which silently drop friends
   mid-transition between online and offline states, causing false unfriend/refriend
