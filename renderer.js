@@ -2777,16 +2777,22 @@ $('pickerClose').addEventListener('click', () => _pickerEnd([]))
 $('pickerModal').addEventListener('click', e => { if (e.target === $('pickerModal')) _pickerEnd([]) })
 
 /* ---------------- profile editor (own) ---------------- */
+let _bioLoaded = false // true once the bio has been fetched from VRChat
 async function loadProfileEditor () {
   const me = await api.vrchatStatus()
   if (!me.ok) { setText('peOut', me.error || 'Log in on the VRChat tab.'); return }
   $('peStatus').value = me.user.status || 'active'
   $('peStatusDesc').value = me.user.statusDescription || ''
-  if (me.user.bio != null) $('peBio').value = me.user.bio
+  if (me.user.bio != null) { $('peBio').value = me.user.bio; _bioLoaded = true }
   setText('peOut', '')
 }
 $('peLoad').addEventListener('click', loadProfileEditor)
 $('peSave').addEventListener('click', async () => {
+  // Never send bio unless it was loaded first — sending an empty string wipes the bio.
+  if (!_bioLoaded) {
+    setText('peOut', 'Please click "Load" first so your bio is fetched before saving.')
+    return
+  }
   setText('peOut', 'Saving…')
   const r = await api.vrchatUpdateProfile({ status: $('peStatus').value, statusDescription: $('peStatusDesc').value, bio: $('peBio').value })
   setText('peOut', r.ok ? '✅ Profile updated' : 'Error: ' + (r.error || 'failed'))
