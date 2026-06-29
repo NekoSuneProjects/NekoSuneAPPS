@@ -6,6 +6,10 @@ This project follows [Semantic Versioning](https://semver.org/).
 ## [1.0.31] - 2026-06-29
 
 ### Fixed
+- **Discord Rich Presence staying blue after a VRChat status change.** The
+  profile update handler never notified Discord — it relied on the 60-second
+  poll, so RPC stayed stale until the next cycle. Now immediately calls
+  `setVrcContext()` with the new mapped status as soon as the update succeeds.
 - **Saving your profile wiped your VRChat bio.** `pickUser()` never included
   the `bio` field, so the profile editor textarea was always empty on load.
   Clicking Save then sent `bio: ""` to VRChat, clearing it silently. Fixed by
