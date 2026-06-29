@@ -773,7 +773,7 @@ function isLoggedIn () { loadCookies(); return !!cookies.auth }
 function logout () { cookies = {}; currentUserId = ''; saveCookies(); invalidate() }
 
 module.exports = {
-  login, verify2fa, fetchUser, mapStatus, isLoggedIn, logout,
+  login, verify2fa, fetchUser, mapStatus, isLoggedIn, logout, invalidate,
   getFriends, getAllFriends, getUser, sendFriendRequest, requestInvite, unfriend, inviteUser, getUserGroups, getUserWorlds,
   getMutualFriends, getFavoriteWorlds, getFavoriteGroups, sendBoop, getMyAvatars, getMyWorlds, addFavorite, removeFavorite,
   searchUsers, searchWorlds, searchGroups, getWorld, getWorldName, getGroup, parseInstance,

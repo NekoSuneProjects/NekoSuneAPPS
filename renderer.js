@@ -54,6 +54,44 @@ document.querySelectorAll('.navbtn').forEach(btn => {
   })
 })
 
+// Sidebar drag-to-reorder — lets users rearrange nav buttons top-to-bottom.
+// Non-button elements (labels, brand, clock) stay fixed; only .navbtn elements move.
+// Order is persisted in settings under 'sidebarOrder'.
+;(function initSidebarDrag () {
+  const sidebar = document.querySelector('.sidebar')
+  let dragging = null
+  sidebar.querySelectorAll('.navbtn').forEach(b => { b.draggable = true })
+
+  sidebar.addEventListener('dragstart', e => {
+    const btn = e.target.closest('.navbtn'); if (!btn) return
+    dragging = btn
+    // Defer class add so the browser captures the non-faded element as the drag ghost.
+    setTimeout(() => btn.classList.add('dragging'), 0)
+  })
+  sidebar.addEventListener('dragend', () => {
+    if (dragging) dragging.classList.remove('dragging')
+    dragging = null
+    sidebar.querySelectorAll('.drag-over').forEach(b => b.classList.remove('drag-over'))
+  })
+  sidebar.addEventListener('dragover', e => {
+    e.preventDefault()
+    const target = e.target.closest('.navbtn')
+    sidebar.querySelectorAll('.drag-over').forEach(b => b.classList.remove('drag-over'))
+    if (target && target !== dragging) target.classList.add('drag-over')
+  })
+  sidebar.addEventListener('drop', e => {
+    e.preventDefault()
+    const target = e.target.closest('.navbtn')
+    if (!target || !dragging || target === dragging) return
+    const btns = [...sidebar.querySelectorAll('.navbtn')]
+    const di = btns.indexOf(dragging); const ti = btns.indexOf(target)
+    if (di < ti) target.after(dragging); else target.before(dragging)
+    target.classList.remove('drag-over')
+    const order = [...sidebar.querySelectorAll('.navbtn[data-tab]')].map(b => b.dataset.tab)
+    api.saveSetting('sidebarOrder', order)
+  })
+})()
+
 // Theme is auto-selected by date (seasonal) and is NOT user-switchable.
 // Default is green; seasons override it around the holiday.
 function easterDate (y) {
@@ -1644,7 +1682,7 @@ async function loadFriends () {
   const fr = r.friends.slice().sort((a, b) =>
     (isOnline(b) - isOnline(a)) || String(a.displayName || '').localeCompare(String(b.displayName || '')))
   const onlineN = r.onlineCount != null ? r.onlineCount : fr.filter(isOnline).length
-  setText('friendCount', `${onlineN}/${fr.length}`)
+  setText('friendCount', `${onlineN}/${r.expected || fr.length}`)
   // Surface any friends VRChat's API still wouldn't return, so the count is honest.
   const prevNote = document.getElementById('fdMissingNote'); if (prevNote) prevNote.remove()
   if (r.stillMissing) { const note = document.createElement('div'); note.id = 'fdMissingNote'; note.className = 'muted'; note.style.cssText = 'font-size:.72rem;margin-bottom:4px'; note.textContent = `${r.stillMissing} friend(s) couldn't be loaded from VRChat right now.`; el.before(note) }
@@ -2903,6 +2941,23 @@ async function applyOverlay () {
 /* ---------------- boot ---------------- */
 async function init () {
   await loadAudioDevices()
+
+  // Restore sidebar button order (Issue #2). Uses a placeholder approach so
+  // non-navbtn elements (labels, clock, brand) keep their original DOM positions.
+  const savedSidebarOrder = await api.getSetting('sidebarOrder', null)
+  if (Array.isArray(savedSidebarOrder) && savedSidebarOrder.length) {
+    const sidebar = document.querySelector('.sidebar')
+    const allBtns = [...sidebar.querySelectorAll('.navbtn[data-tab]')]
+    const orderMap = new Map(savedSidebarOrder.map((tab, i) => [tab, i]))
+    const sorted = allBtns.slice().sort((a, b) => {
+      const ai = orderMap.has(a.dataset.tab) ? orderMap.get(a.dataset.tab) : Infinity
+      const bi = orderMap.has(b.dataset.tab) ? orderMap.get(b.dataset.tab) : Infinity
+      return ai - bi
+    })
+    // Replace each navbtn slot with a comment placeholder, then swap in sorted buttons.
+    const placeholders = allBtns.map(btn => { const ph = document.createComment('nb'); btn.replaceWith(ph); return ph })
+    placeholders.forEach((ph, i) => ph.replaceWith(sorted[i]))
+  }
 
   // restore settings
   $('portInput').value = await api.getSetting('oscPort', 9000); setOscPort(getSendPort())

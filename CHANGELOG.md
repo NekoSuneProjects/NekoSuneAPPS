@@ -3,6 +3,25 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.31] - 2026-06-29
+
+### Fixed
+- **Friend Den showing friends as unfriended and re-friended repeatedly.** The friend
+  diff tracker was using VRChat's raw paginated API buckets, which silently drop friends
+  mid-transition between online and offline states, causing false unfriend/refriend
+  events to appear in History. The tracker now uses `getAllFriends()`, which reconciles
+  against the authoritative `auth/user.friends` ID array so the list is stable and
+  complete. The cache is also invalidated before each poll to guarantee fresh data.
+
+### Added
+- **Friend Den shows your real total friend count.** The count pill (e.g. `12/247`)
+  now uses the authoritative total from your VRChat account instead of however many
+  friends happened to load from the paginated API.
+- **Sidebar is now drag-and-drop reorderable.** All nav buttons in the left lane can
+  be dragged up or down to rearrange them. The order saves automatically and is
+  restored on the next launch. Category labels, the clock, and other non-button
+  elements stay fixed in place.
+
 ## [1.0.30] - 2026-06-18
 
 ### Fixed

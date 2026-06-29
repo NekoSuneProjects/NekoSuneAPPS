@@ -1,6 +1,6 @@
 {
   "name": "nekosuneapps",
-  "version": "1.0.30",
+  "version": "1.0.31",
   "main": "main.js",
   "bin": "main.js",
   "scripts": {
@@ -105,7 +105,7 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
-    "electron": "^31.3.1",
+    "electron": "^31.7.7",
     "electron-builder": "^25.1.8"
   }
 }
