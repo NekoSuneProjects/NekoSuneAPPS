@@ -793,10 +793,14 @@ let lastFriends = null // Map(id -> displayName)
 let friendDiffTimer = null
 async function pollFriendDiff () {
   if (!vrchatApi.isLoggedIn() || vrchatApi.isRateLimited()) return
-  const [on, off] = await Promise.all([vrchatApi.getFriends(false), vrchatApi.getFriends(true)])
-  if (!on.ok && !off.ok) return
+  // Always fetch fresh: the paginated buckets can silently miss friends mid-transition,
+  // causing spurious unfriend/refriend events. getAllFriends() reconciles against the
+  // authoritative auth/user.friends id array so the list is stable and complete.
+  vrchatApi.invalidate('friends:all')
+  const r = await vrchatApi.getAllFriends()
+  if (!r.ok) return
   const map = new Map()
-  for (const f of [...(on.friends || []), ...(off.friends || [])]) map.set(f.id, f.displayName)
+  for (const f of (r.friends || [])) map.set(f.id, f.displayName)
   if (lastFriends === null) { lastFriends = map; return } // baseline
   for (const [id, name] of map) {
     if (!lastFriends.has(id)) gamelog.log('friend_add', name, 'New friend', '')

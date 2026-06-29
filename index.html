@@ -115,6 +115,8 @@
       background:transparent; color:var(--muted); cursor:pointer; font-size:1.18rem; transition:.15s; position:relative; }
     .navbtn:hover { background:var(--panel); color:var(--text); }
     .navbtn.active { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; box-shadow:0 6px 18px -8px var(--accent); }
+    .navbtn.dragging { opacity:.35; }
+    .navbtn.drag-over { outline:2px solid var(--accent); outline-offset:2px; }
     .navbtn .ico { width:auto; }
     /* Custom sidebar icons: drop a PNG/SVG into assets/icons/<tab>.(png|svg) and it
        replaces the emoji automatically. Missing files just keep the emoji. */
@@ -806,7 +808,7 @@
       <section id="friendden" class="tabpanel">
         <div class="card">
           <h3>🫂 Friend Den <span class="pill" id="friendCount">0</span></h3>
-          <div class="muted" style="font-size:.75rem;margin-bottom:8px">All your friends (online first), where they are, and the languages they speak 🏳️ — via the VRChat API. The count shows online / total. Needs VRChat login (VRChat tab).</div>
+          <div class="muted" style="font-size:.75rem;margin-bottom:8px">All your friends (online first), where they are, and the languages they speak 🏳️ — via the VRChat API. The count shows online / total friends on your account. Needs VRChat login (VRChat tab).</div>
           <div class="row"><button class="btn" id="friendRefresh">Refresh</button><label class="switch" style="margin:0"><input type="checkbox" id="friendAuto" checked> Auto-refresh (60s)</label></div>
           <div id="friendList" class="muted" style="margin-top:10px;max-height:460px;overflow:auto;font-size:.84rem">Not loaded.</div>
         </div>
