@@ -2738,10 +2738,12 @@ async function loadAbout () {
     const r = await api.appContributors()
     const el = $('aboutContributors'); if (el) {
       if (r && r.ok && r.contributors.length) {
-        el.innerHTML = r.contributors.map(c =>
-          `<a href="#" data-ext="${c.url}" title="${c.commits} commits" style="display:inline-flex;align-items:center;gap:6px;margin:3px 8px 3px 0;text-decoration:none;color:var(--text)">
-             <img src="${c.avatar}" referrerpolicy="no-referrer" style="width:22px;height:22px;border-radius:50%" onerror="this.style.display='none'"/> ${esc(c.login)}</a>`).join('')
-      } else el.textContent = r && r.error ? 'Could not load (offline?).' : 'Just NekoSuneVR so far.'
+        el.innerHTML = r.contributors.map(c => {
+          const tip = c.commits > 0 ? `${c.commits} commits` : 'Collaborator'
+          return `<a href="#" data-ext="${c.url}" title="${tip}" style="display:inline-flex;align-items:center;gap:6px;margin:3px 8px 3px 0;text-decoration:none;color:var(--text)">` +
+            `<img src="${c.avatar}" referrerpolicy="no-referrer" style="width:22px;height:22px;border-radius:50%" onerror="this.style.display='none'"/> ${esc(c.login)}</a>`
+        }).join('')
+      } else el.textContent = 'Could not load contributors.'
     }
   } catch (_) { if ($('aboutContributors')) setText('aboutContributors', 'Could not load contributors.') }
 }

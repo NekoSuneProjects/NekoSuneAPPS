@@ -47,18 +47,30 @@ async function check (currentVersion) {
   }
 }
 
+// Static collaborators who may not yet appear in GitHub's contributor API
+// (e.g. contributors via fork/PR before merge, or invited collaborators).
+const STATIC_COLLABORATORS = [
+  { login: 'FumikoEcho', url: 'https://github.com/FumikoEcho', avatar: 'https://github.com/FumikoEcho.png', commits: 0 }
+]
+
 // Auto-detect contributors/collaborators from the GitHub repo (for the About page).
 async function contributors () {
   try {
     const { data } = await axios.get(`https://api.github.com/repos/${REPO}/contributors?per_page=30`, {
       timeout: 12000, headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'NekoSuneAPPS-About' }
     })
-    if (!Array.isArray(data)) return { ok: true, contributors: [] }
-    const list = data
+    if (!Array.isArray(data)) return { ok: true, contributors: STATIC_COLLABORATORS }
+    const fromApi = data
       .filter(c => c.type === 'User' && !/\[bot\]$/i.test(c.login || ''))
       .map(c => ({ login: c.login, url: c.html_url, avatar: c.avatar_url, commits: c.contributions }))
-    return { ok: true, contributors: list }
-  } catch (err) { return { ok: false, error: err.message, contributors: [] } }
+    // Merge: keep API entries (authoritative commit count), append static ones not already present.
+    const seen = new Set(fromApi.map(c => c.login.toLowerCase()))
+    const merged = [...fromApi, ...STATIC_COLLABORATORS.filter(c => !seen.has(c.login.toLowerCase()))]
+    return { ok: true, contributors: merged }
+  } catch (err) {
+    // Offline/error — still show static collaborators so the tab isn't empty.
+    return { ok: true, contributors: STATIC_COLLABORATORS, error: err.message }
+  }
 }
 
 module.exports = { check, cmp, contributors, RELEASES_PAGE }
