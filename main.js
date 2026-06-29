@@ -733,7 +733,12 @@ ipcMain.handle('vrchat:searchGroups', (e, q) => vrchatApi.searchGroups(q))
 ipcMain.handle('vrchat:world', (e, id) => vrchatApi.getWorld(id))
 ipcMain.handle('vrchat:worldName', (e, id) => vrchatApi.getWorldName(id))
 ipcMain.handle('vrchat:group', (e, id) => vrchatApi.getGroup(id))
-ipcMain.handle('vrchat:updateProfile', (e, fields) => vrchatApi.updateProfile(fields || {}))
+ipcMain.handle('vrchat:updateProfile', async (e, fields) => {
+  const r = await vrchatApi.updateProfile(fields || {})
+  // Immediately sync Discord RPC when status changes — don't wait for the 60s poll.
+  if (r.ok && fields && fields.status) setVrcContext({ vrcStatus: vrchatApi.mapStatus(fields.status) })
+  return r
+})
 ipcMain.handle('vrchat:selectAvatar', (e, id) => vrchatApi.selectAvatar(id))
 ipcMain.handle('vrchat:deleteAvatar', (e, id) => vrchatApi.deleteAvatar(id))
 ipcMain.handle('vrchat:createInstance', (e, { worldId, access, region } = {}) => vrchatApi.createInstance(worldId, access, region))
