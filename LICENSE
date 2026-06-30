@@ -1,55 +1,111 @@
-NekoSuneAPPS Proprietary License
+NekoSuneAPPS Source-Available Contribution License
 Copyright (c) 2024-2026 NekoSuneVR. All Rights Reserved.
 
-This software and its source code ("the Software") are the exclusive property of
-NekoSuneVR. By downloading, installing, or using the Software you agree to the
-terms below.
+This software, source code, assets, comments, and documentation (collectively,
+"the Software") are the exclusive property of NekoSuneVR unless otherwise stated.
+By downloading, installing, copying, forking, modifying, submitting, or using the
+Software, you agree to the terms below.
 
-1. GRANT OF USE
+1. OFFICIAL PROJECT
+   The official repository for the Software is:
+   https://github.com/NekoSuneProjects/NekoSuneAPPS
+
+   Copies, forks, builds, releases, or mirrors outside the official repository are
+   not official unless NekoSuneVR expressly says so in writing.
+
+2. PERSONAL USE GRANT
    You are granted a personal, non-exclusive, non-transferable, revocable license
-   to download and run the official, unmodified releases of the Software for your
-   own personal use only.
+   to download and run official, unmodified releases of the Software for your own
+   personal use only.
 
-2. PROHIBITED ACTS
+3. CONTRIBUTION GRANT
+   You may fork the official repository and modify the Software only for the
+   purpose of preparing bug fixes, security fixes, documentation updates, feature
+   improvements, new integrations, or removal proposals to be submitted back to
+   the official repository by issue or pull request.
+
+   This grant does not permit public redistribution of modified builds, use in a
+   separate project, publishing competing versions, or using the Software outside
+   the contribution workflow unless NekoSuneVR gives separate written permission.
+
+4. CONTRIBUTION LICENSE TO NEKOSUNEVR
+   By submitting any issue, pull request, patch, code, documentation, asset, or
+   other contribution to the official repository, you grant NekoSuneVR a
+   perpetual, worldwide, royalty-free, irrevocable license to use, copy, modify,
+   publish, distribute, sublicense, and incorporate your contribution into the
+   Software and related projects.
+
+   You represent that you have the right to submit the contribution and that it
+   does not knowingly include stolen code, malware, secrets, or content that
+   violates another party's rights or terms.
+
+5. PROHIBITED ACTS
    You may NOT, in whole or in part:
-   a. modify, edit, adapt, translate, or create derivative works of the Software
-      or its source code;
-   b. copy, reproduce, redistribute, sublicense, sell, rent, lease, or otherwise
-      make the Software or its source code available to any third party;
-   c. steal, plagiarize, or claim authorship of the source code or any portion of
-      it;
-   d. use the Software, its source code, comments, assets, or documentation as
-      input, training data, fine-tuning data, embeddings, or for any other purpose
-      related to the development or training of machine learning or artificial
-      intelligence systems;
-   e. reverse engineer, decompile, or disassemble the Software except to the
-      limited extent expressly permitted by applicable law;
-   f. remove, alter, or obscure any copyright, trademark, or other proprietary
-      notices;
-   g. use the Software for any unlawful, infringing, malicious, or otherwise
-      illegal purpose, or in violation of the terms of service of any third-party
-      platform (including but not limited to VRChat, Discord, Twitch, TikTok,
-      Kick, Pulsoid, or any AI provider).
+   a. copy, reproduce, redistribute, sublicense, sell, rent, lease, host, publish,
+      or otherwise make the Software or modified versions available to any third
+      party except as part of a contribution submitted to the official repository;
+   b. steal, plagiarize, rebrand, or claim authorship or ownership of the Software
+      or any portion of it;
+   c. use the Software or any portion of it in other projects, products, services,
+      plugins, forks, bots, apps, or tools without separate written permission
+      from NekoSuneVR;
+   d. use the Software, source code, comments, assets, documentation, issues,
+      pull requests, or contributions as input, training data, fine-tuning data,
+      embeddings, evaluation data, or for any other purpose related to developing,
+      training, improving, or operating machine learning or artificial
+      intelligence systems, including self-hosted, local, private, or public AI
+      systems;
+   e. reverse engineer, decompile, or disassemble official binary releases except
+      to the limited extent expressly permitted by applicable law;
+   f. remove, alter, or obscure any copyright, trademark, license, attribution, or
+      proprietary notices;
+   g. use the Software for any unlawful, infringing, malicious, abusive, or
+      otherwise harmful purpose;
+   h. use the Software in violation of the terms of service, developer policies,
+      community guidelines, or rules of any third-party platform, including but
+      not limited to VRChat, Discord, Twitch, TikTok, Kick, Pulsoid, HypeRate,
+      OpenAI, or any AI provider;
+   i. add or distribute malware, RATs, backdoors, credential stealers, account
+      theft tools, token loggers, spyware, hidden remote-control behavior,
+      unauthorized downloaders, or other harmful functionality;
+   j. add functionality that injects code into VRChat, modifies VRChat game code,
+      bypasses VRChat systems, tampers with VRChat clients, automates abusive
+      behavior, compromises accounts, or otherwise violates VRChat rules;
+   k. add integrations that interact with VRChat through unsafe or unauthorized
+      methods instead of permitted interfaces such as OSC, public APIs, or other
+      approved external integration methods.
 
-3. NO TRANSFER OF OWNERSHIP
+6. PLATFORM SAFETY AND REVIEW
+   Contributions and integrations must be safe, transparent, and compliant with
+   applicable platform terms. NekoSuneVR may reject, remove, blacklist, or block
+   any contribution, fork, contributor, or use that appears to involve malware,
+   account compromise, unauthorized game modification, VRChat Terms of Service
+   violations, GitHub Terms of Service violations, or other unsafe behavior.
+
+7. THIRD-PARTY COMPONENTS
+   The Software may depend on third-party packages, apps, ideas, protocols, or
+   integrations, each governed by its own terms. Those terms apply only to their
+   respective components. They do not grant rights to the NekoSuneAPPS source
+   code, assets, documentation, or project-specific modifications, which remain
+   governed by this License.
+
+8. NO TRANSFER OF OWNERSHIP
    No title to or ownership of the Software or its intellectual property is
-   transferred to you. All rights not expressly granted are reserved by NekoSuneVR.
+   transferred to you. All rights not expressly granted are reserved by
+   NekoSuneVR.
 
-4. THIRD-PARTY COMPONENTS
-   The Software depends on third-party open-source packages, each licensed under
-   its own terms. Those terms apply only to those respective components, not to
-   the NekoSuneAPPS source code, which remains governed by this License.
+9. TERMINATION
+   This License terminates automatically if you breach any term. Upon termination,
+   you must cease all use, stop distributing any copies or modified versions, and
+   destroy all copies of the Software in your possession or control, except where
+   retention is required by law.
 
-5. TERMINATION
-   This License terminates automatically if you breach any term. Upon termination
-   you must cease all use and destroy all copies of the Software in your possession.
-
-6. NO WARRANTY
+10. NO WARRANTY
    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-   FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. SEE DISCLAIMER.md.
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. SEE DISCLAIMER.md.
 
-7. LIMITATION OF LIABILITY
+11. LIMITATION OF LIABILITY
    IN NO EVENT SHALL NEKOSUNEVR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
    LIABILITY ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR ITS USE.
 
