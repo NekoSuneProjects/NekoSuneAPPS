@@ -1,0 +1,55 @@
+name: Help Desk
+description: Request support with setup, configuration, or using NekoSuneAPPS.
+title: "[Help]: "
+labels: ["help wanted", "support"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Need help using NekoSuneAPPS? Please provide details about your setup and the assistance you need.
+  - type: textarea
+    id: help-needed
+    attributes:
+      label: What do you need help with?
+      description: Describe the setup, configuration, workflow, or problem you need support for.
+      placeholder: Explain what you are trying to accomplish.
+    validations:
+      required: true
+  - type: textarea
+    id: current-state
+    attributes:
+      label: Current setup or state
+      description: Tell us what you have installed, configured, or connected so far.
+      placeholder: Include app version, OS, integrations, settings, or account/service details that are safe to share.
+    validations:
+      required: true
+  - type: textarea
+    id: blockers
+    attributes:
+      label: Where are you stuck?
+      description: What step is failing or unclear?
+      placeholder: Describe the blocker, error message, or confusing step.
+    validations:
+      required: true
+  - type: textarea
+    id: tried
+    attributes:
+      label: What have you tried?
+      description: List documentation, troubleshooting, or configuration changes already attempted.
+      placeholder: Share anything you already tried.
+  - type: dropdown
+    id: urgency
+    attributes:
+      label: Urgency
+      description: How urgent is this request?
+      options:
+        - Low - general guidance
+        - Medium - blocking a workflow
+        - High - app is unusable
+    validations:
+      required: true
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add screenshots, logs, or safe-to-share configuration details here.

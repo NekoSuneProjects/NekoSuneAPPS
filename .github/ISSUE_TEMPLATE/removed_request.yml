@@ -1,0 +1,44 @@
+name: Removed Request
+description: Request that a feature, behavior, integration, or content be removed.
+title: "[Remove]: "
+labels: ["removal-request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to request removing something from NekoSuneAPPS. Please explain the impact and reason clearly.
+  - type: textarea
+    id: item
+    attributes:
+      label: What should be removed?
+      description: Name the feature, behavior, integration, file, content, or UI element.
+      placeholder: Describe exactly what you want removed.
+    validations:
+      required: true
+  - type: textarea
+    id: reason
+    attributes:
+      label: Why should it be removed?
+      description: Explain the problem, risk, confusion, maintenance burden, or policy reason.
+      placeholder: Tell us why removal is needed.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact of removal
+      description: Who will be affected, and what should happen for existing users?
+      placeholder: Describe compatibility, migration, or replacement concerns.
+    validations:
+      required: true
+  - type: textarea
+    id: replacement
+    attributes:
+      label: Suggested replacement or migration
+      description: If applicable, suggest an alternative path for users.
+      placeholder: Explain what users should use instead.
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add screenshots, links, examples, or other details here.
