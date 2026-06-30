@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, shell, dialog, clipboard } = require('electron')
+const { app, BrowserWindow, ipcMain, Tray, Menu, shell, dialog, clipboard, desktopCapturer } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const { spawn } = require('child_process')
@@ -13,42 +13,49 @@ const {
 
 const { startComponentStats, stopComponentStats } = require('./modules/stats/componentStats')
 const { startNetworkStats, stopNetworkStats } = require('./modules/stats/networkStats')
-const { startPulsoid, stopPulsoid } = require('./modules/heartrate/pulsoidModule')
-const { startHyperate, stopHyperate } = require('./modules/heartrate/hyperateModule')
-const hrAnalytics = require('./modules/heartrate/hrAnalytics')
+const { startPulsoid, stopPulsoid } = require('./modules/heartrate/providers/pulsoid/client')
+const { startHyperate, stopHyperate } = require('./modules/heartrate/providers/hyperate/client')
+const { startDeviceBridge, stopDeviceBridge, submitDeviceBpm } = require('./modules/heartrate/devices/bridge')
+const pulsoidOAuth = require('./modules/heartrate/providers/pulsoid/oauth')
+const hrAnalytics = require('./modules/heartrate/core/analytics')
+const hrOsc = require('./modules/heartrate/osc/profiles')
 const { startWindowActivity, stopWindowActivity } = require('./modules/activity/windowActivity')
 const { startAfk, stopAfk } = require('./modules/activity/afkModule')
 const { connectTikTok, disconnectTikTok, startTikTokFollowers, stopTikTokFollowers } = require('./modules/live/tiktokModule')
-const { startTwitch, stopTwitch } = require('./modules/live/twitchModule')
+const { startTwitch, stopTwitch } = require('./modules/live/twitch/followers')
 const { startKick, stopKick } = require('./modules/live/kickModule')
 const { getTikTokTtsAudio, TIKTOK_VOICES } = require('./modules/live/tiktokTts')
 const { intelliRewrite, AI_PROVIDERS } = require('./modules/ai/intelliChat')
-const { loginTwitch, TWITCH_REDIRECT } = require('./modules/integrations/twitchOauth')
-const { startDiscord, stopDiscord, updateActivity, setVrcContext } = require('./modules/integrations/discord')
+const { loginTwitch, TWITCH_REDIRECT } = require('./modules/oauth/providers/twitch')
+const twitchInteractive = require('./modules/live/twitch/interactive')
+const { startDiscord, stopDiscord, updateActivity, setVrcContext } = require('./modules/integrations/discord/discord')
 const { startVrcWorld, stopVrcWorld, getVrcWorld } = require('./modules/vrchat/world/vrchatWorld')
 const { startVrBattery, stopVrBattery } = require('./modules/vrchat/vr/vrBattery')
 const vrchatApi = require('./modules/vrchat/api/vrchatApi')
 const { startWeather, stopWeather, getWeather } = require('./modules/weather/weatherModule')
-const { startBot, stopBot, setMute: botSetMute, setDeaf: botSetDeaf, inviteUrl } = require('./modules/integrations/discordBot')
-const soundpad = require('./modules/integrations/soundpadModule')
+const { startBot, stopBot, setMute: botSetMute, setDeaf: botSetDeaf, inviteUrl } = require('./modules/integrations/discord/discordBot')
+const soundpad = require('./modules/integrations/media/soundpadModule')
 const { pressMediaKey } = require('./modules/vrchat/osc/mediaKeys')
 const vrcTools = require('./modules/vrchat/tools/vrcTools')
 const pawprints = require('./modules/vrchat/tools/pawprints')
 const gamelog = require('./modules/history/gamelog')
-const photoRelay = require('./modules/integrations/photoRelay')
+const photoRelay = require('./modules/integrations/media/photoRelay')
 const avatarDb = require('./modules/vrchat/avatars/avatarDb')
 const crashGuard = require('./modules/vrchat/tools/crashGuard')
-const { startTon, stopTon, getTonState, getTonRaw } = require('./modules/integrations/tonModule')
-const tonOsc = require('./modules/integrations/tonOsc')
+const { startTon, stopTon, getTonState, getTonRaw } = require('./modules/integrations/ton/tonModule')
+const tonOsc = require('./modules/integrations/ton/tonOsc')
 const osc = require('./modules/vrchat/osc/oscModule')
-const tonData = require('./modules/integrations/tonData')
-const tonSaveCodec = require('./modules/integrations/tonSaveCodec')
-const tonUnlockDecoder = require('./modules/integrations/tonUnlockDecoder')
-const { startTonLog, stopTonLog } = require('./modules/integrations/tonLogReader')
-const updater = require('./modules/integrations/updater')
-const tonManager = require('./modules/integrations/tonManager')
-const vrNotify = require('./modules/integrations/vrNotify')
+const tonData = require('./modules/integrations/ton/tonData')
+const tonSaveCodec = require('./modules/integrations/ton/tonSaveCodec')
+const tonUnlockDecoder = require('./modules/integrations/ton/tonUnlockDecoder')
+const { startTonLog, stopTonLog } = require('./modules/integrations/ton/tonLogReader')
+const updater = require('./modules/integrations/maintenance/updater')
+const tonManager = require('./modules/integrations/ton/tonManager')
+const vrNotify = require('./modules/integrations/maintenance/vrNotify')
 const ranks = require('./modules/ranks')
+const avatarLocker = require('./modules/avatarlocker/avatarLockerModule')
+const ruskLaserdome = require('./modules/integrations/osc/laserdome/ruskLaserdome')
+const { recognizeAudio, getProviderStatus } = require('./modules/integrations/osc/recognition/songRecognition')
 
 // Keep a stray error in any poller/network module from hard-crashing the app.
 process.on('uncaughtException', err => console.error('[uncaughtException]', err))
@@ -60,6 +67,30 @@ app.disableHardwareAcceleration()
 
 let mainWindow
 let tray
+let bleSelectCallback = null
+let blePairingCallback = null
+let bleReconnectTarget = null
+const bleScanDevices = new Map()
+let oscAppsCaptureSourceId = ''
+
+function cacheBleDevice (device) {
+  if (!device?.deviceId) return
+  const stored = settings.get('hrBleCachedDevices', [])
+  const cached = (Array.isArray(stored) ? stored : []).filter(item => item && item.id !== device.deviceId)
+  cached.unshift({ id: device.deviceId, name: device.deviceName || 'Unnamed BLE device', lastSeenAt: Date.now() })
+  settings.set('hrBleCachedDevices', cached.slice(0, 20))
+}
+
+function bleDebugPath () { return path.join(app.getPath('userData'), 'ble-debug.log') }
+function appendBleDebug (entry) {
+  try {
+    const file = bleDebugPath()
+    try {
+      if (fs.existsSync(file) && fs.statSync(file).size > 1024 * 1024) fs.renameSync(file, `${file}.old`)
+    } catch (_) { /* best-effort rotation */ }
+    fs.appendFileSync(file, `${JSON.stringify({ at: new Date().toISOString(), ...entry })}\n`)
+  } catch (err) { console.warn('BLE debug log:', err.message) }
+}
 
 // Only ever allow ONE instance — prevents the process count ballooning if the
 // app (or its installer/shortcut) is launched more than once.
@@ -109,6 +140,56 @@ function createWindow () {
 
   mainWindow.loadFile('index.html')
 
+  // OSCQR and ShazamOSC use Chromium's supported screen-sharing path. Prefer
+  // the Windows system picker; the primary display is a fallback on systems
+  // where Electron cannot expose that picker. Audio is loopback-only.
+  mainWindow.webContents.session.setDisplayMediaRequestHandler(async (request, callback) => {
+    try {
+      const sources = await desktopCapturer.getSources({ types: ['screen', 'window'] })
+      const selected = sources.find(source => source.id === oscAppsCaptureSourceId) || sources.find(source => source.id.startsWith('screen:')) || sources[0]
+      callback(selected ? { video: selected, audio: request.audioRequested ? 'loopback' : undefined } : {})
+    } catch (err) {
+      console.warn('Display media request failed:', err.message)
+      callback({})
+    }
+  }, { useSystemPicker: true })
+
+  // Electron does not display Chromium's Bluetooth chooser. Keep the request
+  // open while forwarding discoveries to our Heart Rate device list.
+  mainWindow.webContents.on('select-bluetooth-device', (event, devices, callback) => {
+    event.preventDefault()
+    bleSelectCallback = callback
+    for (const device of devices || []) {
+      bleScanDevices.set(device.deviceId, {
+        id: device.deviceId,
+        name: device.deviceName || 'Unnamed BLE device',
+        source: 'nearby'
+      })
+    }
+    push('hr:bleDevices', [...bleScanDevices.values()])
+    if (bleReconnectTarget) {
+      const match = (devices || []).find(device =>
+        device.deviceId === bleReconnectTarget.id ||
+        (!!bleReconnectTarget.name && device.deviceName === bleReconnectTarget.name))
+      if (match) {
+        cacheBleDevice(match)
+        bleReconnectTarget = null
+        bleSelectCallback = null
+        callback(match.deviceId)
+      }
+    }
+  })
+
+  mainWindow.webContents.session.setBluetoothPairingHandler((details, callback) => {
+    blePairingCallback = callback
+    push('hr:blePairing', {
+      deviceId: details.deviceId,
+      deviceName: bleScanDevices.get(details.deviceId)?.name || '',
+      pairingKind: details.pairingKind,
+      pin: details.pin || ''
+    })
+  })
+
   // Honor "Start minimized to tray": only reveal the window if not opted in.
   const startMinimized = !!settings.get('autostart', {}).autoMinimized
   mainWindow.once('ready-to-show', () => { if (!startMinimized) mainWindow.show() })
@@ -154,6 +235,8 @@ app.whenReady().then(async () => {
   tonManager.init(app.getPath('userData'))
   // Restore the ToN Tablet OSC proxy (sends avatar params on each ToN update).
   if (settings.get('tonOscEnabled', false)) { osc.setOscPort(settings.get('oscPort', 9000)); tonOsc.setEnabled(true) }
+  const savedRusk = settings.get('oscApps.ruskLaserdome', {})
+  if (savedRusk.enabled) ruskLaserdome.start({ ...savedRusk, oscPort: settings.get('oscPort', 9000) }, state => push('oscApps:ruskUpdate', state))
   // Auto-launch ToNSaveManager in the background on app start (downloads it first if missing).
   if (settings.get('tonAutoManager', false)) tonManager.ensureRunning().then(r => { if (r && r.ok) push('tonmgr:status', { installed: true, running: true }) }).catch(() => {})
   startVrcWorld(w => {
@@ -186,9 +269,12 @@ app.on('activate', () => {
 })
 
 app.on('before-quit', () => {
-  stopComponentStats(); stopNetworkStats(); stopPulsoid(); stopHyperate(); stopWindowActivity(); stopTon()
-  disconnectTikTok(); stopTwitch(); stopKick(); stopDiscord(); stopVrBattery(); stopVrcWorld(); stopAfk()
+  if (bleSelectCallback) { const callback = bleSelectCallback; bleSelectCallback = null; callback('') }
+  if (blePairingCallback) { const callback = blePairingCallback; blePairingCallback = null; callback({ confirmed: false }) }
+  stopComponentStats(); stopNetworkStats(); stopPulsoid(); stopHyperate(); stopDeviceBridge(); stopWindowActivity(); stopTon()
+  disconnectTikTok(); stopTwitch(); twitchInteractive.stop(false); stopKick(); stopDiscord(); stopVrBattery(); stopVrcWorld(); stopAfk()
   stopWeather(); stopVrcStatusPoll(); stopBot(); pawprints.tickCommit(); stopFriendDiff(); stopGreeter(); gamelog.close(); photoRelay.stop(); stopGroupAlerts(); stopNotifPoll(); crashGuard.stop(); vrcTools.stopVideoCacher(); stopTonLog(); ranks.close()
+  ruskLaserdome.stop(false)
 })
 
 /* ------------------------------------------------------------------ */
@@ -204,6 +290,87 @@ ipcMain.handle('nowPlaying:sources', () => ({ sources: getSources(), preferred: 
 ipcMain.handle('nowPlaying:setSource', (e, value) => { setPreferredSource(value); settings.set('nowPlayingSource', String(value || '')); return getPreferredSource() })
 ipcMain.handle('getOverlayState', () => getOverlayState())
 ipcMain.handle('updateOverlaySettings', (e, s) => updateOverlaySettings(s))
+
+/* NekoAvatarLocker: signed ownership vault + OSC feature gates */
+ipcMain.handle('locker:getState', () => avatarLocker.getState())
+ipcMain.handle('locker:importOwnership', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Import avatar ownership package',
+    filters: [{ name: 'NekoAvatarLocker ownership', extensions: ['nalown', 'json'] }],
+    properties: ['openFile']
+  })
+  return result.canceled || !result.filePaths[0] ? avatarLocker.getState() : avatarLocker.importOwnershipFile(result.filePaths[0])
+})
+ipcMain.handle('locker:exportOwnership', async (event, avatarId) => {
+  const vault = avatarLocker.getState()
+  const record = vault.avatars.find(item => item.ownershipPackage.license.avatarId === avatarId)
+  if (!record) throw new Error(`Avatar not found: ${avatarId}`)
+  const safeName = String(record.ownershipPackage.license.avatarName || 'ownership').replace(/[<>:"/\\|?*]/g, '_')
+  const result = await dialog.showSaveDialog(mainWindow, {
+    title: 'Export avatar ownership package',
+    defaultPath: `${safeName}.nalown`,
+    filters: [{ name: 'NekoAvatarLocker ownership', extensions: ['nalown'] }]
+  })
+  return result.canceled || !result.filePath ? vault : avatarLocker.exportOwnershipFile(avatarId, result.filePath)
+})
+ipcMain.handle('locker:signOwnershipTemplate', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Select ownership template to sign',
+    filters: [{ name: 'NekoAvatarLocker template', extensions: ['nalown', 'json'] }],
+    properties: ['openFile']
+  })
+  return result.canceled || !result.filePaths[0] ? null : avatarLocker.signOwnershipTemplate(result.filePaths[0])
+})
+ipcMain.handle('locker:setUnlock', (event, avatarId, mode, groupIds) => avatarLocker.setUnlock(String(avatarId || ''), mode, groupIds))
+ipcMain.handle('locker:updateOscSettings', (event, value) => avatarLocker.updateOscSettings(value))
+ipcMain.handle('locker:resetVault', () => avatarLocker.resetVault())
+ipcMain.handle('locker:legacyStatus', () => ({ available: !!avatarLocker.findLegacyVaultPath() }))
+ipcMain.handle('locker:importLegacyVault', () => avatarLocker.importLegacyVault())
+ipcMain.handle('locker:openUserData', () => shell.openPath(avatarLocker.getVaultFolder()))
+
+/* OSC companion integrations */
+ipcMain.handle('oscApps:ruskGet', () => ({ ...ruskLaserdome.getState(), saved: settings.get('oscApps.ruskLaserdome', {}) }))
+ipcMain.handle('oscApps:ruskStart', (event, options) => {
+  const value = { ...(options || {}), enabled: true }
+  settings.set('oscApps.ruskLaserdome', value)
+  return ruskLaserdome.start({ ...value, oscPort: settings.get('oscPort', 9000) }, state => push('oscApps:ruskUpdate', state))
+})
+ipcMain.handle('oscApps:ruskStop', () => {
+  const value = { ...settings.get('oscApps.ruskLaserdome', {}), enabled: false }
+  settings.set('oscApps.ruskLaserdome', value)
+  return ruskLaserdome.stop()
+})
+ipcMain.handle('oscApps:twitchInteractiveGet', () => ({
+  ...twitchInteractive.getState(),
+  saved: settings.get('oscApps.twitchInteractive', {})
+}))
+ipcMain.handle('oscApps:twitchInteractiveStart', async (event, options) => {
+  const value = { ...(options || {}), enabled: true }
+  settings.set('oscApps.twitchInteractive', value)
+  const twitch = settings.get('oauth.twitch', settings.get('twitch', {}))
+  return twitchInteractive.start({ ...value, ...twitch }, osc.sendParam, state => push('oscApps:twitchInteractiveUpdate', state))
+})
+ipcMain.handle('oscApps:twitchInteractiveStop', () => {
+  settings.set('oscApps.twitchInteractive', { ...settings.get('oscApps.twitchInteractive', {}), enabled: false })
+  return twitchInteractive.stop()
+})
+ipcMain.handle('oscApps:recognizeSong', (event, request = {}) => recognizeAudio({
+  audio: Buffer.from(String(request.audioBase64 || ''), 'base64'),
+  token: request.token,
+  provider: request.provider,
+  acrHost: request.acrHost,
+  acrAccessKey: request.acrAccessKey,
+  acrAccessSecret: request.acrAccessSecret
+}))
+ipcMain.handle('oscApps:recognitionProviders', () => getProviderStatus())
+ipcMain.handle('oscApps:captureSources', async () => {
+  const sources = await desktopCapturer.getSources({ types: ['screen', 'window'], thumbnailSize: { width: 0, height: 0 }, fetchWindowIcons: false })
+  return { selected: oscAppsCaptureSourceId, sources: sources.map(source => ({ id: source.id, name: source.name })) }
+})
+ipcMain.handle('oscApps:selectCaptureSource', (event, sourceId) => {
+  oscAppsCaptureSourceId = String(sourceId || '')
+  return oscAppsCaptureSourceId
+})
 
 /* ------------------------------------------------------------------ */
 /* Component stats                                                     */
@@ -222,18 +389,11 @@ ipcMain.handle('net:start', (e, opts) => {
 ipcMain.handle('net:stop', () => { stopNetworkStats(); return true })
 
 /* ------------------------------------------------------------------ */
-/* Heart rate (Pulsoid + HypeRate) with session analytics             */
+/* Heart rate (Pulsoid + HypeRate + local device bridges)             */
 /* ------------------------------------------------------------------ */
 let hrProvider = 'pulsoid'
-
-// Avatar OSC params driven by the heart-rate system.
-const HR_OSC = {
-  bpm: '/avatar/parameters/HeartEchoes_Heart_Beat', // int: live BPM
-  active: '/avatar/parameters/isHRActive',          // bool: monitoring turned on
-  connected: '/avatar/parameters/isHRConnected',    // bool: provider connected with a live reading
-  beat: '/avatar/parameters/isHRBeat',              // bool: pulses true on each beat
-  toggle: '/avatar/parameters/HeartBeatToggle'      // bool: flips state each beat
-}
+let hrOscProfiles = { ...hrOsc.DEFAULTS }
+let hrMonitoringActive = false
 
 let hrLastBpm = 0
 let hrBeatTimer = null
@@ -248,10 +408,9 @@ function scheduleHrBeat () {
   const interval = Math.max(250, Math.round(60000 / hrLastBpm)) // floor guards against absurd BPM
   hrBeatTimer = setTimeout(() => {
     hrBeatToggle = !hrBeatToggle
-    osc.sendParam(HR_OSC.toggle, hrBeatToggle, 'bool')
-    osc.sendParam(HR_OSC.beat, true, 'bool')
+    hrOsc.sendBeat(osc.sendParam, hrOscProfiles, true, hrBeatToggle)
     if (hrPulseTimer) clearTimeout(hrPulseTimer)
-    hrPulseTimer = setTimeout(() => osc.sendParam(HR_OSC.beat, false, 'bool'), Math.min(150, Math.floor(interval / 2)))
+    hrPulseTimer = setTimeout(() => hrOsc.sendBeat(osc.sendParam, hrOscProfiles, false), Math.min(150, Math.floor(interval / 2)))
     scheduleHrBeat()
   }, interval)
 }
@@ -259,7 +418,7 @@ function scheduleHrBeat () {
 function stopHrBeat () {
   if (hrBeatTimer) { clearTimeout(hrBeatTimer); hrBeatTimer = null }
   if (hrPulseTimer) { clearTimeout(hrPulseTimer); hrPulseTimer = null }
-  osc.sendParam(HR_OSC.beat, false, 'bool')
+  hrOsc.sendBeat(osc.sendParam, hrOscProfiles, false)
 }
 
 // Wrap the provider listener so every reading also feeds analytics + Discord.
@@ -267,47 +426,117 @@ function onHr (s) {
   push('hr:update', s)
   hrAnalytics.record(s.bpm)
   const online = !!(s.online && s.bpm)
-  osc.sendParam(HR_OSC.connected, online, 'bool')
+  hrOsc.sendStatus(osc.sendParam, hrOscProfiles, { active: hrMonitoringActive, connected: online })
   if (online) {
     setVrcContext({ hrBpm: s.bpm })
-    osc.sendParam(HR_OSC.bpm, Math.round(s.bpm), 'int')
+    hrOsc.sendReading(osc.sendParam, hrOscProfiles, s.bpm, s.avg)
     hrLastBpm = s.bpm
     if (!hrBeatTimer) scheduleHrBeat() // start the beat loop; it reschedules itself off hrLastBpm
   } else {
     setVrcContext({ hrBpm: 0 })
-    osc.sendParam(HR_OSC.bpm, 0, 'int')
+    hrOsc.sendReading(osc.sendParam, hrOscProfiles, 0)
     hrLastBpm = 0
     stopHrBeat()
   }
 }
 
 function stopHr () {
-  stopPulsoid(); stopHyperate()
+  stopPulsoid(); stopHyperate(); stopDeviceBridge()
   const summary = hrAnalytics.end()
   if (summary) push('hr:sessions', hrAnalytics.list())
   setVrcContext({ hrBpm: 0 })
+  hrMonitoringActive = false
   hrLastBpm = 0
   stopHrBeat()
-  osc.sendParam(HR_OSC.bpm, 0, 'int')
-  osc.sendParam(HR_OSC.connected, false, 'bool')
-  osc.sendParam(HR_OSC.active, false, 'bool')
+  hrBeatToggle = false
+  hrOsc.sendBeat(osc.sendParam, hrOscProfiles, false, false)
+  hrOsc.sendReading(osc.sendParam, hrOscProfiles, 0)
+  hrOsc.sendStatus(osc.sendParam, hrOscProfiles, { active: false, connected: false })
 }
 
-// cfg: { provider:'pulsoid'|'hyperate', token, apiKey, deviceId }
-ipcMain.handle('hr:start', (e, cfg) => {
+// cfg: { provider:'pulsoid'|'hyperate'|'device', token, apiKey, deviceId,
+//        bridgePort, relayToPulsoid, relayToken, oscProfiles }
+ipcMain.handle('hr:start', async (e, cfg) => {
   cfg = cfg || {}
   stopHr()
+  hrOscProfiles = hrOsc.options(cfg.oscProfiles)
+  hrMonitoringActive = true
+  hrBeatToggle = false
   osc.setOscPort(settings.get('oscPort', 9000)) // mirror BPM to the configured OSC port
-  osc.sendParam(HR_OSC.active, true, 'bool')     // monitoring is now turned on
-  hrProvider = cfg.provider === 'hyperate' ? 'hyperate' : 'pulsoid'
+  hrOsc.sendBeat(osc.sendParam, hrOscProfiles, false, false)
+  hrOsc.sendStatus(osc.sendParam, hrOscProfiles, { active: true, connected: false })
+  hrProvider = ['hyperate', 'device'].includes(cfg.provider) ? cfg.provider : 'pulsoid'
   hrAnalytics.begin(hrProvider)
   if (hrProvider === 'hyperate') startHyperate(cfg.apiKey, cfg.deviceId, onHr)
+  else if (hrProvider === 'device') {
+    const result = await startDeviceBridge({
+      port: cfg.bridgePort,
+      relayEnabled: cfg.relayToPulsoid,
+      relayToken: cfg.relayToken
+    }, onHr)
+    if (!result.ok) {
+      hrAnalytics.end()
+      hrMonitoringActive = false
+      hrOsc.sendStatus(osc.sendParam, hrOscProfiles, { active: false, connected: false })
+    }
+    return result
+  }
   else startPulsoid(cfg.token, onHr)
-  return true
+  return { ok: true }
 })
 ipcMain.handle('hr:stop', () => { stopHr(); return true })
 ipcMain.handle('hr:sessions', () => hrAnalytics.list())
 ipcMain.handle('hr:clearSessions', () => { hrAnalytics.clear(); return true })
+ipcMain.handle('hr:bleSelect', (e, deviceId) => {
+  if (!bleSelectCallback || !bleScanDevices.has(String(deviceId || ''))) return false
+  const selected = bleScanDevices.get(String(deviceId))
+  if (selected) cacheBleDevice({ deviceId: selected.id, deviceName: selected.name })
+  const callback = bleSelectCallback
+  bleSelectCallback = null
+  callback(String(deviceId))
+  return true
+})
+ipcMain.handle('hr:bleCancel', () => {
+  if (bleSelectCallback) { const callback = bleSelectCallback; bleSelectCallback = null; callback('') }
+  bleScanDevices.clear()
+  bleReconnectTarget = null
+  return true
+})
+ipcMain.on('hr:blePrepareReconnect', (e, target) => {
+  bleReconnectTarget = target && target.id ? { id: String(target.id), name: String(target.name || '') } : null
+})
+ipcMain.handle('hr:bleCached', () => {
+  const cached = settings.get('hrBleCachedDevices', [])
+  return Array.isArray(cached) ? cached : []
+})
+ipcMain.handle('hr:bleDebug', (e, eventName, details) => {
+  appendBleDebug({ event: String(eventName || 'event'), details: details && typeof details === 'object' ? details : {} })
+  return true
+})
+ipcMain.handle('hr:bleOpenDebug', async () => {
+  const file = bleDebugPath()
+  if (!fs.existsSync(file)) appendBleDebug({ event: 'log-created', details: {} })
+  shell.showItemInFolder(file)
+  return file
+})
+ipcMain.handle('hr:blePairingResponse', (e, response) => {
+  if (!blePairingCallback) return false
+  const callback = blePairingCallback
+  blePairingCallback = null
+  callback(response || { confirmed: false })
+  return true
+})
+ipcMain.handle('hr:bleReading', (e, bpm, measuredAt) => submitDeviceBpm(bpm, measuredAt))
+ipcMain.handle('hr:pulsoidAuthorize', async () => {
+  const session = await pulsoidOAuth.beginDeviceAuthorization()
+  await shell.openExternal(session.verificationUri)
+  const token = await pulsoidOAuth.waitForDeviceToken(session)
+  return { ok: true, ...pulsoidOAuth.publicConfig(), ...token }
+})
+ipcMain.handle('hr:pulsoidKeys', async () => {
+  await shell.openExternal('https://pulsoid.net/ui/keys')
+  return true
+})
 
 /* ------------------------------------------------------------------ */
 /* Window activity                                                     */
@@ -652,10 +881,10 @@ ipcMain.handle('ai:rewrite', (e, opts) => intelliRewrite(opts))
 ipcMain.handle('ai:providers', () => AI_PROVIDERS)
 
 /* ------------------------------------------------------------------ */
-/* Twitch OAuth2 login                                                 */
+/* Shared OAuth providers                                              */
 /* ------------------------------------------------------------------ */
-ipcMain.handle('twitch:redirect', () => TWITCH_REDIRECT)
-ipcMain.handle('twitch:oauth', async (e, { clientId, clientSecret, scopes }) => {
+ipcMain.handle('oauth:twitchRedirect', () => TWITCH_REDIRECT)
+ipcMain.handle('oauth:twitchLogin', async (e, { clientId, clientSecret, scopes }) => {
   try {
     const tokens = await loginTwitch(clientId, clientSecret, scopes)
     return { ok: true, ...tokens }

@@ -3,6 +3,124 @@
 All notable changes to **NekoSuneAPPS** are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+
+## [1.0.34] - 2026-06-29
+
+### Added
+- **Integrated NekoAvatarLocker.** A new sidebar page imports and verifies signed
+  `.nalown` ownership packages, keeps them in an encrypted AppData vault, migrates an
+  existing NekoAvatarLocker desktop vault, exports packages, signs creator templates,
+  and sends Locked/Partial/Unlocked plus per-feature group states to VRChat over OSC.
+  Creator private keys and unrelated Android/Unity/build files are never bundled.
+- **Avatar Locker sidebar artwork.** Added a matching white transparent lock-and-avatar
+  icon generated for the existing navigation icon style.
+- **OAuth Accounts sidebar.** Twitch Client ID, optional secret, channel, redirect URL,
+  login and token management now have one shared page used by follower tracking and
+  Twitch Interactive. The provider layout is ready for additional OAuth services.
+- **OSC Apps hub.** Added an extensible sidebar page for avatar compatibility tools,
+  starting with Rusk Laserdome OSC and native avatar integrations.
+- **Native Rusk Laserdome compatibility.** An attributed MIT-licensed port tails new
+  VRChat log data and restores `LD/Dead`, `LD/Team`, IR pickup, Duo weapon, Avi weapon,
+  and UASRF weapon OSC parameters with individual feature toggles and optional backlog scan.
+- **Twitch Interactive compatibility.** Twitch chat commands and channel-point reward
+  redemptions can map to the single `twitch` integer used by Fooma's Twitch to VRChat
+  Interaction System. Mappings, pulse duration and parameter name are saved locally,
+  and the bridge resumes in the background when enabled.
+- **OSC Realistic Leash compatibility.** Added native eight-direction movement for
+  `MOF/MOB/MOL/MOR` and diagonal `MOFL/MOFR/MOBL/MOBR`, immediate release through
+  uppercase `STOP`, plus `Jump`, backward `JumpS`, and leftward `JumpA`. Undocumented
+  `JumpQ` is safely ignored by default with optional jump/forward/right mappings.
+- **OSC Digital Clock compatibility.** Added a background sender for `OSCClock/MonthF`,
+  `DayF`, `HourF`, `MinuteF`, and `DOWF`, preserving the original app's five-decimal
+  `/127` float encoding and optional legacy `DoWF` weekday spelling.
+- **Native OSCQR.** Added user-approved live screen/window capture, QR detection through
+  `jsQR`, Spotify-link classification, AppData history, optional chatbox output, and
+  compatible `OSCQR/*` triggers/status parameters.
+- **Native ShazamOSC-style song recognition.** Added desktop system-audio capture,
+  user-token AudD recognition, optional 25-second live mode, low-frequency bass output,
+  match history and links, chatbox output, and compatible `ShazamOSC/*` parameters.
+
+- **Extensible BLE heart-rate platform adapters.** Bluetooth SIG parsing and the
+  Goodmans/FunDo protocol now live in separate `devices/ble/platforms` modules. The small
+  `devices/ble/index.js` registry supplies one service list, platform detection, and a
+  normalized BPM relay, with an adapter contract README for adding more watches.
+- **Tidier Heart Rate layout.** Provider credentials, BLE/local devices, background
+  behavior, Pulsoid forwarding, live BPM, and session history are grouped into responsive
+  panels instead of one long settings column.
+- **Beko Smooth Heartbeat / VRC Heart Rate OSC profile.** Every heart-rate source can now
+  publish the current VRCOSC `Connected`, `Value`, `Normalised`, `Average`, and `Beat`
+  parameters plus its legacy digit floats. An optional `HR` integer supports the older
+  2.x Beko prefab without overwriting its internal `HBG/*` menu and audio controls.
+- **Akaryu HeartRate OSC 3.0 profile.** Added `hr_percent`, `hr_connected`, and calculated
+  `hr_beat` output with a configurable maximum BPM, while leaving the asset's local UI,
+  placement, scale and opacity parameters under avatar-menu control.
+- **Separate Pulsoid read and posting tokens.** OAuth now requests only
+  `data:heart_rate:read`. Device relay has an independent manual posting-token field
+  for `data:heart_rate:write`; tokens are never copied between the two.
+- **Bluetooth LE heart-rate scanner.** The local-device provider can discover nearby
+  BLE watches and monitors, show previously granted devices, handle pairing prompts,
+  connect/reconnect over GATT, and stream the standard Bluetooth Heart Rate Service
+  into the existing OSC, Discord, analytics, and optional Pulsoid relay pipeline.
+  Includes a built-in **GMANS WATCH** adapter using its proprietary notification and
+  measurement-trigger protocol.
+- **Persistent BLE reconnect and diagnostics.** Selected watch IDs/names are cached in
+  AppData and used to reacquire remembered devices. GATT setup now performs three clean
+  retries, unexpected disconnects back off and reconnect in the background, and a
+  watchdog restarts sessions that stop producing BPM. A rotating local debug log records
+  discovery, pairing, GATT errors, GMANS frames, measurement triggers, and connection state.
+- **GMANS raw-frame-aware watchdog.** Proprietary `AC` optical-sensor frames now count
+  as connection activity, so the watchdog no longer resets a healthy GATT session while
+  waiting for an `AB` BPM result. Zero optical samples get a clear wear/watch-mode hint,
+  and pressing Connect again no longer restarts an already connected watch.
+- **GMANS screen-off sensor wake fallback.** When the watch stays connected but returns
+  repeated zero-value optical frames, the app can replay the captured official-app
+  `FF00` connect handshake in BLE-sized fragments and retry the `A6` measurement command,
+  aiming to start measurement without leaving the watch Heart Rate screen open.
+  The wake is scheduled from the first zero-signal frame instead of waiting for several
+  frames, since this firmware may emit asleep-state `AC` frames only every 30 seconds.
+  Further captures show the `FF00` payload changes per connection, so this experimental
+  replay is now disabled by default rather than presenting it as a reliable wake method.
+- **GMANS firmware automatic heart-rate mode.** Reverse engineering the Goodmans Fit Pro
+  APK exposed its FunDo/KCT `setAutoHeartData` (`09/92`) command. The device page can now
+  enable all-day watch-side measurements at a configurable interval, save that choice in
+  AppData, and restore it after reconnect. This works without leaving the watch Heart Rate
+  screen open, although firmware may deliver periodic/history samples rather than a
+  continuous live stream.
+- **Generic heart-rate device bridge.** Unsupported watches and device adapters can
+  now feed BPM directly into NekoSuneAPPS through a loopback-only HTTP receiver.
+  Common BPM JSON shapes and simple query-string input are accepted, and readings
+  can optionally be forwarded to Pulsoid using a write-scoped token.
+- **Configurable Pulsoid authorization.** The Heart Rate page uses Pulsoid's desktop
+  Device Authorization Flow for read access and saves the resulting read token.
+  It needs no redirect URI or client secret. The client ID and read scope live in one
+  `providers/pulsoid/pulsoid.config.json` file.
+
+### Changed
+- **SpotiOSC and DiscordOSC moved into OSC Apps.** Their controls now sit beside the
+  other OSC integrations, and the redundant standalone OSC Control sidebar page has
+  been removed. The ToN Tablet refresh hook now correctly follows its Tools page.
+- **Broader VRCOSC avatar compatibility.** Media now accepts `VRCOSC/Media/Play`,
+  `Skip`/`Next`, and `Previous`; Discord accepts `VRCOSC/Discord/Mic` and publishes the
+  Yeusepe DiscordOSC metadata flag. Digital Clock can also send normalized
+  `VRCOSC/Clock/Hours` and `Minutes` floats plus raw `DateTime*` integer fields.
+- **Expanded native SpotiOSC and DiscordOSC.** The separate OSC Apps cards now publish
+  Windows media playback position/state, track-change events, Discord bot readiness,
+  mute/deafen, voice user count and connection state. Spotify Jam invite links can be
+  opened or created through Spotify's own UI.
+- **Tidier integration source layout.** Reorganized the former flat integrations folder
+  into documented `osc`, `ton`, `discord`, `media`, and `maintenance` areas.
+  OSC features have individual QR, recognition, clock, leash and Laserdome folders, and
+  every ToN file—including `tonOsc.js`—now lives together.
+- **Consolidated Twitch and heart-rate layouts.** Twitch runtime features now live under
+  `live/twitch`, reusable authorization lives under `oauth/providers`, and heart-rate code
+  is grouped into `core`, `providers`, `devices`, and `osc` folders with contributor READMEs.
+- **Pluggable song-recognition providers.** Replaced the hand-written AudD multipart
+  client with the official MIT `@audd/sdk`, added the MIT ACRCloud client as a credentialed
+  option/fallback, and added detection for an externally installed `node-shazam`. The
+  GPL-2.0 node-shazam package is deliberately not redistributed by NekoSuneAPPS.
+
 ## [1.0.33] - 2026-06-29
 
 ### Fixed

@@ -36,6 +36,7 @@ Generate all 32 with the SAME style sentence above so they match, only changing 
 | `groups.png` | Groups | three person silhouettes as a group |
 | `content.png` | Content | a globe / world grid |
 | `avatars.png` | Avatars | a standing humanoid avatar figure |
+| `avatarlocker.png` | Avatar Locker | a padlock protecting a humanoid avatar silhouette |
 | `inventory.png` | Inventory | a backpack |
 | `messenger.png` | Messenger | a paper envelope |
 | `search.png` | Search | a magnifying glass |
@@ -43,9 +44,10 @@ Generate all 32 with the SAME style sentence above so they match, only changing 
 | `notify.png` | Notify | a notification bell |
 | `history.png` | History | a clock with a circular back-arrow (history) |
 | `weather.png` | Weather | a sun partly behind a cloud |
-| `osccontrol.png` | OSC Control | three horizontal mixer sliders/faders |
+| `oscapps.svg` | OSC Apps | a rounded electrical plug with a signal node |
 | `vrctools.png` | VRChat Tools | a wrench and screwdriver crossed (toolbox) |
 | `live.png` | Live | a broadcast tower emitting signal waves |
+| `oauth.svg` | OAuth Accounts | a key with two small connected authorization nodes |
 | `discord.png` | Discord | a rounded voice-chat bubble with a small headset (avoid the Discord logo) |
 | `stats.png` | Stats | a bar chart with three rising bars |
 | `tonref.png` | Terrors | a cute ghost |

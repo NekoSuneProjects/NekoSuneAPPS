@@ -7,6 +7,20 @@ const {
 const { KatOscText } = require('./modules/vrchat/osc/katOscText')
 const { ChatboxComposer } = require('./modules/vrchat/chatbox/chatboxComposer')
 const { DEFAULT_PRESETS } = require('./modules/vrchat/status/statusModule')
+const { RealisticOscLeashController } = require('./modules/integrations/osc/leash/realisticOscLeash')
+const { OscDigitalClock } = require('./modules/integrations/osc/clock/oscDigitalClock')
+const { OscQrController } = require('./modules/integrations/osc/qr/oscQrModule')
+const { ShazamOscController } = require('./modules/integrations/osc/recognition/shazamOscModule')
+const {
+  getBleHeartRatePlatform,
+  getBleHeartRatePlatforms,
+  getBleHeartRateOptionalServices,
+  findBleHeartRatePlatform,
+  createBleHeartRateRelay
+} = require('./modules/heartrate/devices/ble')
+
+const goodmansBlePlatform = getBleHeartRatePlatform('goodmans')
+const BLE_OPTIONAL_SERVICES = getBleHeartRateOptionalServices()
 
 const api = window.electronAPI
 const $ = id => document.getElementById(id)
@@ -311,13 +325,15 @@ function nowPlayingNeeded () {
     composer.modes.nowPlaying !== 'off' ||
     (composer.modes.status === 'rotate' && /\{(song|artist|title)\}/.test($('presetsText').value)) ||
     (discordConnected && $('discordShowNp') && $('discordShowNp').checked) ||
-    ($('nowplaying') && $('nowplaying').offsetParent !== null)
+    ($('nowplaying') && $('nowplaying').offsetParent !== null) ||
+    ($('spotiOscEnable') && $('spotiOscEnable').checked)
 }
 async function refreshNowPlaying () {
   if (!nowPlayingNeeded()) return
   try {
     const m = await api.getNowPlaying()
     renderNowPlaying(m)
+    publishSpotiState(m)
     const song = buildSong(m)
     composer.update({
       song: song || 'Not playing',
@@ -579,25 +595,31 @@ api.on('twitch:update', s => {
     $('twitchToken').value = s.token
     twitchRefreshToken = s.refreshToken || twitchRefreshToken
     setTwitchTokenState()
-    api.saveSetting('twitch', currentTwitchCfg())
+    api.saveSetting('oauth.twitch', currentTwitchCfg())
   }
 })
 function setTwitchTokenState () {
   const has = !!$('twitchToken').value
+  const login = $('twitchLogin').value.trim()
+  const summary = has
+    ? `Authorized${login ? ` as/for ${login}` : ''} · shared by Live and Twitch Interactive`
+    : (login ? `${login} · application saved, login required` : 'Not configured')
   setPill('twitchTokenState', has, 'token ✓', 'no token')
+  setText('oauthTwitchAccount', summary)
+  setText('twitchLiveAccount', summary)
 }
 let twitchRefreshToken = ''
 $('twitchLogin2').addEventListener('click', async () => {
   const clientId = $('twitchClientId').value.trim()
   const clientSecret = $('twitchClientSecret').value.trim() // optional: blank = implicit (no refresh)
   if (!clientId) { alert('Enter your Twitch Client ID first.'); return }
-  await api.saveSetting('twitch', currentTwitchCfg())
+  await api.saveSetting('oauth.twitch', currentTwitchCfg())
   setText('twitchTokenState', 'logging in...')
-  const r = await api.twitchOauth(clientId, clientSecret, 'moderator:read:followers')
+  const r = await api.oauthTwitchLogin(clientId, clientSecret, 'moderator:read:followers chat:read channel:read:redemptions')
   if (r.ok) {
-    $('twitchToken').value = r.token
+    $('twitchToken').value = r.accessToken
     twitchRefreshToken = r.refreshToken || ''
-    await api.saveSetting('twitch', currentTwitchCfg())
+    await api.saveSetting('oauth.twitch', currentTwitchCfg())
     setTwitchTokenState()
   } else {
     setText('twitchTokenState', 'login failed')
@@ -615,10 +637,24 @@ function currentTwitchCfg () {
 }
 $('twitchConnect').addEventListener('click', async () => {
   const cfg = currentTwitchCfg()
-  if (!cfg.token) { alert('Login with Twitch first.'); return }
-  await api.saveSetting('twitch', cfg); api.twitchStart(cfg)
+  if (!cfg.token) { alert('Authorize Twitch in OAuth Accounts first.'); return }
+  await api.saveSetting('oauth.twitch', cfg); api.twitchStart(cfg)
 })
 $('twitchDisconnect').addEventListener('click', () => api.twitchStop())
+$('twitchOpenOAuth').addEventListener('click', () => document.querySelector('[data-tab="oauth"]').click())
+$('twitchOAuthSave').addEventListener('click', async () => {
+  await api.saveSetting('oauth.twitch', currentTwitchCfg())
+  setTwitchTokenState()
+})
+$('twitchOAuthForget').addEventListener('click', async () => {
+  $('twitchToken').value = ''
+  twitchRefreshToken = ''
+  await api.saveSetting('oauth.twitch', currentTwitchCfg())
+  api.twitchStop()
+  api.oscAppsTwitchInteractiveStop()
+  setTwitchTokenState()
+})
+;['twitchLogin', 'twitchClientId', 'twitchClientSecret'].forEach(id => $(id).addEventListener('change', setTwitchTokenState))
 
 api.on('kick:update', s => {
   setPill('kickState', s.connected, s.live ? 'live' : 'on', s.error ? 'error' : 'offline')
@@ -666,22 +702,644 @@ api.on('hr:update', s => {
   composer.update({ hr: s.bpm, hrOnline: s.online, hrAvg: s.avg, hrMax: s.max, hrMin: s.min })
 })
 function hrCfg () {
-  return { provider: $('hrProvider').value, token: $('pulsoidToken').value, apiKey: $('hyperateKey').value, deviceId: $('hyperateDevice').value }
+  return {
+    provider: $('hrProvider').value,
+    token: $('pulsoidToken').value,
+    apiKey: $('hyperateKey').value,
+    deviceId: $('hyperateDevice').value,
+    bridgePort: Number($('hrBridgePort').value) || 7392,
+    relayToPulsoid: $('hrRelayPulsoid').checked,
+    relayToken: $('hrRelayToken').value,
+    oscProfiles: {
+      vrcosc: $('hrOscVrcosc').checked,
+      bekoLegacy: $('hrOscBekoLegacy').checked,
+      heartEchoes: $('hrOscHeartEchoes').checked,
+      akaryu: $('hrOscAkaryu').checked,
+      akaryuMaxBpm: Math.max(40, Math.min(255, Number($('hrOscAkaryuMax').value) || 200))
+    }
+  }
 }
 function syncHrFields () {
   const hy = $('hrProvider').value === 'hyperate'
+  const device = $('hrProvider').value === 'device'
   $('hrHyperateFields').style.display = hy ? '' : 'none'
-  $('hrPulsoidFields').style.display = hy ? 'none' : ''
+  $('hrPulsoidFields').style.display = (!hy && !device) ? '' : 'none'
+  $('hrDeviceFields').style.display = device ? '' : 'none'
+  $('hrRelayFields').style.display = $('hrRelayPulsoid').checked ? '' : 'none'
 }
 $('hrProvider').addEventListener('change', () => { syncHrFields(); api.saveSetting('hrProvider', $('hrProvider').value) })
+$('hrPulsoidAuthorize').addEventListener('click', async () => {
+  const button = $('hrPulsoidAuthorize')
+  button.disabled = true
+  $('hrPulsoidAuthHint').textContent = 'Waiting for approval in Pulsoid...'
+  try {
+    const result = await api.hrPulsoidAuthorize()
+    $('pulsoidToken').value = result.accessToken
+    await api.saveSetting('pulsoidToken', result.accessToken)
+    $('hrPulsoidAuthHint').textContent = 'Pulsoid read token authorized and saved.'
+  } catch (err) {
+    $('hrPulsoidAuthHint').textContent = `Pulsoid authorization failed: ${err.message}`
+  } finally {
+    button.disabled = false
+  }
+})
+$('hrRelayPulsoid').addEventListener('change', syncHrFields)
+$('hrPulsoidKeys').addEventListener('click', () => api.hrPulsoidKeys())
+$('hrBridgePort').addEventListener('input', () => { $('hrBridgeEndpoint').textContent = `http://127.0.0.1:${Number($('hrBridgePort').value) || 7392}/heart-rate` })
+;['hrOscVrcosc', 'hrOscBekoLegacy', 'hrOscHeartEchoes', 'hrOscAkaryu', 'hrOscAkaryuMax'].forEach(id => $(id).addEventListener('change', () => {
+  api.saveSetting('hrOscProfiles', hrCfg().oscProfiles)
+}))
+
+const bleBrowserDevices = new Map()
+const bleCachedDevices = new Map()
+let bleScanPromise = null
+let bleConnectedDevice = null
+let bleHeartRateCharacteristic = null
+let bleWriteCharacteristic = null
+let bleMeasurementListener = null
+let bleProtocol = ''
+let bleRetriggerTimer = null
+let bleWatchdogTimer = null
+let bleReconnectTimer = null
+let bleReconnectAttempts = 0
+let bleLastDevice = null
+let bleManualDisconnect = false
+let bleConnectInProgress = false
+let bleLastBpmLogAt = 0
+let bleLastRawLogAt = 0
+let bleLastReadingAt = 0
+let bleLastBpmAt = 0
+let bleLastFrameAt = 0
+let bleLastSensorStatusAt = 0
+let bleNoBpmWarningLogged = false
+let bleGmansConnectedAt = 0
+let bleGmansZeroFrames = 0
+let bleGmansHandshakeAttempted = false
+let bleGmansWakeTimer = null
+let bleGmansCommandSequence = 2
+let deviceProviderRunning = false
+const relayBleMeasurement = createBleHeartRateRelay(({ bpm, platformId }) => submitBleBpm(bpm, platformId))
+
+function setBleStatus (message) { setText('hrBleStatus', message) }
+function bleLog (eventName, details = {}) { api.hrBleDebug(eventName, details).catch(() => {}) }
+function bleWait (ms) { return new Promise(resolve => setTimeout(resolve, ms)) }
+
+function addBleDeviceOption (device, source) {
+  if (!device || !device.id) return
+  const select = $('hrBleDevices')
+  let option = Array.from(select.options).find(item => item.value === device.id)
+  if (!option) {
+    if (select.options.length === 1 && !select.options[0].value) select.innerHTML = ''
+    option = document.createElement('option')
+    option.value = device.id
+    select.appendChild(option)
+  }
+  const sourceLabel = source === 'remembered' ? 'remembered' : source === 'cached' ? 'AppData cache' : 'nearby'
+  option.textContent = `${device.name || 'Unnamed BLE device'} (${sourceLabel})`
+  option.dataset.source = source
+}
+
+api.on('hr:bleDevices', devices => {
+  for (const device of devices || []) addBleDeviceOption(device, 'nearby')
+  bleLog('scan-results', { count: (devices || []).length, devices: (devices || []).map(device => ({ id: device.id, name: device.name })) })
+  setBleStatus(`${(devices || []).length} nearby BLE device(s) found. Select one and press Connect.`)
+})
+
+api.on('hr:blePairing', async details => {
+  const name = details.deviceName || bleConnectedDevice?.name || details.deviceId || 'this device'
+  let response = { confirmed: false }
+  if (details.pairingKind === 'confirm') {
+    response.confirmed = window.confirm(`Pair with ${name}?`)
+  } else if (details.pairingKind === 'confirmPin') {
+    response.confirmed = window.confirm(`Does PIN ${details.pin} match the PIN shown by ${name}?`)
+  } else if (details.pairingKind === 'providePin') {
+    const pin = window.prompt(`Enter the pairing PIN for ${name}:`, '')
+    response = { confirmed: pin !== null && pin !== '', pin: pin || null }
+  }
+  await api.hrBlePairingResponse(response)
+})
+
+async function refreshBleRememberedDevices () {
+  if (!navigator.bluetooth || typeof navigator.bluetooth.getDevices !== 'function') {
+    setBleStatus('Bluetooth device access is unavailable in this Electron build.')
+    return
+  }
+  try {
+    const cachedResult = await api.hrBleCached()
+    const cached = Array.isArray(cachedResult) ? cachedResult : []
+    for (const device of cached) {
+      bleCachedDevices.set(device.id, device)
+      addBleDeviceOption(device, 'cached')
+    }
+    const devices = await navigator.bluetooth.getDevices()
+    for (const device of devices) {
+      bleBrowserDevices.set(device.id, device)
+      addBleDeviceOption(device, 'remembered')
+    }
+    setBleStatus(devices.length
+      ? `${devices.length} remembered device(s) loaded. Devices still need to be powered on and in range to connect.`
+      : cached.length
+        ? `${cached.length} cached device(s) loaded from AppData. Select one and press Connect to reacquire it.`
+        : 'No remembered BLE devices. Use Scan nearby to grant access to one.')
+    const saved = await api.getSetting('hrBleDevice', {})
+    if (saved.id && Array.from($('hrBleDevices').options).some(option => option.value === saved.id)) $('hrBleDevices').value = saved.id
+    const remembered = saved.id ? bleBrowserDevices.get(saved.id) : null
+    if (remembered && $('hrBleAutoReconnect').checked && !bleConnectedDevice && !bleConnectInProgress) {
+      setBleStatus(`Reconnecting remembered device ${remembered.name || saved.name || ''} in background...`)
+      connectBleHeartRateDevice(remembered, { reconnect: true }).catch(() => {})
+    }
+    bleLog('remembered-devices', { browserGranted: devices.length, appDataCached: cached.length, savedLastId: saved.id || '' })
+  } catch (err) {
+    setBleStatus(`Could not load remembered BLE devices: ${err.message}`)
+  }
+}
+
+async function scanNearbyBleDevices () {
+  if (!navigator.bluetooth || typeof navigator.bluetooth.requestDevice !== 'function') {
+    setBleStatus('Web Bluetooth is unavailable on this system.')
+    return
+  }
+  if (bleScanPromise) return
+  api.hrBleCancel()
+  for (const option of Array.from($('hrBleDevices').options)) {
+    if (option.dataset.source === 'nearby' && !bleBrowserDevices.has(option.value)) option.remove()
+  }
+  setBleStatus('Scanning for nearby Bluetooth LE devices...')
+  bleLog('scan-started')
+  let device = null
+  try {
+    bleScanPromise = navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: BLE_OPTIONAL_SERVICES
+    })
+    device = await bleScanPromise
+    bleBrowserDevices.set(device.id, device)
+    addBleDeviceOption(device, 'remembered')
+    $('hrBleDevices').value = device.id
+  } catch (err) {
+    bleLog('scan-error', { name: err.name, message: err.message })
+    if (err.name !== 'NotFoundError') setBleStatus(`BLE scan failed: ${err.message}`)
+    else setBleStatus('Bluetooth scan cancelled.')
+  } finally {
+    bleScanPromise = null
+  }
+  if (device) {
+    try { await connectBleHeartRateDevice(device) } catch (_) { /* connection function shows the error */ }
+  }
+}
+
+async function ensureBleDeviceProvider () {
+  if (deviceProviderRunning) return
+  $('hrProvider').value = 'device'
+  syncHrFields()
+  const cfg = hrCfg()
+  await api.saveSetting('hrProvider', 'device')
+  await api.saveSetting('hrDeviceBridge', { port: cfg.bridgePort, relayToPulsoid: cfg.relayToPulsoid, relayToken: cfg.relayToken })
+  const result = await api.hrStart(cfg)
+  if (!result || result.ok === false) throw new Error(result?.error || 'Could not start local heart-rate receiver')
+  deviceProviderRunning = true
+}
+
+function onGmansHeartRateMeasurement (event) {
+  const value = event.target?.value
+  bleLastFrameAt = Date.now()
+  const bpm = relayBleMeasurement('goodmans', value)
+  if (!bpm && value) {
+    const bytes = new Uint8Array(value.buffer, value.byteOffset, value.byteLength)
+    const command = value.byteLength >= 12 ? value.getUint16(8, true) : 0
+    const subcommand = value.byteLength >= 12 ? value.getUint16(10, true) : 0
+    const isPpg = command === 0x000a && subcommand === 0x00ac
+    const hasOpticalSignal = isPpg && Array.from(bytes.slice(13)).some(sample => sample !== 0)
+    if (isPpg && !hasOpticalSignal) bleGmansZeroFrames += 1
+    else if (isPpg) bleGmansZeroFrames = 0
+    if (command === 0x00ff) bleLog('gmans-handshake-response', { subcommand, hex: Buffer.from(bytes).toString('hex') })
+    if (Date.now() - bleLastRawLogAt > 30000) {
+      bleLastRawLogAt = Date.now()
+      bleLog('gmans-non-bpm-frame', { length: bytes.length, command, subcommand, hasOpticalSignal, hex: Buffer.from(bytes).toString('hex') })
+    }
+    if (isPpg && Date.now() - bleLastSensorStatusAt > 15000) {
+      bleLastSensorStatusAt = Date.now()
+      setBleStatus(hasOpticalSignal
+        ? 'GMANS WATCH is connected and collecting optical pulse samples; waiting for BPM...'
+        : 'GMANS WATCH is connected, but its optical sensor is returning zero signal. Wear it firmly and open the watch Heart Rate screen if its firmware requires that mode.')
+    }
+    if (isPpg && !hasOpticalSignal) scheduleGmansBackgroundWake()
+  }
+}
+
+function submitBleBpm (bpm, protocol) {
+  bleLastReadingAt = Date.now()
+  bleLastBpmAt = bleLastReadingAt
+  bleLastFrameAt = Date.now()
+  bleNoBpmWarningLogged = false
+  api.hrBleReading(bpm, Date.now())
+  if (Date.now() - bleLastBpmLogAt > 30000) {
+    bleLastBpmLogAt = Date.now()
+    bleLog('heart-rate-received', { bpm, protocol })
+  }
+}
+
+async function triggerGmansHeartRate () {
+  const characteristic = bleWriteCharacteristic
+  if (!characteristic) return
+  await writeBleCommand(goodmansBlePlatform.startHeartRateCommand)
+  bleLog('gmans-measurement-triggered')
+}
+
+async function configureGmansAutomaticHeartRate (enabled) {
+  if (bleProtocol !== 'gmans' || !bleWriteCharacteristic) throw new Error('Connect GMANS WATCH first')
+  const intervalMinutes = Math.max(1, Math.min(255, Number($('hrGmansAutoInterval').value) || 5))
+  $('hrGmansAutoInterval').value = intervalMinutes
+  const command = goodmansBlePlatform.buildAutomaticHeartRateCommand({
+    enabled,
+    startHour: 0,
+    startMinute: 0,
+    endHour: 23,
+    endMinute: 59,
+    intervalMinutes,
+    sequence: bleGmansCommandSequence++ & 0xffff
+  })
+  await writeBleCommand(command)
+  await api.saveSetting('hrGmansAutomatic', { enabled, intervalMinutes })
+  bleLog('gmans-auto-heart-configured', { enabled, intervalMinutes, hex: Buffer.from(command).toString('hex') })
+  setBleStatus(enabled
+    ? `GMANS automatic heart-rate measurement enabled every ${intervalMinutes} minute(s). The watch may report these as periodic/history readings rather than a continuous live stream.`
+    : 'GMANS automatic heart-rate measurement disabled on the watch.')
+}
+
+async function writeBleCommand (bytes) {
+  const characteristic = bleWriteCharacteristic
+  if (!characteristic) throw new Error('GMANS write characteristic is unavailable')
+  // The official app fragmented long protocol frames at the default 20-byte
+  // ATT payload boundary. Short commands remain a single write.
+  for (let offset = 0; offset < bytes.length; offset += 20) {
+    const chunk = bytes.slice(offset, Math.min(offset + 20, bytes.length))
+    if (typeof characteristic.writeValueWithoutResponse === 'function') await characteristic.writeValueWithoutResponse(chunk)
+    else await characteristic.writeValue(chunk)
+    if (offset + 20 < bytes.length) await bleWait(35)
+  }
+}
+
+async function triggerGmansBackgroundWake () {
+  setBleStatus('GMANS optical sensor is idle; trying captured background wake handshake...')
+  bleLog('gmans-background-wake-started', { zeroFrames: bleGmansZeroFrames })
+  await writeBleCommand(goodmansBlePlatform.backgroundHandshake)
+  await bleWait(250)
+  await triggerGmansHeartRate()
+  bleLog('gmans-background-wake-sent')
+}
+
+function scheduleGmansBackgroundWake () {
+  if (bleGmansHandshakeAttempted || bleGmansWakeTimer || !$('hrGmansBackgroundWake').checked) return
+  // This firmware can emit only one AC frame every ~30 seconds while its sensor
+  // is asleep, so counting several frames delays the fallback for minutes.
+  const elapsed = Date.now() - bleGmansConnectedAt
+  const delay = Math.max(0, 10000 - elapsed)
+  bleLog('gmans-background-wake-scheduled', { delay, zeroFrames: bleGmansZeroFrames })
+  bleGmansWakeTimer = setTimeout(() => {
+    bleGmansWakeTimer = null
+    if (bleProtocol !== 'gmans' || bleGmansHandshakeAttempted || bleLastBpmAt > bleGmansConnectedAt) return
+    bleGmansHandshakeAttempted = true
+    triggerGmansBackgroundWake().catch(err => {
+      bleLog('gmans-background-wake-error', { name: err.name, message: err.message })
+      setBleStatus(`GMANS background sensor wake failed: ${err.message}`)
+    })
+  }, delay)
+}
+
+async function connectRegisteredBlePlatform (server, platform) {
+  const service = await server.getPrimaryService(platform.serviceUuid)
+  const characteristic = await service.getCharacteristic(platform.notifyCharacteristicUuid)
+  const writeCharacteristic = platform.writeCharacteristicUuid
+    ? await service.getCharacteristic(platform.writeCharacteristicUuid)
+    : null
+  await characteristic.startNotifications()
+  const listener = event => relayBleMeasurement(platform.id, event.target?.value)
+  characteristic.addEventListener('characteristicvaluechanged', listener)
+  bleHeartRateCharacteristic = characteristic
+  bleMeasurementListener = listener
+  bleProtocol = platform.protocol || platform.id
+  bleWriteCharacteristic = writeCharacteristic
+  try {
+    if (writeCharacteristic && platform.startHeartRateCommand) await writeBleCommand(platform.startHeartRateCommand)
+  } catch (err) {
+    characteristic.removeEventListener('characteristicvaluechanged', listener)
+    try { await characteristic.stopNotifications() } catch (_) {}
+    bleHeartRateCharacteristic = null
+    bleMeasurementListener = null
+    bleWriteCharacteristic = null
+    bleProtocol = ''
+    throw err
+  }
+}
+
+async function connectGmansHeartRate (server) {
+  const service = await server.getPrimaryService(goodmansBlePlatform.serviceUuid)
+  const writeCharacteristic = await service.getCharacteristic(goodmansBlePlatform.writeCharacteristicUuid)
+  const notifyCharacteristic = await service.getCharacteristic(goodmansBlePlatform.notifyCharacteristicUuid)
+  await notifyCharacteristic.startNotifications()
+  notifyCharacteristic.addEventListener('characteristicvaluechanged', onGmansHeartRateMeasurement)
+  bleWriteCharacteristic = writeCharacteristic
+  bleHeartRateCharacteristic = notifyCharacteristic
+  bleMeasurementListener = onGmansHeartRateMeasurement
+  bleProtocol = 'gmans'
+  bleGmansConnectedAt = Date.now()
+  bleLastBpmAt = 0
+  bleGmansZeroFrames = 0
+  bleGmansHandshakeAttempted = false
+  if (bleGmansWakeTimer) clearTimeout(bleGmansWakeTimer)
+  bleGmansWakeTimer = null
+  if ($('hrGmansAutomatic').checked) {
+    await configureGmansAutomaticHeartRate(true)
+    await bleWait(150)
+  }
+  await triggerGmansHeartRate()
+  bleRetriggerTimer = setInterval(() => {
+    triggerGmansHeartRate().catch(err => {
+      console.warn('GMANS heart-rate retrigger failed:', err.message)
+      bleLog('gmans-trigger-error', { name: err.name, message: err.message })
+    })
+  }, 15000)
+}
+
+function startBleWatchdog () {
+  if (bleWatchdogTimer) clearInterval(bleWatchdogTimer)
+  bleLastReadingAt = Date.now()
+  bleLastFrameAt = Date.now()
+  bleNoBpmWarningLogged = false
+  bleWatchdogTimer = setInterval(() => {
+    if (!bleConnectedDevice || bleConnectInProgress) return
+    // GMANS can stream raw AC/PPG frames for a while before producing an AB/BPM
+    // frame. Any recent notification proves GATT is alive and must not trigger a
+    // reconnect, otherwise we repeatedly reset the watch's measurement cycle.
+    if (bleProtocol === 'gmans' && Date.now() - bleLastFrameAt < 60000) {
+      if (!bleNoBpmWarningLogged && Date.now() - bleLastReadingAt >= 60000) {
+        bleNoBpmWarningLogged = true
+        bleLog('gmans-no-bpm-yet', { seconds: Math.round((Date.now() - bleLastReadingAt) / 1000), framesStillArriving: true })
+      }
+      return
+    }
+    if (Date.now() - bleLastReadingAt < 45000) return
+    const stalledDevice = bleConnectedDevice
+    clearInterval(bleWatchdogTimer)
+    bleWatchdogTimer = null
+    bleLog('heart-rate-stalled', { secondsWithoutReading: Math.round((Date.now() - bleLastReadingAt) / 1000), protocol: bleProtocol })
+    setBleStatus('BLE is connected but heart rate stalled; restarting the GATT session...')
+    connectBleHeartRateDevice(stalledDevice, { reconnect: true })
+      .catch(err => scheduleBleReconnect(`heart-rate watchdog: ${err.message}`))
+  }, 10000)
+}
+
+function onBleDisconnected (event) {
+  if (event.target !== bleConnectedDevice) return
+  const disconnectedDevice = bleConnectedDevice
+  if (bleRetriggerTimer) clearInterval(bleRetriggerTimer)
+  bleRetriggerTimer = null
+  if (bleWatchdogTimer) clearInterval(bleWatchdogTimer)
+  bleWatchdogTimer = null
+  bleHeartRateCharacteristic = null
+  bleWriteCharacteristic = null
+  bleMeasurementListener = null
+  bleProtocol = ''
+  bleGmansConnectedAt = 0
+  bleGmansZeroFrames = 0
+  bleGmansHandshakeAttempted = false
+  if (bleGmansWakeTimer) clearTimeout(bleGmansWakeTimer)
+  bleGmansWakeTimer = null
+  bleConnectedDevice = null
+  bleLog('gatt-disconnected', { id: disconnectedDevice?.id, name: disconnectedDevice?.name, manual: bleManualDisconnect })
+  if (!bleManualDisconnect) scheduleBleReconnect('unexpected disconnect')
+  else setBleStatus('BLE device disconnected.')
+}
+
+function clearBleReconnectTimer () {
+  if (bleReconnectTimer) clearTimeout(bleReconnectTimer)
+  bleReconnectTimer = null
+}
+
+function scheduleBleReconnect (reason) {
+  if (!$('hrBleAutoReconnect').checked || !bleLastDevice || bleManualDisconnect) {
+    setBleStatus('BLE device disconnected. Select it and press Connect to reconnect.')
+    return
+  }
+  clearBleReconnectTimer()
+  const delays = [1000, 2500, 5000, 10000, 30000]
+  const delay = delays[Math.min(bleReconnectAttempts, delays.length - 1)]
+  bleReconnectAttempts += 1
+  setBleStatus(`BLE disconnected; reconnect attempt ${bleReconnectAttempts} in ${Math.round(delay / 1000)}s...`)
+  bleLog('reconnect-scheduled', { attempt: bleReconnectAttempts, delay, reason })
+  bleReconnectTimer = setTimeout(() => {
+    bleReconnectTimer = null
+    connectBleHeartRateDevice(bleLastDevice, { reconnect: true })
+      .catch(err => scheduleBleReconnect(err.message))
+  }, delay)
+}
+
+async function disconnectBleHeartRateDevice (options = {}) {
+  const manual = options.manual !== false
+  const showStatus = options.showStatus !== false
+  bleManualDisconnect = manual
+  if (manual) clearBleReconnectTimer()
+  const characteristic = bleHeartRateCharacteristic
+  const device = bleConnectedDevice
+  const measurementListener = bleMeasurementListener
+  if (bleRetriggerTimer) clearInterval(bleRetriggerTimer)
+  bleRetriggerTimer = null
+  if (bleWatchdogTimer) clearInterval(bleWatchdogTimer)
+  bleWatchdogTimer = null
+  bleHeartRateCharacteristic = null
+  bleWriteCharacteristic = null
+  bleMeasurementListener = null
+  bleProtocol = ''
+  bleGmansConnectedAt = 0
+  bleGmansZeroFrames = 0
+  bleGmansHandshakeAttempted = false
+  if (bleGmansWakeTimer) clearTimeout(bleGmansWakeTimer)
+  bleGmansWakeTimer = null
+  bleConnectedDevice = null
+  if (characteristic) {
+    try {
+      if (measurementListener) characteristic.removeEventListener('characteristicvaluechanged', measurementListener)
+    } catch (_) {}
+    try { await characteristic.stopNotifications() } catch (_) {}
+  }
+  if (device) {
+    try { device.removeEventListener('gattserverdisconnected', onBleDisconnected) } catch (_) {}
+    try { if (device.gatt?.connected) device.gatt.disconnect() } catch (_) {}
+  }
+  if (showStatus) setBleStatus('BLE device disconnected.')
+}
+
+async function connectBleHeartRateDevice (device, options = {}) {
+  if (!device?.gatt) throw new Error('Selected device does not expose Bluetooth GATT')
+  if (bleConnectedDevice?.id === device.id && device.gatt.connected) {
+    setBleStatus(`Already connected to ${device.name || 'BLE device'}; background monitoring is active.`)
+    return
+  }
+  if (bleConnectInProgress) throw new Error('A BLE connection attempt is already running')
+  bleConnectInProgress = true
+  bleLastDevice = device
+  bleManualDisconnect = false
+  clearBleReconnectTimer()
+  try {
+    await disconnectBleHeartRateDevice({ manual: false, showStatus: false })
+    // Windows can report "GATT Error Unknown" if a new connection starts before
+    // the previous ATT session has finished closing.
+    await bleWait(options.reconnect ? 1200 : 500)
+    await ensureBleDeviceProvider()
+    let lastError = null
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      setBleStatus(`${options.reconnect ? 'Reconnecting' : 'Connecting'} to ${device.name || 'BLE device'} (attempt ${attempt}/3)...`)
+      bleLog('gatt-connect-attempt', { attempt, reconnect: !!options.reconnect, id: device.id, name: device.name || '' })
+      try {
+        if (device.gatt.connected) device.gatt.disconnect()
+        if (attempt > 1) await bleWait(attempt * 1000)
+        const server = await device.gatt.connect()
+        const preferredPlatform = findBleHeartRatePlatform({ name: device.name })
+        if (preferredPlatform) {
+          if (preferredPlatform.id === 'goodmans') await connectGmansHeartRate(server)
+          else await connectRegisteredBlePlatform(server, preferredPlatform)
+        } else {
+          let platformError = null
+          for (const platform of getBleHeartRatePlatforms()) {
+            try {
+              if (platform.id === 'goodmans') await connectGmansHeartRate(server)
+              else await connectRegisteredBlePlatform(server, platform)
+              platformError = null
+              break
+            } catch (err) {
+              platformError ||= err
+            }
+          }
+          if (platformError) throw platformError
+        }
+        device.addEventListener('gattserverdisconnected', onBleDisconnected)
+        bleConnectedDevice = device
+        bleReconnectAttempts = 0
+        startBleWatchdog()
+        await api.saveSetting('hrBleDevice', { id: device.id, name: device.name || 'BLE heart-rate device', protocol: bleProtocol, lastConnectedAt: Date.now() })
+        bleLog('gatt-connected', { id: device.id, name: device.name || '', protocol: bleProtocol, attempt })
+        const activePlatform = getBleHeartRatePlatforms().find(platform => (platform.protocol || platform.id) === bleProtocol)
+        setBleStatus(`Connected to ${device.name || 'BLE device'} using ${activePlatform?.displayName || bleProtocol}; background monitoring is active.`)
+        return
+      } catch (err) {
+        lastError = err
+        bleLog('gatt-connect-error', { attempt, name: err.name, message: err.message, connected: !!device.gatt.connected })
+        await disconnectBleHeartRateDevice({ manual: false, showStatus: false })
+        try { if (device.gatt.connected) device.gatt.disconnect() } catch (_) {}
+      }
+    }
+    const err = lastError || new Error('Unknown GATT connection failure')
+    const missingService = err.name === 'NotFoundError'
+    setBleStatus(missingService
+      ? `${device.name || 'Device'} did not expose a supported heart-rate service or adapter characteristics during this connection.`
+      : `Could not connect to ${device.name || 'device'} after 3 attempts: ${err.message}. Ensure phone/Python apps are disconnected, then power-cycle the watch if Windows kept a stale GATT session.`)
+    throw err
+  } finally {
+    bleConnectInProgress = false
+  }
+}
+
+$('hrBleScan').addEventListener('click', scanNearbyBleDevices)
+$('hrBlePaired').addEventListener('click', refreshBleRememberedDevices)
+$('hrBleCancel').addEventListener('click', async () => {
+  await api.hrBleCancel()
+  for (const option of Array.from($('hrBleDevices').options)) {
+    if (option.dataset.source === 'nearby' && !bleBrowserDevices.has(option.value)) option.remove()
+  }
+  setBleStatus('Bluetooth scan cancelled.')
+})
+$('hrBleConnect').addEventListener('click', async () => {
+  const id = $('hrBleDevices').value
+  if (!id) return setBleStatus('Select a BLE device first.')
+  const remembered = bleBrowserDevices.get(id)
+  const cached = bleCachedDevices.get(id)
+  try {
+    if (remembered) await connectBleHeartRateDevice(remembered)
+    else if (cached) {
+      // requestDevice must remain directly attached to this click. Main uses the
+      // AppData cache to select the matching watch as soon as it appears.
+      api.hrBlePrepareReconnect(cached)
+      setBleStatus(`Looking for cached device ${cached.name || cached.id}...`)
+      const device = await navigator.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: BLE_OPTIONAL_SERVICES
+      })
+      bleBrowserDevices.set(device.id, device)
+      addBleDeviceOption(device, 'remembered')
+      await connectBleHeartRateDevice(device)
+    }
+    else if (!await api.hrBleSelect(id)) setBleStatus('That scan result expired. Scan again.')
+  } catch (err) {
+    bleLog('cached-or-selected-connect-error', { name: err.name, message: err.message, id })
+    if (err.name === 'NotFoundError') setBleStatus('Cached BLE device was not found. Turn it on, keep it nearby, and try again.')
+  }
+})
+$('hrBleDisconnect').addEventListener('click', disconnectBleHeartRateDevice)
+$('hrBleDebug').addEventListener('click', () => api.hrBleOpenDebug())
+$('hrBleAutoReconnect').addEventListener('change', async e => {
+  await api.saveSetting('hrBleAutoReconnect', e.target.checked)
+  bleLog('auto-reconnect-changed', { enabled: e.target.checked })
+  if (!e.target.checked) clearBleReconnectTimer()
+  else if (!bleConnectedDevice && bleLastDevice) scheduleBleReconnect('auto-reconnect enabled')
+})
+$('hrGmansAutomatic').addEventListener('change', async e => {
+  const intervalMinutes = Math.max(1, Math.min(255, Number($('hrGmansAutoInterval').value) || 5))
+  await api.saveSetting('hrGmansAutomatic', { enabled: e.target.checked, intervalMinutes })
+  if (bleProtocol !== 'gmans') {
+    setBleStatus(`GMANS automatic heart rate will be ${e.target.checked ? 'enabled' : 'disabled'} the next time the watch connects.`)
+    return
+  }
+  try {
+    await configureGmansAutomaticHeartRate(e.target.checked)
+  } catch (err) {
+    bleLog('gmans-auto-heart-error', { name: err.name, message: err.message })
+    setBleStatus(`Could not configure GMANS automatic heart rate: ${err.message}`)
+  }
+})
+$('hrGmansAutoInterval').addEventListener('change', async e => {
+  const intervalMinutes = Math.max(1, Math.min(255, Number(e.target.value) || 5))
+  e.target.value = intervalMinutes
+  await api.saveSetting('hrGmansAutomatic', { enabled: $('hrGmansAutomatic').checked, intervalMinutes })
+  if ($('hrGmansAutomatic').checked && bleProtocol === 'gmans') {
+    try { await configureGmansAutomaticHeartRate(true) } catch (err) { setBleStatus(`Could not update GMANS interval: ${err.message}`) }
+  }
+})
+$('hrGmansBackgroundWake').addEventListener('change', e => {
+  api.saveSetting('hrGmansBackgroundWake', e.target.checked)
+  bleLog('gmans-background-wake-changed', { enabled: e.target.checked })
+})
+document.addEventListener('visibilitychange', () => {
+  bleLog('renderer-visibility', { state: document.visibilityState, connected: !!bleConnectedDevice, protocol: bleProtocol })
+})
+
 $('hrStart').addEventListener('click', async () => {
   const c = hrCfg()
   await api.saveSetting('pulsoidToken', c.token)
   await api.saveSetting('hrProvider', c.provider)
   await api.saveSetting('hyperate', { apiKey: c.apiKey, deviceId: c.deviceId })
-  api.hrStart(c)
+  await api.saveSetting('hrDeviceBridge', { port: c.bridgePort, relayToPulsoid: c.relayToPulsoid, relayToken: c.relayToken })
+  await api.saveSetting('hrOscProfiles', c.oscProfiles)
+  try {
+    const result = await api.hrStart(c)
+    deviceProviderRunning = c.provider === 'device' && !!result?.ok
+    if (result && result.ok === false) {
+      setPill('hrState', false, '', 'offline')
+      setText('hrSub', `Could not start receiver: ${result.error}`)
+    } else if (c.provider === 'device') {
+      setText('hrSub', `waiting at ${result.endpoint}`)
+    }
+  } catch (err) {
+    setPill('hrState', false, '', 'offline')
+    setText('hrSub', `Could not start heart rate: ${err.message}`)
+  }
 })
-$('hrStop').addEventListener('click', () => api.hrStop())
+$('hrStop').addEventListener('click', async () => {
+  await disconnectBleHeartRateDevice()
+  await api.hrBleCancel()
+  await api.hrStop()
+  deviceProviderRunning = false
+})
 $('hrClear').addEventListener('click', async () => { await api.hrClearSessions(); renderHrSessions([]) })
 
 function fmtDur (sec) { const m = Math.floor(sec / 60); const s = sec % 60; return `${m}m ${s}s` }
@@ -694,6 +1352,159 @@ function renderHrSessions (list) {
   }).join('')
 }
 api.on('hr:sessions', renderHrSessions)
+
+/* ---------------- avatar locker ---------------- */
+let lockerVault = null
+let lockerSelectedAvatarId = ''
+let lockerBusy = false
+
+function lockerMessage (message, error = false) {
+  const el = $('lockerMessage')
+  el.textContent = message
+  el.style.color = error ? 'var(--bad)' : 'var(--muted)'
+}
+
+function lockerSelectedRecord () {
+  return lockerVault?.avatars?.find(record => record.ownershipPackage.license.avatarId === lockerSelectedAvatarId) || null
+}
+
+function lockerCheckedGroups () {
+  return [...document.querySelectorAll('#lockerGroups input[data-group-id]:checked')].map(input => input.dataset.groupId)
+}
+
+function renderLocker () {
+  const vault = lockerVault
+  const avatars = vault?.avatars || []
+  setText('lockerOwnedCount', avatars.length)
+  setText('lockerUnlockedCount', avatars.filter(record => record.unlockMode !== 'locked').length)
+  setText('lockerOscSummary', vault ? `${vault.oscSettings.host}:${vault.oscSettings.port}` : '127.0.0.1:9000')
+  setText('lockerDeviceId', vault?.deviceId || 'loading')
+  if (vault) {
+    $('lockerOscHost').value = vault.oscSettings.host
+    $('lockerOscPort').value = vault.oscSettings.port
+  }
+
+  if (lockerSelectedAvatarId && !avatars.some(record => record.ownershipPackage.license.avatarId === lockerSelectedAvatarId)) lockerSelectedAvatarId = ''
+  if (!lockerSelectedAvatarId && avatars.length) lockerSelectedAvatarId = avatars[0].ownershipPackage.license.avatarId
+
+  const list = $('lockerAvatarList')
+  list.replaceChildren()
+  if (!avatars.length) {
+    const empty = document.createElement('div')
+    empty.className = 'section-note'
+    empty.textContent = 'No ownership packages imported.'
+    list.appendChild(empty)
+  }
+  for (const record of avatars) {
+    const license = record.ownershipPackage.license
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.className = `locker-avatar${license.avatarId === lockerSelectedAvatarId ? ' active' : ''}`
+    const title = document.createElement('b')
+    title.textContent = license.avatarName
+    const meta = document.createElement('div')
+    meta.className = 'meta'
+    meta.textContent = `${license.creatorDisplayName} · ${record.unlockMode} · ${license.lockGroups.length} group(s)`
+    button.append(title, meta)
+    button.addEventListener('click', () => { lockerSelectedAvatarId = license.avatarId; renderLocker() })
+    list.appendChild(button)
+  }
+
+  const selected = lockerSelectedRecord()
+  $('lockerNoSelection').style.display = selected ? 'none' : ''
+  $('lockerSelected').style.display = selected ? '' : 'none'
+  if (!selected) return
+  const license = selected.ownershipPackage.license
+  setText('lockerAvatarName', license.avatarName)
+  setText('lockerAvatarCreator', `Verified package by ${license.creatorDisplayName}`)
+  setText('lockerAvatarId', license.avatarId)
+  setText('lockerAvatarMode', selected.unlockMode)
+  $('lockerAvatarMode').className = `pill ${selected.unlockMode === 'locked' ? 'off' : 'on'}`
+  document.querySelectorAll('.locker-mode').forEach(button => button.classList.toggle('active', button.dataset.lockerMode === selected.unlockMode))
+
+  const groups = $('lockerGroups')
+  groups.replaceChildren()
+  if (!license.lockGroups.length) {
+    const empty = document.createElement('div')
+    empty.className = 'section-note'
+    empty.textContent = 'This ownership package has no individual feature groups.'
+    groups.appendChild(empty)
+  }
+  for (const group of license.lockGroups) {
+    const label = document.createElement('label')
+    label.className = 'locker-group'
+    label.style.margin = '0'
+    const text = document.createElement('span')
+    const name = document.createElement('b')
+    name.style.display = 'block'
+    name.style.color = 'var(--text)'
+    name.textContent = group.displayName
+    const parameter = document.createElement('small')
+    parameter.className = 'section-note'
+    parameter.textContent = group.oscParameter
+    text.append(name, parameter)
+    const checkbox = document.createElement('input')
+    checkbox.type = 'checkbox'
+    checkbox.dataset.groupId = group.id
+    checkbox.checked = selected.groupIds.includes(group.id)
+    label.append(text, checkbox)
+    groups.appendChild(label)
+  }
+}
+
+async function runLocker (message, action) {
+  if (lockerBusy) return
+  lockerBusy = true
+  lockerMessage(message)
+  document.querySelectorAll('#avatarlocker button').forEach(button => { button.disabled = true })
+  try {
+    const result = await action()
+    if (result?.avatars) lockerVault = result
+    renderLocker()
+    lockerMessage('Avatar Locker is ready.')
+    return result
+  } catch (err) {
+    lockerMessage(err.message || String(err), true)
+    return null
+  } finally {
+    lockerBusy = false
+    document.querySelectorAll('#avatarlocker button').forEach(button => { button.disabled = false })
+  }
+}
+
+async function loadLocker () {
+  await runLocker('Loading encrypted vault...', () => api.lockerGetState())
+  try {
+    const legacy = await api.lockerLegacyStatus()
+    $('lockerLegacy').style.display = legacy.available ? '' : 'none'
+  } catch (_) {}
+}
+
+document.querySelector('[data-tab="avatarlocker"]').addEventListener('click', loadLocker)
+$('lockerRefresh').addEventListener('click', loadLocker)
+$('lockerImport').addEventListener('click', () => runLocker('Importing and verifying ownership package...', () => api.lockerImportOwnership()))
+$('lockerLegacy').addEventListener('click', () => runLocker('Importing the original NekoAvatarLocker vault...', () => api.lockerImportLegacyVault()))
+$('lockerFolder').addEventListener('click', () => api.lockerOpenUserData())
+$('lockerSign').addEventListener('click', async () => {
+  const result = await runLocker('Signing ownership template...', () => api.lockerSignOwnershipTemplate())
+  if (result?.outputPath) lockerMessage(`Signed ${result.avatarName}: ${result.outputPath}`)
+})
+$('lockerExport').addEventListener('click', () => {
+  if (lockerSelectedAvatarId) runLocker('Exporting ownership package...', () => api.lockerExportOwnership(lockerSelectedAvatarId))
+})
+document.querySelectorAll('.locker-mode').forEach(button => button.addEventListener('click', () => {
+  if (!lockerSelectedAvatarId) return
+  const mode = button.dataset.lockerMode
+  const groups = mode === 'partial' ? lockerCheckedGroups() : []
+  runLocker(`Sending ${mode} state to VRChat...`, () => api.lockerSetUnlock(lockerSelectedAvatarId, mode, groups))
+}))
+$('lockerSendPartial').addEventListener('click', () => {
+  if (lockerSelectedAvatarId) runLocker('Sending selected feature groups...', () => api.lockerSetUnlock(lockerSelectedAvatarId, 'partial', lockerCheckedGroups()))
+})
+$('lockerSaveOsc').addEventListener('click', () => runLocker('Saving OSC target...', () => api.lockerUpdateOscSettings({ host: $('lockerOscHost').value, port: Number($('lockerOscPort').value) })))
+$('lockerReset').addEventListener('click', () => {
+  if (window.confirm('Remove every imported ownership package from the local Avatar Locker vault?')) runLocker('Clearing Avatar Locker vault...', () => api.lockerResetVault())
+})
 
 api.on('window:update', s => {
   setText('winOut', `${s.app || ''}${s.title ? ' — ' + s.title : ''}`)
@@ -1349,7 +2160,312 @@ $('tonOscRaw').addEventListener('click', async () => {
     return `${t}  ${JSON.stringify(r.msg)}`
   }).join('\n') || 'No ToN WebSocket messages yet — connect ToNSaveManager and join a round.'
 })
-document.querySelector('[data-tab="osccontrol"]').addEventListener('click', loadTonOsc)
+document.querySelector('[data-tab="tools"]').addEventListener('click', loadTonOsc)
+
+/* ---------------- OSC companion apps ---------------- */
+let removeRealisticLeashListener = null
+let realisticLeashLoaded = false
+let oscQrLoaded = false
+let shazamOscLoaded = false
+
+function renderOscQrHistory (history = []) {
+  $('oscQrHistory').innerHTML = history.length
+    ? history.map(item => `<div class="section-note" style="padding:4px 0;border-bottom:1px solid var(--border)"><b>${item.spotify ? 'Spotify' : 'QR'}</b> · ${new Date(item.at).toLocaleTimeString()}<br>${esc(item.data)}</div>`).join('')
+    : '<div class="section-note">No QR codes detected.</div>'
+}
+
+const oscQr = new OscQrController({
+  sendParam: (address, value, type) => sendParam(address, value, type),
+  onDetected: item => {
+    if ($('oscQrChatbox').checked) sendChatboxMessage(`QR: ${item.data}`.slice(0, 144), false)
+  },
+  onUpdate: state => {
+    setPill('oscQrState', state.enabled, 'scanning', 'off')
+    setText('oscQrOut', state.error ? `Error: ${state.error}` : `${state.status}${state.lastData ? ` · ${state.lastData.slice(0, 80)}` : ''}`)
+    renderOscQrHistory(state.history)
+    if (state.event === 'detected' || state.event === 'history-cleared') api.saveSetting('oscApps.oscQrHistory', state.history)
+  }
+})
+
+function oscQrConfig () {
+  return {
+    intervalMs: Number($('oscQrInterval').value) || 500,
+    saveHistory: $('oscQrSaveHistory').checked
+  }
+}
+
+function saveOscQrConfig () {
+  const config = { ...oscQrConfig(), toChatbox: $('oscQrChatbox').checked }
+  oscQr.configure(config)
+  api.saveSetting('oscApps.oscQr', config)
+}
+
+async function restoreOscQr () {
+  if (oscQrLoaded) return
+  oscQrLoaded = true
+  const saved = await api.getSetting('oscApps.oscQr', { intervalMs: 500, saveHistory: true, toChatbox: false })
+  const history = await api.getSetting('oscApps.oscQrHistory', [])
+  $('oscQrInterval').value = saved.intervalMs || 500
+  $('oscQrSaveHistory').checked = saved.saveHistory !== false
+  $('oscQrChatbox').checked = !!saved.toChatbox
+  oscQr.configure({ ...saved, history })
+  renderOscQrHistory(history)
+}
+
+function renderShazamHistory (saved = []) {
+  $('shazamHistory').innerHTML = saved.length
+    ? saved.map(song => `<div class="section-note" style="padding:4px 0;border-bottom:1px solid var(--border)"><b>${esc(song.artist || 'Unknown')}</b> — ${esc(song.title || 'Unknown')} <span class="muted">${esc(song.provider || '')}</span>${song.song_link ? `<br><button class="btn ghost shazam-open" data-url="${encodeURIComponent(song.song_link)}" style="padding:2px 7px;font-size:.68rem">Open song</button>` : ''}</div>`).join('')
+    : '<div class="section-note">No recognized songs yet.</div>'
+}
+
+const shazamOsc = new ShazamOscController({
+  sendParam: (address, value, type) => sendParam(address, value, type),
+  recognize: request => api.oscAppsRecognizeSong(request),
+  onRecognized: (match, config) => {
+    if (config.toChatbox) sendChatboxMessage(`🎶 ${match.artist || 'Unknown'} — ${match.title || 'Unknown'}`.slice(0, 144), false)
+  },
+  onUpdate: state => {
+    setPill('shazamOscState', state.live || state.busy || state.sharing, state.live ? 'live' : state.busy ? 'listening' : 'ready', 'ready')
+    setText('shazamOut', state.error ? `Error: ${state.error}` : state.status)
+    $('shazamLive').checked = state.live
+    renderShazamHistory(state.saved)
+    if (['recognized', 'saved-cleared'].includes(state.event)) api.saveSetting('oscApps.shazamHistory', state.saved)
+  }
+})
+
+function shazamConfig () {
+  return {
+    provider: $('shazamProvider').value,
+    token: $('shazamToken').value.trim(),
+    acrHost: $('shazamAcrHost').value.trim(),
+    acrAccessKey: $('shazamAcrKey').value.trim(),
+    acrAccessSecret: $('shazamAcrSecret').value.trim(),
+    clipSeconds: 10,
+    liveSeconds: Number($('shazamLiveInterval').value) || 25,
+    toChatbox: $('shazamChatbox').checked
+  }
+}
+
+function saveShazamConfig () {
+  const config = shazamConfig()
+  shazamOsc.configure(config)
+  api.saveSetting('oscApps.shazam', config)
+}
+
+async function restoreShazamOsc () {
+  if (shazamOscLoaded) return
+  shazamOscLoaded = true
+  const saved = await api.getSetting('oscApps.shazam', { provider: 'auto', token: '', acrHost: '', acrAccessKey: '', acrAccessSecret: '', clipSeconds: 10, liveSeconds: 25, toChatbox: false })
+  const history = await api.getSetting('oscApps.shazamHistory', [])
+  $('shazamProvider').value = ['auto', 'audd', 'acrcloud', 'node-shazam'].includes(saved.provider) ? saved.provider : 'auto'
+  $('shazamToken').value = saved.token || ''
+  $('shazamAcrHost').value = saved.acrHost || ''
+  $('shazamAcrKey').value = saved.acrAccessKey || ''
+  $('shazamAcrSecret').value = saved.acrAccessSecret || ''
+  $('shazamLiveInterval').value = saved.liveSeconds || 25
+  $('shazamChatbox').checked = !!saved.toChatbox
+  shazamOsc.configure({ ...saved, saved: history })
+  renderShazamHistory(history)
+  try {
+    const providers = await api.oscAppsRecognitionProviders()
+    setText('shazamProviderState', `AudD SDK ready · ACRCloud ready · node-shazam ${providers.nodeShazam ? 'available' : 'not installed (optional GPL-2.0 fallback)'}`)
+  } catch (err) { setText('shazamProviderState', `Provider check failed: ${err.message}`) }
+}
+const realisticLeash = new RealisticOscLeashController({
+  sendInput: (address, value, type) => sendParam(address, value, type),
+  onUpdate: state => {
+    setPill('realLeashState', state.enabled, 'on', 'off')
+    setText('realLeashOut', `${state.directionLabel}${state.event.startsWith('jump') || state.event === 'jump' ? ' · jump triggered' : ''}`)
+  }
+})
+
+let oscDigitalClockLoaded = false
+const oscDigitalClock = new OscDigitalClock({
+  sendParam: (address, value, type) => sendParam(address, value, type),
+  onUpdate: state => {
+    setPill('oscClockState', state.enabled, 'sending', 'off')
+    const raw = state.values.raw
+    const encoded = state.values.encoded
+    const status = `${raw.MonthF}/${raw.DayF} ${String(raw.HourF).padStart(2, '0')}:${String(raw.MinuteF).padStart(2, '0')} · M ${encoded.MonthF} · D ${encoded.DayF} · H ${encoded.HourF} · Min ${encoded.MinuteF} · DOW ${encoded.DOWF}`
+    setText('oscClockOut', state.lastError ? `Error: ${state.lastError}` : status)
+  }
+})
+
+function oscDigitalClockConfig () {
+  return {
+    enabled: $('oscClockEnable').checked,
+    intervalSeconds: Number($('oscClockInterval').value) || 10,
+    legacyDoW: $('oscClockLegacyDow').checked,
+    vrcoscClock: $('oscClockVrcosc').checked,
+    clock24Hour: $('oscClock24Hour').checked,
+    dateTimeInts: $('oscClockDateTimeInts').checked
+  }
+}
+
+function applyOscDigitalClock (save = true) {
+  const config = oscDigitalClockConfig()
+  oscDigitalClock.configure(config)
+  oscDigitalClock.setEnabled(config.enabled)
+  if (save) api.saveSetting('oscApps.digitalClock', config)
+}
+
+async function restoreOscDigitalClock () {
+  if (oscDigitalClockLoaded) return
+  oscDigitalClockLoaded = true
+  const saved = await api.getSetting('oscApps.digitalClock', { enabled: false, intervalSeconds: 10, legacyDoW: true, vrcoscClock: true, clock24Hour: false, dateTimeInts: true })
+  $('oscClockEnable').checked = !!saved.enabled
+  $('oscClockInterval').value = saved.intervalSeconds || 10
+  $('oscClockLegacyDow').checked = saved.legacyDoW !== false
+  $('oscClockVrcosc').checked = saved.vrcoscClock !== false
+  $('oscClock24Hour').checked = !!saved.clock24Hour
+  $('oscClockDateTimeInts').checked = saved.dateTimeInts !== false
+  applyOscDigitalClock(false)
+}
+
+function realisticLeashConfig () {
+  return {
+    enabled: $('realLeashEnable').checked,
+    strength: Number($('realLeashStrength').value) || 1,
+    run: $('realLeashRun').checked,
+    jumpQAction: $('realLeashJumpQ').value
+  }
+}
+
+function applyRealisticLeash (save = true) {
+  const config = realisticLeashConfig()
+  realisticLeash.configure(config)
+  if (config.enabled && !removeRealisticLeashListener) removeRealisticLeashListener = addOscListener((address, args) => realisticLeash.handleOsc(address, args), getRecvPort())
+  if (!config.enabled && removeRealisticLeashListener) { removeRealisticLeashListener(); removeRealisticLeashListener = null }
+  realisticLeash.setEnabled(config.enabled)
+  if (save) api.saveSetting('oscApps.realisticLeash', config)
+}
+
+async function restoreRealisticLeash () {
+  if (realisticLeashLoaded) return
+  realisticLeashLoaded = true
+  const saved = await api.getSetting('oscApps.realisticLeash', { enabled: false, strength: 1, run: false, jumpQAction: 'ignore' })
+  $('realLeashEnable').checked = !!saved.enabled
+  $('realLeashStrength').value = saved.strength || 1
+  $('realLeashRun').checked = !!saved.run
+  $('realLeashJumpQ').value = ['ignore', 'jump', 'forward', 'right'].includes(saved.jumpQAction) ? saved.jumpQAction : 'ignore'
+  applyRealisticLeash(false)
+}
+
+function ruskOptions () {
+  return {
+    logDirectory: $('ruskLogDirectory').value.trim(),
+    scanExisting: $('ruskScanExisting').checked,
+    features: Object.fromEntries([...document.querySelectorAll('[data-rusk-feature]')].map(input => [input.dataset.ruskFeature, input.checked]))
+  }
+}
+
+function renderRuskState (state) {
+  if (!state) return
+  setPill('ruskState', !!state.running, 'running', 'off')
+  if (state.logDirectory && !$('ruskLogDirectory').value) $('ruskLogDirectory').value = state.logDirectory
+  const values = state.values || {}
+  const held = [values.pistol && 'Pistol', values.fire && 'Fire', values.weld && 'Welder', values.duoRight && 'Duo R', values.duoLeft && 'Duo L', values.aviWeapon && 'Avi weapon', values.uasrfWeapon && 'UASRF weapon'].filter(Boolean)
+  setText('ruskValues', `Dead: ${!!values.dead} · Team: ${values.team || 0} · ${held.length ? held.join(', ') : 'no pickups held'}`)
+  const logName = state.currentLog ? state.currentLog.split(/[\\/]/).pop() : 'waiting for a VRChat output log'
+  setText('ruskOut', state.lastError ? `Error: ${state.lastError}` : `${state.running ? 'Watching' : 'Stopped'} · ${logName}`)
+}
+
+function twitchInteractiveOptions () {
+  return {
+    parameter: $('twitchInteractiveParameter').value.trim() || 'twitch',
+    pulseMs: Math.max(100, Number($('twitchInteractivePulse').value) || 750),
+    mappings: $('twitchInteractiveMappings').value,
+    enabled: true
+  }
+}
+
+function renderTwitchInteractive (state = {}) {
+  setPill('twitchInteractiveState', !!state.running, state.running ? 'running' : 'off', 'off')
+  const connections = state.running
+    ? `Chat ${state.chatConnected ? 'connected' : 'connecting'} · Rewards ${state.rewardsConnected ? 'connected' : 'connecting'}`
+    : 'Stopped'
+  const last = state.lastTrigger
+    ? ` · Last: ${state.lastTrigger.source} ${state.lastTrigger.match} → ${state.lastTrigger.value}${state.lastTrigger.user ? ` by ${state.lastTrigger.user}` : ''}`
+    : ''
+  setText('twitchInteractiveOut', state.error ? `Error: ${state.error}` : connections + last)
+}
+
+async function restoreTwitchInteractive (autoStart) {
+  try {
+    const state = await api.oscAppsTwitchInteractiveGet()
+    const saved = state.saved || {}
+    $('twitchInteractiveParameter').value = saved.parameter || 'twitch'
+    $('twitchInteractivePulse').value = saved.pulseMs || 750
+    $('twitchInteractiveMappings').value = saved.mappings || ''
+    renderTwitchInteractive(state)
+    if (autoStart && saved.enabled && !state.running) {
+      try { renderTwitchInteractive(await api.oscAppsTwitchInteractiveStart(saved)) } catch (err) { setText('twitchInteractiveOut', `Error: ${err.message}`) }
+    }
+  } catch (err) { setText('twitchInteractiveOut', `Error: ${err.message}`) }
+}
+
+async function loadOscApps () {
+  await restoreRealisticLeash()
+  await restoreOscDigitalClock()
+  await restoreOscQr()
+  await restoreShazamOsc()
+  await loadOscCaptureSources()
+  await restoreTwitchInteractive(false)
+  try {
+    const rusk = await api.oscAppsRuskGet()
+    const saved = rusk.saved || {}
+    $('ruskLogDirectory').value = saved.logDirectory || rusk.logDirectory || ''
+    $('ruskScanExisting').checked = !!saved.scanExisting
+    document.querySelectorAll('[data-rusk-feature]').forEach(input => { input.checked = saved.features?.[input.dataset.ruskFeature] !== false })
+    renderRuskState(rusk)
+  } catch (err) { setText('ruskOut', `Error: ${err.message}`) }
+}
+
+$('ruskStart').addEventListener('click', async () => {
+  try { renderRuskState(await api.oscAppsRuskStart(ruskOptions())) } catch (err) { setText('ruskOut', `Error: ${err.message}`) }
+})
+$('ruskStop').addEventListener('click', async () => { try { renderRuskState(await api.oscAppsRuskStop()) } catch (err) { setText('ruskOut', `Error: ${err.message}`) } })
+api.on('oscApps:ruskUpdate', renderRuskState)
+
+$('twitchInteractiveStart').addEventListener('click', async () => {
+  try {
+    setText('twitchInteractiveOut', 'Connecting to Twitch chat and rewards…')
+    renderTwitchInteractive(await api.oscAppsTwitchInteractiveStart(twitchInteractiveOptions()))
+  } catch (err) { setText('twitchInteractiveOut', `Error: ${err.message}`) }
+})
+$('twitchInteractiveStop').addEventListener('click', async () => renderTwitchInteractive(await api.oscAppsTwitchInteractiveStop()))
+api.on('oscApps:twitchInteractiveUpdate', renderTwitchInteractive)
+;['realLeashEnable', 'realLeashStrength', 'realLeashRun', 'realLeashJumpQ'].forEach(id => $(id).addEventListener('change', () => applyRealisticLeash(true)))
+;['oscClockEnable', 'oscClockInterval', 'oscClockLegacyDow', 'oscClockVrcosc', 'oscClock24Hour', 'oscClockDateTimeInts'].forEach(id => $(id).addEventListener('change', () => applyOscDigitalClock(true)))
+$('oscClockSync').addEventListener('click', () => oscDigitalClock.syncNow())
+$('oscQrStart').addEventListener('click', async () => { saveOscQrConfig(); await oscQr.start() })
+$('oscQrStop').addEventListener('click', () => oscQr.stop())
+$('oscQrClear').addEventListener('click', () => oscQr.clearHistory())
+;['oscQrInterval', 'oscQrChatbox', 'oscQrSaveHistory'].forEach(id => $(id).addEventListener('change', saveOscQrConfig))
+$('shazamRecognize').addEventListener('click', async () => { saveShazamConfig(); await shazamOsc.recognizeNow() })
+$('shazamStop').addEventListener('click', () => shazamOsc.stopAudio())
+$('shazamLive').addEventListener('change', async e => { saveShazamConfig(); await shazamOsc.setLive(e.target.checked) })
+;['shazamProvider', 'shazamToken', 'shazamAcrHost', 'shazamAcrKey', 'shazamAcrSecret', 'shazamLiveInterval', 'shazamChatbox'].forEach(id => $(id).addEventListener('change', saveShazamConfig))
+$('shazamDashboard').addEventListener('click', () => api.openExternal($('shazamProvider').value === 'acrcloud' ? 'https://console.acrcloud.com/' : 'https://dashboard.audd.io/'))
+$('shazamHistory').addEventListener('click', e => { const button = e.target.closest('.shazam-open'); if (button) api.openExternal(decodeURIComponent(button.dataset.url)) })
+$('oscAppsCaptureRefresh').addEventListener('click', loadOscCaptureSources)
+$('oscAppsCaptureSource').addEventListener('change', async e => {
+  await api.oscAppsSelectCaptureSource(e.target.value)
+  await api.saveSetting('oscApps.captureSource', e.target.value)
+})
+document.querySelector('[data-tab="oscapps"]').addEventListener('click', loadOscApps)
+
+async function loadOscCaptureSources () {
+  try {
+    const saved = await api.getSetting('oscApps.captureSource', '')
+    const result = await api.oscAppsCaptureSources()
+    const select = $('oscAppsCaptureSource')
+    select.innerHTML = '<option value="">Primary display</option>' + result.sources.map(source => `<option value="${source.id.replace(/"/g, '&quot;')}">${esc(source.name)}</option>`).join('')
+    const selected = result.sources.some(source => source.id === saved) ? saved : result.selected
+    select.value = result.sources.some(source => source.id === selected) ? selected : ''
+    await api.oscAppsSelectCaptureSource(select.value)
+  } catch (err) { setText('oscQrOut', `Could not list capture sources: ${err.message}`) }
+}
 
 /* ---------------- tools: Emerald Sound System (rf_ESS) ---------------- */
 function essSend (name, value, type) { try { sendParam('/avatar/parameters/rf_ESS/' + name, value, type) } catch (_) {} }
@@ -1496,6 +2612,16 @@ $('botInvite').addEventListener('click', async () => {
 })
 api.on('bot:update', s => {
   setPill('botState', s.connected, 'on')
+  if ($('discordOscEnable')?.checked) {
+    setPill('discordOscState', s.connected, s.connected ? 'connected' : 'waiting', 'off')
+    sendParam(DISCORD_OSC_METADATA, true, 'bool')
+    sendParam('/avatar/parameters/VRCOSC/Discord/Ready', !!s.connected, 'bool')
+    sendParam('/avatar/parameters/VRCOSC/Discord/Mic', !!s.selfMute, 'bool')
+    sendParam('/avatar/parameters/VRCOSC/Discord/Deafen', !!s.selfDeaf, 'bool')
+    sendParam('/avatar/parameters/VRCOSC/Discord/ChannelUserCount', Number(s.userCount) || 0, 'int')
+    sendParam('/avatar/parameters/VRCOSC/Discord/VoiceConnectionState', s.inVoice ? 1 : 0, 'int')
+    setText('discordOscOut', s.connected ? (s.inVoice ? `${s.channelName} · ${s.userCount || 0} users` : 'Connected · not in voice') : (s.error ? `Error: ${s.error}` : 'Waiting for Discord Voice Bot'))
+  }
   if (!s.connected) { if (s.error) setText('botOut', 'Error: ' + s.error); return }
   const bits = []
   bits.push(s.inVoice ? `🔊 ${s.channelName} (${s.userCount})` : 'not in voice')
@@ -1503,8 +2629,8 @@ api.on('bot:update', s => {
   if (s.selfDeaf) bits.push('🔈 deafened')
   setText('botOut', bits.join(' · '))
   composer.update({ discordChannel: s.inVoice ? s.channelName : '', discordUsers: s.userCount || 0, discordMute: !!s.selfMute, discordDeaf: !!s.selfDeaf })
-  if (s.callEvent === 'started') { logLine('Discord call started'); setText('oscControlOut', '📞 Call started') }
-  if (s.callEvent === 'ended') { logLine('Discord call ended'); setText('oscControlOut', '📞 Call ended') }
+  if (s.callEvent === 'started') { logLine('Discord call started'); setText('discordOscOut', '📞 Call started') }
+  if (s.callEvent === 'ended') { logLine('Discord call ended'); setText('discordOscOut', '📞 Call ended') }
 })
 
 /* ---------------- soundpad ---------------- */
@@ -1529,23 +2655,96 @@ $('soundpadRefresh').addEventListener('click', async () => {
 $('soundpadList').addEventListener('click', async e => { const b = e.target.closest('.sp-play'); if (b) spOut(await api.soundpadCmd('play', parseInt(b.dataset.i, 10))) })
 
 /* ---------------- SpotiOSC + DiscordOSC (OSC-in → action) ---------------- */
-;['spotiOscEnable', 'discordOscEnable'].forEach(id => $(id).addEventListener('change', () => api.saveSetting(id, $(id).checked)))
+const DISCORD_OSC_METADATA = '/avatar/parameters/VRCOSC/Metadata/Modules/YUCP.VIRA.yeusepesmodules.discordosc'
+const SPOTI_OSC_METADATA = '/avatar/parameters/VRCOSC/Metadata/Modules/YUCP.VIRA.yeusepesmodules.spotiosc'
+let lastSpotiTrack = ''
+
+function saveOscAppControl (id) {
+  api.saveSetting(id, $(id).checked)
+  if (id === 'discordOscEnable') {
+    sendParam(DISCORD_OSC_METADATA, $(id).checked, 'bool')
+    setPill('discordOscState', $(id).checked, $(id).checked ? 'waiting' : 'off', 'off')
+  }
+  if (id === 'spotiOscEnable') {
+    sendParam(SPOTI_OSC_METADATA, $(id).checked, 'bool')
+    sendParam('/avatar/parameters/SpotiOSC/Enabled', $(id).checked, 'bool')
+    setPill('spotiOscState', $(id).checked, 'on', 'off')
+    if ($(id).checked) refreshNowPlaying()
+  }
+}
+
+;['spotiOscEnable', 'discordOscEnable'].forEach(id => $(id).addEventListener('change', () => saveOscAppControl(id)))
 const SPOTI_MAP = {
   '/avatar/parameters/VRCOSC/Spotify/PlayPause': 'playpause',
   '/avatar/parameters/VRCOSC/Spotify/Next': 'next',
   '/avatar/parameters/VRCOSC/Spotify/Previous': 'previous',
-  '/avatar/parameters/VRCOSC/Spotify/Stop': 'stop'
+  '/avatar/parameters/VRCOSC/Spotify/Stop': 'stop',
+  '/avatar/parameters/VRCOSC/Media/Skip': 'next',
+  '/avatar/parameters/VRCOSC/Media/Next': 'next',
+  '/avatar/parameters/VRCOSC/Media/Previous': 'previous',
+  '/avatar/parameters/SpotiOSC/Pause': 'playpause',
+  '/avatar/parameters/SpotiOSC/NextTrack': 'next',
+  '/avatar/parameters/SpotiOSC/PreviousTrack': 'previous'
 }
+let lastVrcoscMediaPlay = null
+
+function publishSpotiState (media) {
+  if (!$('spotiOscEnable')?.checked) return
+  const found = !!media?.found
+  const playing = found && media.status === 'Playing'
+  const track = found ? `${media.artist || ''}|${media.title || ''}` : ''
+  lastVrcoscMediaPlay = playing
+  sendParam(SPOTI_OSC_METADATA, true, 'bool')
+  sendParam('/avatar/parameters/SpotiOSC/Enabled', true, 'bool')
+  sendParam('/avatar/parameters/SpotiOSC/IsPlaying', playing, 'bool')
+  sendParam('/avatar/parameters/SpotiOSC/PlaybackPosition', Number(media?.progressMs) || 0, 'float')
+  sendParam('/avatar/parameters/SpotiOSC/TrackDurationMs', Number(media?.durationMs) || 0, 'float')
+  sendParam('/avatar/parameters/SpotiOSC/Timestamp', media?.durationMs ? Math.min(1, media.progressMs / media.durationMs) : 0, 'float')
+  sendParam('/avatar/parameters/VRCOSC/Media/Play', playing, 'bool')
+  if (track && track !== lastSpotiTrack) {
+    lastSpotiTrack = track
+    sendParam('/avatar/parameters/SpotiOSC/TrackChangedEvent', true, 'bool')
+    setTimeout(() => sendParam('/avatar/parameters/SpotiOSC/TrackChangedEvent', false, 'bool'), 250)
+  }
+  setPill('spotiOscState', true, found ? (playing ? 'playing' : 'paused') : 'waiting', 'off')
+  setText('spotiOscOut', found ? `${media.artist || 'Unknown artist'} — ${media.title || 'Unknown title'} · ${media.status || 'Active'}` : 'Waiting for a Windows media session')
+}
+
 addOscListener((address, args) => {
   const val = args && args[0]
+  oscQr.handleOsc(address, args)
+  shazamOsc.handleOsc(address, args)
+  if (address === '/avatar/change') {
+    if ($('discordOscEnable')?.checked) sendParam(DISCORD_OSC_METADATA, true, 'bool')
+    if ($('spotiOscEnable')?.checked) sendParam(SPOTI_OSC_METADATA, true, 'bool')
+  }
   if ($('spotiOscEnable') && $('spotiOscEnable').checked && SPOTI_MAP[address] && val === true) {
-    api.mediaKey(SPOTI_MAP[address]); setText('oscControlOut', `🎵 Spotify: ${SPOTI_MAP[address]}`)
+    api.mediaKey(SPOTI_MAP[address]); setText('spotiOscOut', `🎵 Media: ${SPOTI_MAP[address]}`)
+  }
+  if ($('spotiOscEnable')?.checked && address === '/avatar/parameters/VRCOSC/Media/Play') {
+    const playing = !!val
+    if (lastVrcoscMediaPlay !== null && lastVrcoscMediaPlay !== playing) {
+      api.mediaKey('playpause'); setText('spotiOscOut', `🎵 Media: ${playing ? 'play' : 'pause'}`)
+    }
+    lastVrcoscMediaPlay = playing
   }
   if ($('discordOscEnable') && $('discordOscEnable').checked) {
-    if (address === '/avatar/parameters/VRCOSC/Discord/Mute') { api.botSetMute(!!val); setText('oscControlOut', `🎙 mute: ${!!val}`) }
-    if (address === '/avatar/parameters/VRCOSC/Discord/Deafen') { api.botSetDeaf(!!val); setText('oscControlOut', `🎙 deafen: ${!!val}`) }
+    if (address === '/avatar/parameters/VRCOSC/Discord/Mute' || address === '/avatar/parameters/VRCOSC/Discord/Mic') { api.botSetMute(!!val); setText('discordOscOut', `🎙 mute: ${!!val}`) }
+    if (address === '/avatar/parameters/VRCOSC/Discord/Deafen') { api.botSetDeaf(!!val); setText('discordOscOut', `🎙 deafen: ${!!val}`) }
   }
 }, getRecvPort())
+
+$('spotiJamJoin').addEventListener('click', () => {
+  const url = $('spotiJamUrl').value.trim()
+  if (!/^https:\/\/(?:spotify\.link|open\.spotify\.com)\//i.test(url)) { setText('spotiOscOut', 'Enter a Spotify Jam invite link first.'); return }
+  api.saveSetting('oscApps.spotiJamUrl', url)
+  api.openExternal(url)
+  setText('spotiOscOut', 'Opened the Jam invite in Spotify.')
+})
+$('spotiJamCreate').addEventListener('click', () => {
+  api.openExternal('https://open.spotify.com/')
+  setText('spotiOscOut', 'Spotify opened · use the current-device menu and choose Start a Jam, then paste its invite link here.')
+})
 
 /* ---------------- vrchat maintenance tools ---------------- */
 function fmtBytes (b) {
@@ -3012,6 +4211,10 @@ async function init () {
   $('portInput').value = await api.getSetting('oscPort', 9000); setOscPort(getSendPort())
   $('receiverPortInput').value = await api.getSetting('receiverPort', 9001)
   $('enableReceive').checked = await api.getSetting('receiveEnabled', false)
+  await restoreRealisticLeash()
+  await restoreOscDigitalClock()
+  await restoreOscQr()
+  await restoreShazamOsc()
   for (const name of ['gain', 'lowBoost', 'bassBoost', 'midBoost', 'trebleBoost']) {
     const def = { gain: 2.0, lowBoost: 2.6, bassBoost: 3.0, midBoost: 2.0, trebleBoost: 3.4 }[name]
     const v = await api.getSetting(name, def); $(name + 'Slider').value = v; setText(name + 'Value', v)
@@ -3040,20 +4243,46 @@ async function init () {
   $('tiktokUser').value = await api.getSetting('tiktokUser', '')
   $('tiktokSignKey').value = await api.getSetting('tiktokSignKey', '')
   $('kickSlug').value = await api.getSetting('kickSlug', '')
-  const tw = await api.getSetting('twitch', {})
+  let tw = await api.getSetting('oauth.twitch', null)
+  if (!tw) {
+    tw = await api.getSetting('twitch', {})
+    if (Object.keys(tw).length) await api.saveSetting('oauth.twitch', tw)
+  }
   $('twitchLogin').value = tw.login || ''
   $('twitchClientId').value = tw.clientId || DEFAULT_TWITCH_CLIENT_ID
   $('twitchClientSecret').value = tw.clientSecret || ''
   $('twitchToken').value = tw.token || ''
   twitchRefreshToken = tw.refreshToken || ''
   setTwitchTokenState()
-  try { const rdir = await api.twitchRedirect(); if ($('docsTwitchRedirect')) $('docsTwitchRedirect').textContent = rdir } catch (_) {}
+  await restoreTwitchInteractive(true)
+  try {
+    const rdir = await api.oauthTwitchRedirect()
+    if ($('docsTwitchRedirect')) $('docsTwitchRedirect').textContent = rdir
+    if ($('oauthTwitchRedirect')) $('oauthTwitchRedirect').textContent = rdir
+  } catch (_) {}
   $('pulsoidToken').value = await api.getSetting('pulsoidToken', '')
   $('hrProvider').value = await api.getSetting('hrProvider', 'pulsoid')
   const hy = await api.getSetting('hyperate', {})
   $('hyperateKey').value = hy.apiKey || ''
   $('hyperateDevice').value = hy.deviceId || ''
+  const bridge = await api.getSetting('hrDeviceBridge', {})
+  $('hrBridgePort').value = bridge.port || 7392
+  $('hrRelayPulsoid').checked = !!bridge.relayToPulsoid
+  $('hrRelayToken').value = bridge.relayToken || ''
+  $('hrBleAutoReconnect').checked = await api.getSetting('hrBleAutoReconnect', true)
+  const gmansAutomatic = await api.getSetting('hrGmansAutomatic', { enabled: false, intervalMinutes: 5 })
+  $('hrGmansAutomatic').checked = !!gmansAutomatic.enabled
+  $('hrGmansAutoInterval').value = Math.max(1, Math.min(255, Number(gmansAutomatic.intervalMinutes) || 5))
+  $('hrGmansBackgroundWake').checked = await api.getSetting('hrGmansBackgroundWake', false)
+  const hrProfiles = await api.getSetting('hrOscProfiles', { vrcosc: true, bekoLegacy: false, heartEchoes: true, akaryu: true, akaryuMaxBpm: 200 })
+  $('hrOscVrcosc').checked = hrProfiles.vrcosc !== false
+  $('hrOscBekoLegacy').checked = hrProfiles.bekoLegacy === true
+  $('hrOscHeartEchoes').checked = hrProfiles.heartEchoes !== false
+  $('hrOscAkaryu').checked = hrProfiles.akaryu !== false
+  $('hrOscAkaryuMax').value = Math.max(40, Math.min(255, Number(hrProfiles.akaryuMaxBpm) || 200))
+  $('hrBridgeEndpoint').textContent = `http://127.0.0.1:${$('hrBridgePort').value}/heart-rate`
   syncHrFields()
+  refreshBleRememberedDevices()
   try { renderHrSessions(await api.hrSessions()) } catch (_) {}
   const dc = await api.getSetting('discord', {})
   discordAccessToken = dc.accessToken || ''
@@ -3116,13 +4345,20 @@ async function init () {
   $('weatherEnable').checked = !!wx.enabled
   if (wx.enabled && wx.city) { setPill('weatherState', true, 'on'); api.weatherStart({ city: wx.city, units: wx.units }) }
 
-  // Discord bot + OSC control restore
+  // Discord bot + OSC Apps controls restore
   $('botToken').value = await api.getSetting('discordBotToken', '')
   const bcfg = await api.getSetting('discordBot', {})
   $('botUserId').value = bcfg.userId || ''
   $('botAppId').value = bcfg.appId || ''
   $('spotiOscEnable').checked = await api.getSetting('spotiOscEnable', false)
   $('discordOscEnable').checked = await api.getSetting('discordOscEnable', false)
+  $('spotiJamUrl').value = await api.getSetting('oscApps.spotiJamUrl', '')
+  sendParam(DISCORD_OSC_METADATA, $('discordOscEnable').checked, 'bool')
+  sendParam(SPOTI_OSC_METADATA, $('spotiOscEnable').checked, 'bool')
+  sendParam('/avatar/parameters/SpotiOSC/Enabled', $('spotiOscEnable').checked, 'bool')
+  setPill('discordOscState', $('discordOscEnable').checked, $('discordOscEnable').checked ? 'waiting' : 'off', 'off')
+  setPill('spotiOscState', $('spotiOscEnable').checked, 'on', 'off')
+  if ($('spotiOscEnable').checked) refreshNowPlaying()
 
   // Friend Den + Event Scout restore
   trackedGroups = await api.getSetting('eventGroups', [])
@@ -3165,7 +4401,7 @@ async function init () {
   // Drive the existing controls so saved tokens/IDs are reused (no manual clicks).
   const fireToggle = id => { if (!$(id).checked) { $(id).checked = true; $(id).dispatchEvent(new Event('change')) } }
   if (as.autoDiscord && $('discordAppId').value) $('discordStart').click()
-  if (as.autoHeartrate && ($('pulsoidToken').value || $('hyperateDevice').value)) $('hrStart').click()
+  if (as.autoHeartrate && ($('hrProvider').value === 'device' || $('pulsoidToken').value || $('hyperateDevice').value)) $('hrStart').click()
   if (as.autoStats) fireToggle('enableStats')
   if (as.autoNet) fireToggle('enableNet')
   if (as.autoWindow) fireToggle('enableWindow')

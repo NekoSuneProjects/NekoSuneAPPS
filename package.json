@@ -1,6 +1,6 @@
 {
   "name": "nekosuneapps",
-  "version": "1.0.33",
+  "version": "1.0.34",
   "main": "main.js",
   "bin": "main.js",
   "scripts": {
@@ -90,13 +90,16 @@
   "license": "SEE LICENSE IN LICENSE",
   "description": "NekoSuneAPPS - a VRChat OSC companion: chatbox, status, social suite, component stats, heart rate, TikTok & Twitch follower counters, AudioLink and Now Playing with KAT support.",
   "dependencies": {
+    "@audd/sdk": "^1.5.11",
     "@nekosuneprojects/vrnotications": "^1.0.2",
+    "acrcloud": "^1.4.0",
     "axios": "^1.7.7",
     "discord-rpc": "^4.0.1",
     "discord.js": "^14.16.3",
     "electron-store": "^8.2.0",
     "express": "^4.21.1",
     "fft-js": "^0.0.12",
+    "jsqr": "^1.4.0",
     "mathjs": "^13.2.1",
     "node-fetch": "^3.3.2",
     "sql.js": "^1.12.0",

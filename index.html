@@ -162,10 +162,27 @@
     label { font-size:.85rem; color:var(--muted); display:block; margin-bottom:5px; }
     .card { background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:16px; box-shadow:0 10px 30px -20px #000; }
     .card h3 { margin:0 0 12px; font-size:1.05rem; display:flex; align-items:center; gap:8px; }
+    .subcard { background:var(--panel2); border:1px solid var(--border); border-radius:12px; padding:14px; }
+    .subcard h4 { margin:0 0 10px; color:var(--text); font-size:.92rem; }
+    .section-note { color:var(--muted); font-size:.74rem; line-height:1.45; }
+    .metric-row { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+    .metric-tile { background:var(--panel2); border:1px solid var(--border); border-radius:12px; padding:12px; min-width:0; }
+    .metric-tile small { display:block; color:var(--muted); font-size:.7rem; text-transform:uppercase; letter-spacing:.04em; }
+    .metric-tile b { display:block; margin-top:5px; font-size:1.35rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .hr-layout { display:grid; grid-template-columns:minmax(320px,.85fr) minmax(380px,1.15fr); gap:16px; align-items:start; }
+    .hr-device-grid { display:grid; grid-template-columns:minmax(0,1fr) 145px; gap:10px; align-items:end; }
+    .locker-layout { display:grid; grid-template-columns:minmax(280px,.8fr) minmax(380px,1.2fr); gap:16px; align-items:start; }
+    .locker-list { display:flex; flex-direction:column; gap:8px; max-height:430px; overflow:auto; }
+    .locker-avatar { width:100%; text-align:left; background:var(--panel2); border:1px solid var(--border); color:var(--text); border-radius:11px; padding:11px; cursor:pointer; }
+    .locker-avatar:hover,.locker-avatar.active { border-color:var(--accent); filter:brightness(1.08); }
+    .locker-avatar .meta { color:var(--muted); font-size:.73rem; margin-top:4px; }
+    .locker-group { display:flex; align-items:center; justify-content:space-between; gap:12px; background:var(--panel2); border:1px solid var(--border); border-radius:10px; padding:9px 11px; }
+    .locker-group input { width:auto; }
     .grid { display:grid; gap:14px; }
     .grid.cols-2 { grid-template-columns:1fr 1fr; }
     .grid.cols-3 { grid-template-columns:repeat(3,1fr); }
-    @media (max-width: 820px){ .grid.cols-2,.grid.cols-3 { grid-template-columns:1fr; } .app{ grid-template-columns:64px 1fr; } .brand h1,.navbtn span.lbl,.navlabel{display:none;} }
+    @media (max-width: 920px){ .grid.cols-2,.grid.cols-3,.hr-layout,.locker-layout { grid-template-columns:1fr; } .app{ grid-template-columns:64px 1fr; } .brand h1,.navbtn span.lbl,.navlabel{display:none;} }
+    @media (max-width: 620px){ .metric-row,.hr-device-grid { grid-template-columns:1fr; } }
     .btn { border:none; border-radius:10px; padding:9px 14px; font-weight:600; cursor:pointer; color:#fff; background:linear-gradient(135deg,var(--accent),var(--accent2)); transition:.15s; }
     .btn:hover { filter:brightness(1.1); }
     .btn.ghost { background:var(--panel2); color:var(--text); border:1px solid var(--border); }
@@ -214,6 +231,7 @@
       <button class="navbtn" data-tab="groups"><span class="ico">👥</span><span class="lbl">Groups</span></button>
       <button class="navbtn" data-tab="content"><span class="ico">🌐</span><span class="lbl">Content</span></button>
       <button class="navbtn" data-tab="avatars"><span class="ico">🧍</span><span class="lbl">Avatars</span></button>
+      <button class="navbtn" data-tab="avatarlocker"><span class="ico">🔐</span><span class="lbl">Avatar Locker</span></button>
       <button class="navbtn" data-tab="inventory"><span class="ico">🎒</span><span class="lbl">Inventory</span></button>
       <button class="navbtn" data-tab="messenger"><span class="ico">✉️</span><span class="lbl">Messenger</span></button>
       <button class="navbtn" data-tab="search"><span class="ico">🔍</span><span class="lbl">Search</span></button>
@@ -221,10 +239,11 @@
       <button class="navbtn" data-tab="notify"><span class="ico">🔔</span><span class="lbl">Notify</span></button>
       <button class="navbtn" data-tab="history"><span class="ico">📜</span><span class="lbl">History</span></button>
       <button class="navbtn" data-tab="weather"><span class="ico">🌦</span><span class="lbl">Weather</span></button>
-      <button class="navbtn" data-tab="osccontrol"><span class="ico">🎛</span><span class="lbl">OSC Control</span></button>
+      <button class="navbtn" data-tab="oscapps"><span class="ico">🔌</span><span class="lbl">OSC Apps</span></button>
       <button class="navbtn" data-tab="vrctools"><span class="ico">🧰</span><span class="lbl">VRChat Tools</span></button>
       <div class="navlabel">Social</div>
       <button class="navbtn" data-tab="live"><span class="ico">📡</span><span class="lbl">Live</span></button>
+      <button class="navbtn" data-tab="oauth"><span class="ico">🔑</span><span class="lbl">OAuth Accounts</span></button>
       <button class="navbtn" data-tab="discord"><span class="ico">💜</span><span class="lbl">Discord</span></button>
       <div class="navlabel">General</div>
       <button class="navbtn" data-tab="stats"><span class="ico">📊</span><span class="lbl">Stats</span></button>
@@ -443,15 +462,8 @@
           </div>
           <div class="card">
             <h3>🟣 Twitch <span class="pill off" id="twitchState">offline</span></h3>
-            <label>Channel login</label><input type="text" id="twitchLogin" placeholder="channel" />
-            <label style="margin-top:8px">Client ID</label><input type="password" id="twitchClientId" placeholder="client id" autocomplete="off" />
-            <label style="margin-top:8px">Client Secret</label><input type="password" id="twitchClientSecret" placeholder="client secret" />
-            <div class="row" style="margin-top:8px">
-              <button class="btn ghost" id="twitchLogin2">🔑 Login with Twitch</button>
-              <span class="pill" id="twitchTokenState">no token</span>
-            </div>
-            <input type="hidden" id="twitchToken" />
-            <div class="muted" style="font-size:.72rem; margin-top:6px">First time? Register the OAuth redirect URL — see <b>Docs / Setup</b>.</div>
+            <div class="subcard"><div class="muted" id="twitchLiveAccount">No Twitch OAuth account configured.</div></div>
+            <button class="btn ghost" id="twitchOpenOAuth" style="margin-top:8px">OAuth account settings</button>
             <div class="stat-big" id="twitchFollowers">—</div><div class="muted">followers</div>
             <div class="row" style="margin-top:10px"><button class="btn" id="twitchConnect">Start</button><button class="btn ghost" id="twitchDisconnect">Stop</button></div>
           </div>
@@ -470,6 +482,38 @@
             <button class="btn" id="ttsSpeak">Speak</button>
           </div>
           <div class="muted" id="ttsStatus" style="margin-top:8px"></div>
+        </div>
+      </section>
+
+      <!-- OAUTH ACCOUNTS -->
+      <section id="oauth" class="tabpanel">
+        <div class="card">
+          <h3>OAuth Accounts</h3>
+          <div class="section-note">One home for external account authorization. Live counters, OSC apps, and future integrations reuse these saved accounts instead of storing duplicate client IDs, secrets, and tokens.</div>
+        </div>
+        <div class="grid cols-2">
+          <div class="card">
+            <h3>🟣 Twitch <span class="pill" id="twitchTokenState">no token</span></h3>
+            <label>Channel login</label><input type="text" id="twitchLogin" placeholder="channel" />
+            <label style="margin-top:8px">Application Client ID</label><input type="password" id="twitchClientId" placeholder="client id" autocomplete="off" />
+            <label style="margin-top:8px">Client Secret <span class="muted">(optional, enables refresh tokens)</span></label><input type="password" id="twitchClientSecret" placeholder="client secret" autocomplete="off" />
+            <input type="hidden" id="twitchToken" />
+            <div class="subcard" style="margin-top:10px">
+              <div class="section-note"><b>Permissions:</b> follower totals, chat read, and channel reward redemptions.</div>
+              <div class="section-note" style="margin-top:5px"><b>Redirect:</b> <code id="oauthTwitchRedirect">http://localhost:3737/oauth2/twitch/callback</code></div>
+            </div>
+            <div class="row" style="margin-top:10px;flex-wrap:wrap">
+              <button class="btn" id="twitchLogin2">Login with Twitch</button>
+              <button class="btn ghost" id="twitchOAuthSave">Save application</button>
+              <button class="btn danger" id="twitchOAuthForget">Forget token</button>
+            </div>
+            <div class="section-note" id="oauthTwitchAccount" style="margin-top:8px">Not configured</div>
+          </div>
+          <div class="card">
+            <h3>Adding more OAuth providers</h3>
+            <div class="section-note">This page is ready for more provider cards. Each provider should keep its authorization implementation under <code>modules/oauth/providers/</code> and expose one shared saved account to the features that need it.</div>
+            <div class="subcard" style="margin-top:10px"><div class="section-note">OAuth callbacks use loopback-only URLs while login is active. Credentials remain in local AppData and are not included in builds or source control.</div></div>
+          </div>
         </div>
       </section>
 
@@ -602,23 +646,149 @@
       <section id="heartrate" class="tabpanel">
         <div class="card">
           <h3>❤️ Heart rate <span class="pill off" id="hrState">offline</span></h3>
+          <div class="hr-layout">
+          <div class="subcard">
+          <h4>Monitoring source</h4>
           <label>Provider</label>
           <select id="hrProvider">
             <option value="pulsoid">Pulsoid</option>
             <option value="hyperate">HypeRate.io</option>
+            <option value="device">Other device / local bridge</option>
           </select>
-          <div id="hrPulsoidFields" style="margin-top:8px">
-            <label>Pulsoid access token</label><input type="password" id="pulsoidToken" placeholder="token" />
+          <div id="hrPulsoidFields" class="subcard" style="margin-top:10px">
+          <h4>Pulsoid read access</h4>
+          <div>
+            <button class="btn ghost" id="hrPulsoidAuthorize" type="button">Authorize Pulsoid read access</button>
+            <div class="muted" id="hrPulsoidAuthHint" style="font-size:.72rem;margin-top:4px">Authorizes only <code>data:heart_rate:read</code>. This token is never used for device posting.</div>
           </div>
-          <div id="hrHyperateFields" style="margin-top:8px; display:none">
+          <div style="margin-top:8px">
+            <label>Pulsoid read token</label><input type="password" id="pulsoidToken" placeholder="token with data:heart_rate:read" />
+          </div>
+          </div>
+          <div id="hrHyperateFields" class="subcard" style="margin-top:10px; display:none">
+            <h4>HypeRate connection</h4>
             <label>HypeRate API key</label><input type="password" id="hyperateKey" placeholder="api key" />
             <label style="margin-top:8px">HypeRate device / session ID</label><input type="text" id="hyperateDevice" placeholder="e.g. abc123 (from hyperate.io/abc123)" />
           </div>
-          <div class="row" style="margin-top:8px"><button class="btn" id="hrStart">Start</button><button class="btn ghost" id="hrStop">Stop</button></div>
+          </div>
+          <div>
+          <div id="hrDeviceFields" class="subcard" style="display:none">
+            <h4>BLE watch and local receiver</h4>
+            <div class="muted" style="font-size:.75rem;margin-bottom:8px">Accepts BPM from any watch, phone app, Home Assistant automation, microcontroller, or device-specific bridge over a local HTTP endpoint.</div>
+            <label>Local receiver port</label><input type="number" id="hrBridgePort" min="1" max="65535" value="7392" />
+            <div class="muted" style="font-size:.72rem;margin-top:4px">Send <code>{"bpm":72}</code> to <code id="hrBridgeEndpoint">http://127.0.0.1:7392/heart-rate</code></div>
+            <hr style="border:none;border-top:1px solid var(--border);margin:12px 0" />
+            <label>Bluetooth LE watch / heart-rate monitor</label>
+            <div class="row" style="margin-top:6px">
+              <button class="btn ghost" id="hrBleScan" type="button">Scan nearby</button>
+              <button class="btn ghost" id="hrBlePaired" type="button">Paired / remembered</button>
+              <button class="btn ghost" id="hrBleCancel" type="button">Cancel scan</button>
+            </div>
+            <select id="hrBleDevices" style="margin-top:8px"><option value="">No BLE devices loaded</option></select>
+            <div class="row" style="margin-top:8px">
+              <button class="btn" id="hrBleConnect" type="button">Connect</button>
+              <button class="btn ghost" id="hrBleDisconnect" type="button">Disconnect</button>
+              <button class="btn ghost" id="hrBleDebug" type="button">BLE debug log</button>
+            </div>
+            <label class="switch" style="margin-top:8px"><input type="checkbox" id="hrBleAutoReconnect" checked> Keep monitoring and auto-reconnect in background</label>
+            <div class="row" style="margin-top:6px;align-items:center">
+              <label class="switch" style="flex:1"><input type="checkbox" id="hrGmansAutomatic"> Enable GMANS watch-side automatic heart rate</label>
+              <div style="width:150px"><label>Interval (minutes)</label><input type="number" id="hrGmansAutoInterval" min="1" max="255" value="5"></div>
+            </div>
+            <div class="muted" style="font-size:.72rem;margin-top:4px">Recovered from Goodmans Fit Pro's <code>setAutoHeartData</code> command. It lets the watch measure with its Heart Rate screen closed; firmware may save periodic readings instead of streaming every beat.</div>
+            <label class="switch" style="margin-top:6px"><input type="checkbox" id="hrGmansBackgroundWake"> Experimental GMANS screen-off handshake <span class="muted">(session-specific; off by default)</span></label>
+            <div class="muted" id="hrBleStatus" style="font-size:.72rem;margin-top:5px">Supports standard BLE Heart Rate Service devices and the proprietary GMANS WATCH protocol. Other proprietary watches need an adapter.</div>
+            <label class="switch" style="margin-top:10px"><input type="checkbox" id="hrRelayPulsoid"> Also feed readings to Pulsoid</label>
+            <div id="hrRelayFields" style="display:none">
+              <label style="margin-top:8px">Pulsoid posting token</label><input type="password" id="hrRelayToken" placeholder="separate token with data:heart_rate:write" />
+              <button class="btn ghost" id="hrPulsoidKeys" type="button" style="margin-top:6px">Get posting token</button>
+              <div class="muted" id="hrRelayTokenStatus" style="font-size:.72rem;margin-top:4px">Enter a separate manually issued token with <code>data:heart_rate:write</code>. The read OAuth token is not copied here.</div>
+            </div>
+          </div>
+          <div class="subcard" style="margin-top:10px">
+          <h4>Live reading and session</h4>
+          <div class="row"><button class="btn" id="hrStart">Start monitoring</button><button class="btn ghost" id="hrStop">Stop</button></div>
           <div class="stat-big" id="hrOut" style="margin-top:8px">—</div><div class="muted" id="hrSub">bpm</div>
           <hr style="border:none;border-top:1px solid var(--border);margin:12px 0" />
           <div class="row" style="justify-content:space-between"><label style="margin:0">Session history</label><button class="btn ghost" id="hrClear" style="padding:4px 10px;font-size:.78rem">Clear</button></div>
           <div id="hrSessions" class="muted" style="font-size:.78rem;margin-top:6px;max-height:160px;overflow:auto">No saved sessions yet.</div>
+          </div>
+          </div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Avatar OSC outputs</h3>
+          <div class="section-note" style="margin-bottom:10px">Enable only the avatar systems you use. Every enabled output receives the same reading from Pulsoid, HypeRate, BLE, or the local bridge.</div>
+          <div class="grid cols-2">
+            <div class="subcard">
+              <h4>Beko Smooth Heartbeat / VRC Heart Rate</h4>
+              <label class="switch"><input type="checkbox" id="hrOscVrcosc" checked> Current 3.x profile</label>
+              <div class="section-note"><code>VRCOSC/Heartrate/Value</code>, Connected, Average, Enabled, Beat, Normalised and digit floats.</div>
+              <label class="switch" style="margin-top:8px"><input type="checkbox" id="hrOscBekoLegacy"> Legacy 2.x <code>HR</code> integer</label>
+              <div class="section-note" style="margin-top:6px"><code>HBG/*</code> remains controlled by the asset. <a href="https://booth.pm/ja/items/5316535" target="_blank">Asset page</a></div>
+            </div>
+            <div class="subcard">
+              <h4>HeartEchoes</h4>
+              <label class="switch"><input type="checkbox" id="hrOscHeartEchoes" checked> Enable complete HeartEchoes profile</label>
+              <div class="section-note"><code>HeartEchoes_Heart_Beat</code>, <code>isHRActive</code>, <code>isHRConnected</code>, <code>isHRBeat</code>, and <code>HeartBeatToggle</code>.</div>
+            </div>
+            <div class="subcard">
+              <h4>Akaryu HeartRate OSC 3.0</h4>
+              <div class="row" style="align-items:center">
+                <label class="switch" style="flex:1"><input type="checkbox" id="hrOscAkaryu" checked> Enable profile</label>
+                <div style="width:125px"><label>Maximum BPM</label><input type="number" id="hrOscAkaryuMax" min="40" max="255" value="200"></div>
+              </div>
+              <div class="section-note"><code>hr_percent</code>, <code>hr_connected</code>, and toggled <code>hr_beat</code>. Local UI, position, rotation, scale and opacity remain avatar-controlled. <a href="https://booth.pm/ja/items/5531594" target="_blank">Asset page</a></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- AVATAR LOCKER -->
+      <section id="avatarlocker" class="tabpanel">
+        <div class="card">
+          <h3>Avatar Locker <span class="pill on" id="lockerState">secure vault</span></h3>
+          <div class="metric-row">
+            <div class="metric-tile"><small>Owned avatars</small><b id="lockerOwnedCount">0</b></div>
+            <div class="metric-tile"><small>Active unlocks</small><b id="lockerUnlockedCount">0</b></div>
+            <div class="metric-tile"><small>OSC target</small><b id="lockerOscSummary" style="font-size:1rem">127.0.0.1:9000</b></div>
+          </div>
+          <div class="row" style="margin-top:12px;flex-wrap:wrap">
+            <button class="btn" id="lockerImport">Import ownership</button>
+            <button class="btn ghost" id="lockerLegacy">Import old vault</button>
+            <button class="btn ghost" id="lockerSign">Sign template</button>
+            <button class="btn ghost" id="lockerFolder">Vault folder</button>
+            <button class="btn ghost" id="lockerRefresh">Refresh</button>
+          </div>
+          <div class="section-note" id="lockerMessage" style="margin-top:8px">Signed packages are verified before being added. Creator private keys remain in AppData.</div>
+        </div>
+        <div class="locker-layout">
+          <div class="card">
+            <h3>Owned avatars</h3>
+            <div class="locker-list" id="lockerAvatarList"><div class="section-note">No ownership packages imported.</div></div>
+          </div>
+          <div>
+            <div class="card" id="lockerDetail">
+              <h3>Unlock controls</h3>
+              <div id="lockerNoSelection" class="section-note">Select or import an avatar ownership package.</div>
+              <div id="lockerSelected" style="display:none">
+                <div class="row" style="justify-content:space-between;align-items:flex-start">
+                  <div><h3 id="lockerAvatarName" style="margin-bottom:3px"></h3><div class="section-note" id="lockerAvatarCreator"></div><div class="section-note" id="lockerAvatarId" style="word-break:break-all"></div></div>
+                  <span class="pill" id="lockerAvatarMode">locked</span>
+                </div>
+                <div class="row" style="margin-top:14px;flex-wrap:wrap"><button class="btn ghost locker-mode" data-locker-mode="locked">Lock</button><button class="btn ghost locker-mode" data-locker-mode="partial">Partial</button><button class="btn locker-mode" data-locker-mode="unlocked">Unlock all</button></div>
+                <h4 style="margin:16px 0 8px">Feature groups</h4>
+                <div id="lockerGroups" style="display:flex;flex-direction:column;gap:7px"></div>
+                <div class="row" style="margin-top:12px;flex-wrap:wrap"><button class="btn" id="lockerSendPartial">Send selected groups</button><button class="btn ghost" id="lockerExport">Export package</button></div>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Locker OSC settings</h3>
+              <div class="grid cols-2"><div><label>Host</label><input id="lockerOscHost" type="text" value="127.0.0.1"></div><div><label>Port</label><input id="lockerOscPort" type="number" min="1" max="65535" value="9000"></div></div>
+              <div class="row" style="margin-top:10px;flex-wrap:wrap"><button class="btn" id="lockerSaveOsc">Save OSC target</button><button class="btn danger" id="lockerReset">Clear vault</button></div>
+              <div class="section-note" style="margin-top:8px">Device ID: <code id="lockerDeviceId">loading</code></div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -762,15 +932,130 @@
         </div>
       </section>
 
-      <!-- OSC CONTROL -->
-      <section id="osccontrol" class="tabpanel">
+      <!-- OSC APPS -->
+      <section id="oscapps" class="tabpanel">
         <div class="card">
-          <h3>🎛 OSC Control <span class="muted" style="font-size:.72rem">(needs OSC receive enabled in Settings)</span></h3>
-          <label class="switch"><input type="checkbox" id="spotiOscEnable"> 🎵 SpotiOSC — control Spotify from VRChat avatar params</label>
-          <div class="muted" style="font-size:.72rem;margin:6px 0 10px">Bool params (trigger on true): <code>/avatar/parameters/VRCOSC/Spotify/PlayPause</code>, <code>/Next</code>, <code>/Previous</code>, <code>/Stop</code>. Uses global media keys.</div>
-          <label class="switch"><input type="checkbox" id="discordOscEnable"> 🎙 DiscordOSC — mute/deafen from VRChat avatar params</label>
-          <div class="muted" style="font-size:.72rem;margin:6px 0 4px">Bool params: <code>/avatar/parameters/VRCOSC/Discord/Mute</code>, <code>/Deafen</code> (server mute/deafen via the bot). Requires the Discord Voice Bot connected + you in a voice channel.</div>
-          <div class="muted" id="oscControlOut" style="margin-top:6px">Idle</div>
+          <h3>OSC companion apps</h3>
+          <div class="section-note">Native and managed OSC compatibility tools for VRChat avatars, media, Discord, leashes, clocks, and supported worlds.</div>
+          <div class="row" style="margin-top:10px"><div style="flex:1"><label>Screen/window used by OSCQR and ShazamOSC</label><select id="oscAppsCaptureSource"><option value="">Primary display</option></select></div><button class="btn ghost" id="oscAppsCaptureRefresh" style="margin-top:20px">Refresh sources</button></div>
+        </div>
+        <div class="grid cols-2">
+          <div class="card">
+            <h3>OSCQR <span class="pill off" id="oscQrState">off</span></h3>
+            <div class="section-note">Real-time QR detection from a screen or window you choose. Results stay local unless chatbox output is enabled.</div>
+            <div class="grid cols-2" style="margin-top:9px">
+              <div><label>Scan interval (ms)</label><input type="number" id="oscQrInterval" min="200" max="5000" step="100" value="500"></div>
+              <label class="switch" style="margin:20px 0 0"><input type="checkbox" id="oscQrChatbox"> Post detected text to chatbox</label>
+            </div>
+            <label class="switch"><input type="checkbox" id="oscQrSaveHistory" checked> Save recent codes in AppData</label>
+            <div class="row" style="margin-top:10px"><button class="btn" id="oscQrStart">Start scan</button><button class="btn ghost" id="oscQrStop">Stop</button><button class="btn ghost" id="oscQrClear">Clear history</button></div>
+            <div class="section-note" id="oscQrOut" style="margin-top:8px">Stopped</div>
+            <div class="subcard" id="oscQrHistory" style="margin-top:10px;max-height:145px;overflow:auto"><div class="section-note">No QR codes detected.</div></div>
+          </div>
+          <div class="card">
+            <h3>DiscordOSC <span class="pill off" id="discordOscState">off</span></h3>
+            <div class="section-note">Controls and monitors Discord voice through NekoSuneAPPS's Discord Voice Bot. Configure and connect the bot on the Discord page first.</div>
+            <label class="switch" style="margin-top:10px"><input type="checkbox" id="discordOscEnable"> Enable DiscordOSC parameters</label>
+            <div class="subcard" style="margin-top:10px"><div class="section-note"><code>VRCOSC/Discord/Mic</code>/<code>Mute</code> · <code>Deafen</code> · <code>Ready</code> · <code>ChannelUserCount</code> · <code>VoiceConnectionState</code></div></div>
+            <div class="section-note" id="discordOscOut" style="margin-top:8px">Waiting for Discord Voice Bot</div>
+          </div>
+          <div class="card">
+            <h3>SpotiOSC <span class="pill off" id="spotiOscState">off</span></h3>
+            <div class="section-note">Controls Spotify or another Windows media session and publishes playback state to OSC.</div>
+            <label class="switch" style="margin-top:10px"><input type="checkbox" id="spotiOscEnable"> Enable SpotiOSC parameters</label>
+            <div class="section-note" style="margin:6px 0 10px"><code>VRCOSC/Media/Play</code> · <code>Skip</code>/<code>Next</code> · <code>Previous</code><br><code>SpotiOSC/Pause</code> · <code>NextTrack</code> · <code>PreviousTrack</code> · <code>IsPlaying</code> · playback position</div>
+            <label style="margin-top:8px">Spotify Jam invite link</label><input type="text" id="spotiJamUrl" placeholder="https://spotify.link/..." />
+            <div class="row" style="margin-top:8px"><button class="btn" id="spotiJamJoin">Open / join Jam</button><button class="btn ghost" id="spotiJamCreate">Create Jam in Spotify</button></div>
+            <div class="section-note" id="spotiOscOut" style="margin-top:8px">Idle</div>
+          </div>
+          <div class="card">
+            <h3>ShazamOSC <span class="pill off" id="shazamOscState">ready</span></h3>
+            <div class="section-note">Recognizes desktop audio, sends bass and match parameters, saves results, and can post matches to the chatbox.</div>
+            <label style="margin-top:10px">Recognition provider</label>
+            <select id="shazamProvider"><option value="auto">Automatic fallback</option><option value="audd">AudD</option><option value="acrcloud">ACRCloud</option><option value="node-shazam">node-shazam (optional external)</option></select>
+            <label style="margin-top:8px">AudD API token</label><input type="password" id="shazamToken" autocomplete="off" placeholder="Your token from dashboard.audd.io" />
+            <details style="margin-top:8px"><summary class="section-note" style="cursor:pointer">ACRCloud fallback credentials</summary>
+              <label style="margin-top:8px">Host</label><input type="text" id="shazamAcrHost" placeholder="identify-eu-west-1.acrcloud.com" />
+              <div class="grid cols-2" style="margin-top:7px"><div><label>Access key</label><input type="password" id="shazamAcrKey" autocomplete="off" /></div><div><label>Access secret</label><input type="password" id="shazamAcrSecret" autocomplete="off" /></div></div>
+            </details>
+            <div class="section-note" id="shazamProviderState" style="margin-top:7px">Checking providers…</div>
+            <div class="grid cols-2" style="margin-top:9px">
+              <div><label>Live interval (seconds)</label><input type="number" id="shazamLiveInterval" min="15" max="300" value="25"></div>
+              <label class="switch" style="margin:20px 0 0"><input type="checkbox" id="shazamChatbox"> Post matches to chatbox</label>
+            </div>
+            <label class="switch"><input type="checkbox" id="shazamLive"> Live listening</label>
+            <div class="row" style="margin-top:10px"><button class="btn" id="shazamRecognize">Recognize now</button><button class="btn ghost" id="shazamStop">Stop audio share</button><button class="btn ghost" id="shazamDashboard">Get token</button></div>
+            <div class="section-note" id="shazamOut" style="margin-top:8px">Ready</div>
+            <div class="subcard" id="shazamHistory" style="margin-top:10px;max-height:145px;overflow:auto"><div class="section-note">No recognized songs yet.</div></div>
+          </div>
+          <div class="card">
+            <h3>Rusk Laserdome OSC <span class="pill off" id="ruskState">off</span></h3>
+            <div class="section-note">Native MIT-licensed compatibility for Laserdome 1/2 and related pickup parameters. It watches new VRChat log lines and sends avatar OSC parameters.</div>
+            <label style="margin-top:10px">VRChat log folder</label><input type="text" id="ruskLogDirectory" />
+            <label class="switch" style="margin-top:8px"><input type="checkbox" id="ruskScanExisting"> Scan the current log from the beginning</label>
+            <h4 style="margin:12px 0 7px">Parameters</h4>
+            <div class="grid cols-2" id="ruskFeatures">
+              <label class="switch"><input type="checkbox" data-rusk-feature="dead" checked> LD/Dead</label>
+              <label class="switch"><input type="checkbox" data-rusk-feature="team" checked> LD/Team</label>
+              <label class="switch"><input type="checkbox" data-rusk-feature="pistol" checked> IR/Pistol</label>
+              <label class="switch"><input type="checkbox" data-rusk-feature="fire" checked> IR/Fire</label>
+              <label class="switch"><input type="checkbox" data-rusk-feature="weld" checked> IR/Weld</label>
+              <label class="switch"><input type="checkbox" data-rusk-feature="duoRight" checked> Duo/Right</label>
+              <label class="switch"><input type="checkbox" data-rusk-feature="duoLeft" checked> Duo/Left</label>
+              <label class="switch"><input type="checkbox" data-rusk-feature="aviWeapon" checked> Avi/Weapon</label>
+              <label class="switch"><input type="checkbox" data-rusk-feature="uasrfWeapon" checked> UASRF/Weapon</label>
+            </div>
+            <div class="row" style="margin-top:10px"><button class="btn" id="ruskStart">Start</button><button class="btn ghost" id="ruskStop">Stop</button></div>
+            <div class="section-note" id="ruskOut" style="margin-top:8px">Enable VRChat debug logging before starting.</div>
+            <div class="subcard" style="margin-top:10px"><div id="ruskValues" class="section-note">Dead: false · Team: 0 · no pickups held</div></div>
+          </div>
+          <div class="card">
+            <h3>Twitch Interactive <span class="pill off" id="twitchInteractiveState">off</span></h3>
+            <div class="section-note">Native command and channel-reward support for Fooma's Twitch to VRChat Interaction System. Authorize Twitch on the OAuth Accounts page first; this keeps running while you use other pages.</div>
+            <div class="grid cols-2" style="margin-top:9px">
+              <div><label>Avatar integer parameter</label><input type="text" id="twitchInteractiveParameter" value="twitch" placeholder="twitch"></div>
+              <div><label>Reset pulse (ms)</label><input type="number" id="twitchInteractivePulse" min="100" max="10000" step="50" value="750"></div>
+            </div>
+            <label style="margin-top:9px">Command and reward mappings</label>
+            <textarea id="twitchInteractiveMappings" rows="7" spellcheck="false" placeholder="command | !bonk | 1&#10;reward | Throw Tomato | 2"></textarea>
+            <div class="section-note" style="margin-top:6px">Format: <code>command | !name | value</code> or <code>reward | exact title or reward ID | value</code>. Values 1–255 must match your purchased Unity setup; the parameter resets to 0 after each trigger.</div>
+            <div class="row" style="margin-top:10px"><button class="btn" id="twitchInteractiveStart">Start</button><button class="btn ghost" id="twitchInteractiveStop">Stop</button></div>
+            <div class="section-note" id="twitchInteractiveOut" style="margin-top:8px">Stopped</div>
+          </div>
+          <div class="card">
+            <h3>OSC Realistic Leash <span class="pill off" id="realLeashState">off</span></h3>
+            <div class="section-note">Native compatibility for YimuQr's BOOTH avatar system. Receives its avatar parameters and sends VRChat movement inputs; the paid product itself is not included.</div>
+            <label class="switch" style="margin-top:10px"><input type="checkbox" id="realLeashEnable"> Enable Realistic Leash input</label>
+            <div class="grid cols-2" style="margin-top:9px">
+              <div><label>Pull strength</label><input type="number" id="realLeashStrength" min="0.1" max="1" step="0.1" value="1"></div>
+              <label class="switch" style="margin:20px 0 0"><input type="checkbox" id="realLeashRun"> Run when pulled</label>
+            </div>
+            <label style="margin-top:9px">Unknown JumpQ action</label>
+            <select id="realLeashJumpQ"><option value="ignore">Ignore (recommended)</option><option value="jump">Jump only</option><option value="forward">Jump forward</option><option value="right">Jump right</option></select>
+            <div class="subcard" style="margin-top:10px">
+              <div class="section-note"><b>Directions:</b> MOF forward · MOB back · MOL left · MOR right · MOFL/MOFR/MOBL/MOBR diagonals · STOP releases movement.</div>
+              <div class="section-note" style="margin-top:6px"><b>Jump:</b> Jump = vertical jump · JumpS = jump back · JumpA = jump left. JumpQ stays ignored unless configured above.</div>
+            </div>
+            <div class="section-note" id="realLeashOut" style="margin-top:8px">Stopped</div>
+          </div>
+          <div class="card">
+            <h3>OSC Digital Clock <span class="pill off" id="oscClockState">off</span></h3>
+            <div class="section-note">Sends the five float parameters shown by the OSCClock avatar setup. Values use its original five-decimal <code>value / 127</code> encoding.</div>
+            <label class="switch" style="margin-top:10px"><input type="checkbox" id="oscClockEnable"> Send clock in the background</label>
+            <div class="grid cols-2" style="margin-top:9px">
+              <div><label>Update every (seconds)</label><input type="number" id="oscClockInterval" min="1" max="300" step="1" value="10"></div>
+              <label class="switch" style="margin:20px 0 0"><input type="checkbox" id="oscClockLegacyDow" checked> Also send legacy <code>DoWF</code></label>
+            </div>
+            <div class="subcard" style="margin-top:10px">
+              <div class="section-note"><code>OSCClock/MonthF</code> · <code>DayF</code> · <code>HourF</code> · <code>MinuteF</code> · <code>DOWF</code></div>
+              <div class="section-note" style="margin-top:6px">24-hour local time. Day of week is Sunday 0 through Saturday 6.</div>
+            </div>
+            <label class="switch" style="margin-top:10px"><input type="checkbox" id="oscClockVrcosc" checked> Send normalized <code>VRCOSC/Clock/Hours</code> and <code>Minutes</code></label>
+            <label class="switch"><input type="checkbox" id="oscClock24Hour"> Use 24-hour normalization (off matches VRCOSC's 12-hour default)</label>
+            <label class="switch"><input type="checkbox" id="oscClockDateTimeInts" checked> Send raw <code>DateTimeHour/Minute/Day/Month</code> integers</label>
+            <div class="row" style="margin-top:10px"><button class="btn ghost" id="oscClockSync">Sync now</button></div>
+            <div class="section-note" id="oscClockOut" style="margin-top:8px">Not sending</div>
+          </div>
         </div>
       </section>
 
@@ -1195,8 +1480,8 @@
           <div class="muted" style="line-height:1.8">
             1. Create an app at <a href="https://dev.twitch.tv/console" target="_blank">dev.twitch.tv/console</a> and copy its Client ID.<br>
             2. Add the Twitch redirect URL above to the app's <b>OAuth Redirect URLs</b>.<br>
-            3. Copy the <b>Client ID</b> into the Twitch card. <b>Client Secret is optional</b> — leave it blank for a quick login (token expires in ~4h), or add it to get auto-refreshing tokens.<br>
-            4. Press <b>🔑 Login with Twitch</b>, approve, done.<br>
+            3. Copy the <b>Client ID</b> into OAuth Accounts → Twitch. <b>Client Secret is optional</b> — leave it blank for a quick login, or add it to get auto-refreshing tokens.<br>
+            4. Press <b>🔑 Login with Twitch</b>, then approve follower, chat-read, and channel-reward permissions.<br>
             5. Enter your <b>channel login</b> and press <b>Start</b>.
           </div>
         </div>
@@ -1212,7 +1497,7 @@
         <div class="card">
           <h3>❤️ Pulsoid heart rate</h3>
           <div class="muted" style="line-height:1.8">
-            Get a token at <a href="https://pulsoid.net/ui/keys" target="_blank">pulsoid.net/ui/keys</a> with scope <code>data:heart_rate:read</code>, paste it in Stats → Heart rate, press Start. The line shows <code>bpm | avg | max | min</code>.
+            Authorize Pulsoid from the Heart Rate page, then press Start monitoring. The line shows <code>bpm | avg | max | min</code>.
           </div>
         </div>
 

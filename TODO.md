@@ -87,7 +87,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 ## 👻 Terrors of Nowhere
 
 - [x] **Read ToN directly from the VRChat output log (ToNSaveManager now OPTIONAL).**
-  `modules/integrations/tonLogReader.js` tails the newest `output_log_*.txt` and parses
+  `modules/integrations/ton/tonLogReader.js` tails the newest `output_log_*.txt` and parses
   save codes (`[START]…[END]`), round type + map (`This round is taking place at …`),
   terror IDs (`Killers have been set - …`), deaths (`You died.`), round end
   (`Verified Round End`), stuns and damage. Runs alongside the WS; drives live state when

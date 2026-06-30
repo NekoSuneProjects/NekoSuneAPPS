@@ -6,9 +6,9 @@ A standalone **VRChat OSC companion** by **NekoSuneVR** — chatbox, heart rate,
 playing, Discord, world radar & more, in one polished themed app.
 
 > Chatbox · Status · AudioLink · Now Playing (KAT) · Component & Network stats ·
-> Heart rate (Pulsoid / HypeRate) · TikTok / Twitch / Kick counters · TikTok TTS ·
+> Heart rate (Pulsoid / HypeRate / local device bridge) · Avatar Locker · TikTok / Twitch / Kick counters · TikTok TTS ·
 > IntelliChat · Discord Rich Presence (world + Join button) · Discord Voice Bot ·
-> VRChat auto-status · Radar · Weather · SpotiOSC · DiscordOSC · Soundpad ·
+> VRChat auto-status · Radar · Weather · OSCQR · SpotiOSC · DiscordOSC · ShazamOSC · Soundpad ·
 > Stopwatch · Calculator · Auto-AFK · OBS overlay.
 
 ---
@@ -23,13 +23,16 @@ playing, Discord, world radar & more, in one polished themed app.
 | 🎵 **Now Playing** | Windows media + KAT + chatbox posting | Windows |
 | 🎬 **TikTok followers** | Live followers / viewers / new follows | creator must be **live** |
 | 🟣 **Twitch followers** | Follower total (Helix) | Client ID + OAuth token |
+| 🔑 **OAuth Accounts** | Shared provider applications, redirects and tokens | your provider app credentials |
 | 🟢 **Kick followers** | Follower total + live state | channel slug |
 | 🗣 **TikTok TTS** | Voice synthesis via gesserit.co | — |
 | ✨ **IntelliChat** | AI rewrite/spellcheck/shorten/translate | OpenAI-compatible key |
 | 🖥 **Component stats** | CPU/GPU/RAM load & temps | — |
 | 🌐 **Network stats** | Up/down + ping | — |
 | 🪟 **Window activity** | Active app/window title | — |
-| ❤️ **Heart rate** | Live BPM + session history | **Pulsoid** token or **HypeRate** key |
+| ❤️ **Heart rate** | Live BPM + session history; generic local input for unsupported devices | **Pulsoid** token, **HypeRate** key, or a local bridge |
+| 🔐 **Avatar Locker** | Verify signed ownership packages and send avatar feature locks over OSC | A signed `.nalown` package |
+| 🔌 **OSC Apps** | Native OSCQR, DiscordOSC, SpotiOSC, Twitch interactions, song recognition, Realistic Leash, Rusk Laserdome, and Digital Clock | OSC receive; optional Twitch, Discord Bot, or recognition credentials |
 | 💜 **Discord Rich Presence** | World + ❤️ BPM + 🎵 song, with a **Join World** button | Discord App ID |
 | 🤖 **Discord Voice Bot** | Read voice state + server mute/deafen via OSC (no allowlist) | your own bot token |
 | 🦊 **VRChat auto-status** | Detect 🟢/🔵/🟠/🔴 from your account | VRChat login (2FA ok) |
@@ -37,8 +40,6 @@ playing, Discord, world radar & more, in one polished themed app.
 | 🧰 **VRChat tools** | YouTube fix (yt-dlp), **VRCVideoCacher** install/run, cache tools | Windows |
 | 📡 **Radar** | Live list of players in your instance | reads VRChat log |
 | 🌦 **Weather** | Current conditions as `{weather}` | a city (Open-Meteo, no key) |
-| 🎵 **SpotiOSC** | Control Spotify from VRChat avatar params | OSC receive on |
-| 🎙 **DiscordOSC** | Mute/deafen from VRChat avatar params | Discord Voice Bot |
 | 🔊 **Soundpad** | Trigger Leppsoft Soundpad sounds | Soundpad running |
 | ⏱ **Stopwatch / 🧮 Calculator / 💤 Auto-AFK** | Handy tools, post to chatbox | — |
 | 🔋 **VR gear battery** | HMD/controller battery | native OpenVR helper (see below) |
@@ -65,17 +66,54 @@ The sidebar is grouped into **VRChat**, **Tools**, and **General**.
 ## 🔑 Getting tokens & accounts
 
 - **Pulsoid**: token at [pulsoid.net keys](https://pulsoid.net/ui/keys) with `data:heart_rate:read`.
+  The Heart Rate page uses Pulsoid's redirect-free Device Authorization Flow for
+  `data:heart_rate:read` only. Device posting uses a separate manually issued token
+  with `data:heart_rate:write`; the two token fields are never copied or combined.
+  The app client ID and read scope are configured in
+  `modules/heartrate/providers/pulsoid/pulsoid.config.json`.
 - **HypeRate**: request an API key from HypeRate, then enter it + your `hyperate.io/<id>` device ID.
+- **Unsupported devices**: select **Other device / local bridge**, start the receiver,
+  then send JSON such as `{"bpm":72}` to `http://127.0.0.1:7392/heart-rate`.
+  Pulsoid-compatible `{"data":{"heart_rate":72}}` payloads and `?bpm=72` requests
+  also work. Enable **Also feed readings to Pulsoid** and use a token with
+  `data:heart_rate:write` if you want the same readings available in Pulsoid.
+- **Bluetooth LE devices**: under **Other device / local bridge**, use **Scan nearby**
+  to discover watches and monitors or **Paired / remembered** to reload devices
+  previously granted to NekoSuneAPPS. Devices implementing the standard BLE Heart
+  Rate Service connect directly. **GMANS WATCH** is also supported through its built-in
+  proprietary protocol adapter; other proprietary watches require their own adapter.
+  The last watch is cached in AppData and automatically reconnects while the app is on
+  another page or hidden in the tray. A 45-second no-reading watchdog restarts stale
+  GATT sessions, while live GMANS optical frames keep a measuring session alive even
+  before BPM is available. Use **BLE debug log** for local scan/connect/frame diagnostics.
+    An experimental screen-off handshake replay is available but disabled by default:
+    captures show that its payload changes between sessions, so it is not a reliable
+    substitute for opening the watch's Heart Rate screen. For GMANS firmware, enable
+    **watch-side automatic heart rate** instead; this uses the official app's scheduling
+    command and works with the watch screen closed. Automatic samples may be periodic or
+    stored for history rather than streamed continuously.
+- **Beko Smooth Heartbeat 3.x / VRC Heart Rate**: leave its OSC profile enabled and the
+  app sends `VRCOSC/Heartrate/Value` plus connection, average, beat, normalized and digit
+  fields from any selected provider. Only enable the legacy `HR` option for a 2.x avatar.
+- **Akaryu HeartRate OSC 3.0**: sends `hr_percent`, `hr_connected`, and `hr_beat`; its
+  maximum BPM is configurable and defaults to the original `hr-osc` value of 200.
 - **VRChat account** (auto-status / Radar): log in on the **VRChat** tab. Handles email &
   authenticator 2FA. Your **password is never stored** — only the session cookie, locally.
 - **Discord (Rich Presence)**: an Application (Client) ID from the
   [Discord Developer Portal](https://discord.com/developers/applications). A default ID is preset.
 - **Discord (Voice Bot)**: create a **bot**, copy its **token**, use the in-app **Invite link**
   to add it to **your own private server**, and enter your Discord **user ID**. It stays invisible.
+- **ShazamOSC song recognition**: enter your own token from the
+  [AudD dashboard](https://dashboard.audd.io/). Audio is captured only from the screen/system
+  audio source you explicitly share, then a short clip is sent to the selected provider.
+  ACRCloud is also available with a project host, access key and access secret. Automatic
+  mode tries configured providers in order; optional GPL `node-shazam` is detected but
+  never bundled by NekoSuneAPPS.
 - **TikTok**: enter the creator's `@username` while they are **live** (add a free
   [Euler Stream](https://www.eulerstream.com) key if you hit `SignatureError`).
-- **Twitch**: Client ID from the [Twitch Dev Console](https://dev.twitch.tv/console) + a User
-  OAuth token with `moderator:read:followers`.
+- **Twitch**: Client ID from the [Twitch Dev Console](https://dev.twitch.tv/console), then
+  authorize it once from **OAuth Accounts**. It requests `moderator:read:followers`, `chat:read`, and
+  `channel:read:redemptions` for counters and Twitch Interactive.
 - **Kick**: your channel slug (after `kick.com/`).
 - **OpenAI / compatible**: an API key from your provider.
 
@@ -87,8 +125,17 @@ Enable **OSC receive** in Settings, then drive these VRChat **avatar parameters*
 
 ```
 SpotiOSC   /avatar/parameters/VRCOSC/Spotify/PlayPause   (also /Next /Previous /Stop)
-DiscordOSC /avatar/parameters/VRCOSC/Discord/Mute        (also /Deafen)
+Media      /avatar/parameters/VRCOSC/Media/Play          (also /Skip /Next /Previous)
+DiscordOSC /avatar/parameters/VRCOSC/Discord/Mic         (also /Mute /Deafen)
+Clock      /avatar/parameters/VRCOSC/Clock/Hours         (also /Minutes, Float 0–1)
+Date/time  /avatar/parameters/DateTimeHour               (also Minute /Day /Month, Int)
+OSCQR      /avatar/parameters/OSCQR/StartRecording       (also ReadQRCode; outputs QRCodeFound/Error)
+ShazamOSC  /avatar/parameters/ShazamOSC/Recognize        (also LiveListening; outputs Recognized/Listening/Error/OSCTrackID/BassLevel)
 ```
+
+When DiscordOSC is enabled, the app also publishes
+`VRCOSC/Metadata/Modules/YUCP.VIRA.yeusepesmodules.discordosc` as a Bool.
+OSCQR, SpotiOSC, and ShazamOSC publish equivalent lowercase module metadata flags.
 
 ---
 
@@ -110,10 +157,16 @@ NekoSuneAPPS/
    │  ├─ world/       # world + radar (log tailer)
    │  ├─ api/         # VRChat API (auto status)
    │  └─ vr/          # vrBattery (extension point)
-   ├─ heartrate/      # pulsoidModule, hyperateModule, hrAnalytics
+   ├─ heartrate/      # providers, BLE/device bridges, analytics and OSC profiles
    ├─ weather/        # Open-Meteo
-   ├─ integrations/   # discord (RPC), discordBot, soundpad, twitchOauth
-   ├─ live/           # tiktok, twitch, kick, tiktokTts
+   ├─ integrations/   # grouped external/service integrations (see its README)
+   │  ├─ osc/         # QR, recognition, clocks, leashes and Laserdome
+   │  ├─ ton/         # all ToN modules, data, saves and tonOsc
+   │  ├─ discord/     # Rich Presence, RPC and DiscordOSC bot
+   │  ├─ media/       # Soundpad and Photo Relay
+   │  └─ maintenance/ # updater and Windows notifications
+   ├─ oauth/          # shared OAuth provider implementations
+   ├─ live/           # TikTok, Kick, TTS and consolidated Twitch runtime features
    ├─ media/ stats/ activity/ ai/ overlay/
 ```
 
@@ -145,6 +198,19 @@ CI builds all three OSes on every push via
 publishes a GitHub Release with the installers attached. The app ships **no native
 node-gyp modules**, so Windows/macOS/Linux all build without a C++/Python toolchain
 (window-activity uses the OS's own CLI: PowerShell / `osascript` / `xdotool`).
+
+---
+
+## Contributors
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
 
 ---
 

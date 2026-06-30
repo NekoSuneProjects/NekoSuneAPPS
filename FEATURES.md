@@ -26,16 +26,42 @@ program.**
   (🟢/🔵/🟠/🔴) and applies it automatically.
 - **Radar** — live list of players in your current instance.
 - **Weather** — current conditions for a city you pick (`{weather}` token).
-- **SpotiOSC** — control Spotify (play/pause/next/previous/stop) from VRChat avatar params.
-- **DiscordOSC** — mute / deafen yourself from VRChat avatar params (via the bot).
 - **VRChat Tools** — external, file-based maintenance (inspired by VRCNext, no game
   injection): **YouTube fix** (updates `yt-dlp` so world video players work), **cache
   size / clear**, and quick **open-folder** shortcuts.
 - **VR gear battery** — extension point for HMD/controller battery.
 - **OBS overlay** — a now-playing browser source.
+- **Avatar Locker** — imports Ed25519-signed `.nalown` ownership packages into an
+  encrypted local vault and sends Locked, Partial, Unlocked, avatar hashes, and selected
+  feature groups to VRChat over OSC. Existing NekoAvatarLocker desktop vaults can be
+  migrated from AppData; creator templates can be signed without bundling private keys.
+- **OSC Apps** — SpotiOSC media controls and DiscordOSC voice controls, native Rusk
+  Laserdome log-to-OSC compatibility, and Twitch command/reward mapping for Fooma's
+  Twitch to VRChat Interaction System.
+  Includes native OSC Realistic Leash direction, stop, and shake-jump parameter handling,
+  with configurable pull strength, running, and safe handling for undocumented `JumpQ`.
+  Also includes an OSC Digital Clock sender compatible with the `OSCClock/*F` float
+  parameters, including the original normalized `/127` encoding.
+  Native **OSCQR** scans a user-selected screen for QR codes and keeps optional local
+  history. **ShazamOSC-style song recognition** captures a short user-approved desktop
+  audio clip, identifies it through AudD or ACRCloud credentials with optional external
+  node-shazam fallback, publishes bass/match OSC fields, saves recent songs, and can post
+  matches to the chatbox. SpotiOSC also publishes
+  playback state and offers Spotify Jam link helpers; DiscordOSC publishes live bot voice state.
 
 ### Heart rate
+- **Avatar OSC profiles** — native Beko Smooth Heartbeat 3.x / VRC Heart Rate and Akaryu
+  HeartRate OSC 3.0 output, optional Beko 2.x `HR`, HeartEchoes, connection state, and beats.
 - **Pulsoid** and **HypeRate.io** providers (live BPM, avg/min/max).
+- **Other device / local bridge** input accepts BPM from unsupported watches,
+  phone apps, Home Assistant, microcontrollers, and custom adapters, with optional
+  forwarding to Pulsoid.
+- **Bluetooth LE scanner** discovers nearby devices, reconnects devices previously
+  granted to the app, and reads monitors implementing the standard Bluetooth Heart
+  Rate Service. Pairing PIN and confirmation prompts are supported. The proprietary
+  Goodmans 364134 / **GMANS WATCH** protocol is supported through a built-in adapter.
+  Granted device metadata is cached in AppData, with background monitoring, automatic
+  reconnect, stalled-reading recovery, and a local rotating BLE diagnostic log.
 - **Session history** — past sessions saved locally (duration, avg, min, max).
 
 ### Live / streaming
@@ -43,6 +69,8 @@ program.**
 - **TikTok TTS** via gesserit.co.
 
 ### Integrations & tools
+- **OAuth Accounts** — one sidebar page owns Twitch application credentials, redirect
+  setup and tokens for follower tracking and Twitch Interactive, with room for more providers.
 - **Discord Voice Bot** — your own bot (invisible/offline) reads voice state and can
   server-mute/deafen you over OSC. The supported alternative to Discord's allowlist-only
   voice scope.

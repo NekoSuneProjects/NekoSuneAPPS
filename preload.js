@@ -22,11 +22,45 @@ window.electronAPI = {
   netStart: opts => ipcRenderer.invoke('net:start', opts),
   netStop: () => ipcRenderer.invoke('net:stop'),
 
-  // heart rate (cfg: { provider, token, apiKey, deviceId })
+  // heart rate (Pulsoid, HypeRate, or generic local device bridge)
   hrStart: cfg => ipcRenderer.invoke('hr:start', cfg),
   hrStop: () => ipcRenderer.invoke('hr:stop'),
   hrSessions: () => ipcRenderer.invoke('hr:sessions'),
   hrClearSessions: () => ipcRenderer.invoke('hr:clearSessions'),
+  hrPulsoidAuthorize: () => ipcRenderer.invoke('hr:pulsoidAuthorize'),
+  hrPulsoidKeys: () => ipcRenderer.invoke('hr:pulsoidKeys'),
+  hrBleSelect: deviceId => ipcRenderer.invoke('hr:bleSelect', deviceId),
+  hrBleCancel: () => ipcRenderer.invoke('hr:bleCancel'),
+  hrBlePrepareReconnect: target => ipcRenderer.send('hr:blePrepareReconnect', target),
+  hrBleCached: () => ipcRenderer.invoke('hr:bleCached'),
+  hrBleDebug: (eventName, details) => ipcRenderer.invoke('hr:bleDebug', eventName, details),
+  hrBleOpenDebug: () => ipcRenderer.invoke('hr:bleOpenDebug'),
+  hrBlePairingResponse: response => ipcRenderer.invoke('hr:blePairingResponse', response),
+  hrBleReading: (bpm, measuredAt) => ipcRenderer.invoke('hr:bleReading', bpm, measuredAt),
+
+  // NekoAvatarLocker ownership vault + VRChat OSC feature gates
+  lockerGetState: () => ipcRenderer.invoke('locker:getState'),
+  lockerImportOwnership: () => ipcRenderer.invoke('locker:importOwnership'),
+  lockerExportOwnership: avatarId => ipcRenderer.invoke('locker:exportOwnership', avatarId),
+  lockerSignOwnershipTemplate: () => ipcRenderer.invoke('locker:signOwnershipTemplate'),
+  lockerSetUnlock: (avatarId, mode, groupIds) => ipcRenderer.invoke('locker:setUnlock', avatarId, mode, groupIds),
+  lockerUpdateOscSettings: settings => ipcRenderer.invoke('locker:updateOscSettings', settings),
+  lockerResetVault: () => ipcRenderer.invoke('locker:resetVault'),
+  lockerLegacyStatus: () => ipcRenderer.invoke('locker:legacyStatus'),
+  lockerImportLegacyVault: () => ipcRenderer.invoke('locker:importLegacyVault'),
+  lockerOpenUserData: () => ipcRenderer.invoke('locker:openUserData'),
+
+  // OSC companion integrations
+  oscAppsRuskGet: () => ipcRenderer.invoke('oscApps:ruskGet'),
+  oscAppsRuskStart: options => ipcRenderer.invoke('oscApps:ruskStart', options),
+  oscAppsRuskStop: () => ipcRenderer.invoke('oscApps:ruskStop'),
+  oscAppsTwitchInteractiveGet: () => ipcRenderer.invoke('oscApps:twitchInteractiveGet'),
+  oscAppsTwitchInteractiveStart: options => ipcRenderer.invoke('oscApps:twitchInteractiveStart', options),
+  oscAppsTwitchInteractiveStop: () => ipcRenderer.invoke('oscApps:twitchInteractiveStop'),
+  oscAppsRecognizeSong: request => ipcRenderer.invoke('oscApps:recognizeSong', request),
+  oscAppsRecognitionProviders: () => ipcRenderer.invoke('oscApps:recognitionProviders'),
+  oscAppsCaptureSources: () => ipcRenderer.invoke('oscApps:captureSources'),
+  oscAppsSelectCaptureSource: sourceId => ipcRenderer.invoke('oscApps:selectCaptureSource', sourceId),
 
   // window activity
   windowStart: () => ipcRenderer.invoke('window:start'),
@@ -94,9 +128,9 @@ window.electronAPI = {
   kickStart: slug => ipcRenderer.invoke('kick:start', slug),
   kickStop: () => ipcRenderer.invoke('kick:stop'),
 
-  // twitch oauth
-  twitchOauth: (clientId, clientSecret, scopes) => ipcRenderer.invoke('twitch:oauth', { clientId, clientSecret, scopes }),
-  twitchRedirect: () => ipcRenderer.invoke('twitch:redirect'),
+  // shared OAuth providers
+  oauthTwitchLogin: (clientId, clientSecret, scopes) => ipcRenderer.invoke('oauth:twitchLogin', { clientId, clientSecret, scopes }),
+  oauthTwitchRedirect: () => ipcRenderer.invoke('oauth:twitchRedirect'),
 
   // ai
   aiRewrite: opts => ipcRenderer.invoke('ai:rewrite', opts),
