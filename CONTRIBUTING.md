@@ -77,6 +77,16 @@ Please open a GitHub issue and include:
 - Whether it uses OSC, a public API, or another safe integration method.
 - Any VRChat Terms of Service or platform-safety concerns that should be reviewed.
 
+## Contributor recognition
+
+This project uses the [All Contributors](https://allcontributors.org/) bot to recognize community help. After your contribution is accepted, you can ask the bot to add you by commenting on an issue or pull request with a command like:
+
+```text
+@all-contributors please add @your-github-username for code, doc
+```
+
+Use the contribution types that match your work, such as `code`, `doc`, `bug`, `ideas`, `test`, or `review`. The bot will open a pull request that updates the contributors list in `README.md`.
+
 ## Pull request checklist
 
 Before opening a pull request, please make sure:
