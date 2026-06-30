@@ -2,6 +2,8 @@
 
 # NekoSuneAPPS 🦊💬
 
+[![All Contributors](https://img.shields.io/github/all-contributors/NekoSuneProjects/NekoSuneAPPS?color=ee8449&style=flat-square)](#contributors)
+
 A standalone **VRChat OSC companion** by **NekoSuneVR** — chatbox, heart rate, now
 playing, Discord, world radar & more, in one polished themed app.
 
@@ -216,8 +218,12 @@ node-gyp modules**, so Windows/macOS/Linux all build without a C++/Python toolch
 
 ## 📜 License & policies
 
-**Proprietary — All Rights Reserved.** © 2024–2026 NekoSuneVR. You may run the official
-releases for personal use only; you may **not** modify, redistribute, reverse engineer, or
-use the code/assets to train AI. See [LICENSE](LICENSE), [TOS.md](TOS.md),
+**Source-available contribution license — All Rights Reserved.** © 2024–2026 NekoSuneVR.
+You may run official unmodified releases for personal use, and you may fork and modify
+the code only to prepare fixes, features, integrations, documentation updates, or removal
+proposals for submission back to the official repository. You may **not** redistribute
+modified builds, reuse the code in other projects, inject code into VRChat, add malware,
+or use the code/assets/docs/issues/pull requests/contributions to train AI. See
+[LICENSE](LICENSE), [CONTRIBUTING.md](CONTRIBUTING.md), [TOS.md](TOS.md),
 [PRIVACY.md](PRIVACY.md), and [DISCLAIMER.md](DISCLAIMER.md). Version history is in
 [CHANGELOG.md](CHANGELOG.md).
