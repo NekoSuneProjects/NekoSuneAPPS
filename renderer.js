@@ -138,8 +138,9 @@ document.querySelectorAll('.navbtn').forEach(btn => {
   sidebar.addEventListener('mouseleave', () => { tip.style.opacity = '0' })
 })()
 
-// Theme is auto-selected by date (seasonal) and is NOT user-switchable.
-// Default is green; seasons override it around the holiday.
+// Event themes (Halloween/Christmas/Pride/Easter) always take over during their
+// window, even on top of a custom/default theme pick — the custom pick just
+// resumes automatically once the event window ends.
 function easterDate (y) {
   const a = y % 19; const b = Math.floor(y / 100); const c = y % 100
   const d = Math.floor(b / 4); const e = b % 4; const f = Math.floor((b + 8) / 25)
@@ -151,16 +152,38 @@ function easterDate (y) {
 }
 function seasonalTheme (now) {
   const mo = now.getMonth() + 1; const day = now.getDate()
-  if (mo === 10 && day >= 24) return { theme: 'halloween', label: '🎃 Halloween' }
-  if (mo === 12) return { theme: 'xmas', label: '🎄 Christmas' }
-  if (mo === 6) return { theme: 'rainbow', label: '🏳️‍🌈 Pride' }
+  if (mo === 10 && day >= 24) return { theme: 'halloween', label: '🎃 Halloween', isEvent: true }
+  if (mo === 12) return { theme: 'xmas', label: '🎄 Christmas', isEvent: true }
+  if (mo === 6) return { theme: 'rainbow', label: '🏳️‍🌈 Pride', isEvent: true }
   const diff = (now - easterDate(now.getFullYear())) / 86400000
-  if (diff >= -7 && diff <= 1) return { theme: 'easter', label: '🐰 Easter' }
-  return { theme: 'green', label: '' }
+  if (diff >= -7 && diff <= 1) return { theme: 'easter', label: '🐰 Easter', isEvent: true }
+  return { theme: 'blackgreen', label: '', isEvent: false }
 }
-const season = seasonalTheme(new Date())
-document.documentElement.setAttribute('data-theme', season.theme)
-if ($('seasonBadge')) $('seasonBadge').textContent = season.label
+function applyTheme (uiTheme) {
+  const season = seasonalTheme(new Date())
+  if (season.isEvent) {
+    document.documentElement.setAttribute('data-theme', season.theme)
+    if ($('seasonBadge')) $('seasonBadge').textContent = season.label
+    return
+  }
+  const useAuto = !uiTheme || uiTheme === 'auto'
+  document.documentElement.setAttribute('data-theme', useAuto ? season.theme : uiTheme)
+  if ($('seasonBadge')) $('seasonBadge').textContent = ''
+}
+applyTheme('auto')
+api.getSetting('uiTheme', 'auto').then(saved => {
+  applyTheme(saved)
+  if ($('themeSelect')) $('themeSelect').value = saved || 'auto'
+})
+if ($('themeSelect')) {
+  $('themeSelect').addEventListener('change', async e => {
+    await api.saveSetting('uiTheme', e.target.value)
+    applyTheme(e.target.value)
+  })
+}
+// Re-check at midnight-ish so an event window ending while the app stays open
+// (or starting while it's open) recolors without needing a restart.
+setInterval(() => { api.getSetting('uiTheme', 'auto').then(applyTheme) }, 30 * 60 * 1000)
 
 /* ---------------- helpers ---------------- */
 function setText (id, v) { const el = $(id); if (el) el.textContent = v }

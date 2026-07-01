@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="green">
+<html lang="en" data-theme="blackgreen">
 
 <head>
   <meta charset="UTF-8" />
@@ -28,6 +28,11 @@
     [data-theme="green"]    { --bg:#031a0b; --bg2:#052612; --panel:#073318; --panel2:#0a4220; --border:#0e5a2d; --text:#e4ffe9; --muted:#8fd5a3; --accent:#22e06a; --accent2:#9dffb8; }
     [data-theme="rainbow"]  { --bg:#06060c; --bg2:#0c0c16; --panel:#15151f; --panel2:#1d1d2b; --border:#2b2b40; --accent:#ff0080; --accent2:#40e0d0; }
     [data-theme="light"]    { --bg:#f3f4f8; --bg2:#e9eaf0; --panel:#ffffff; --panel2:#f1f2f7; --border:#d7d9e3; --text:#1b1b2a; --muted:#5b5b70; --accent:#d6006b; --accent2:#0090a8; }
+    [data-theme="blackpurple"] { --bg:#060308; --bg2:#0a050f; --panel:#100a1c; --panel2:#171026; --border:#2a1b40; --text:#f0e6ff; --muted:#b39ddb; --accent:#8b5cf6; --accent2:#c084fc; }
+    [data-theme="blackpink"]   { --bg:#08040a; --bg2:#0d060f; --panel:#170a17; --panel2:#211023; --border:#3a1029; --text:#ffe6f2; --muted:#e0a8c8; --accent:#ec4899; --accent2:#f472b6; }
+    [data-theme="blackcyan"]   { --bg:#03080a; --bg2:#050e10; --panel:#0a1518; --panel2:#0f1e22; --border:#123a40; --text:#e0fbff; --muted:#8fd0d9; --accent:#06b6d4; --accent2:#22d3ee; }
+    [data-theme="blackgold"]   { --bg:#0a0803; --bg2:#100c05; --panel:#1a1408; --panel2:#241b0b; --border:#4a3a10; --text:#fff6e0; --muted:#d9c08a; --accent:#f5b942; --accent2:#ffd97a; }
+    [data-theme="blackgreen"]  { --bg:#050806; --bg2:#0a0f0c; --panel:#0f1712; --panel2:#141f18; --border:#1f3327; --text:#e8fff0; --muted:#8fbfa0; --accent:#22c55e; --accent2:#4ade80; }
     /* Seasonal (auto-selected by date — not user-switchable) */
     [data-theme="xmas"]      { --bg:#07140d; --bg2:#0a1c12; --panel:#0d2417; --panel2:#11301e; --border:#1c4a30; --text:#eafff0; --muted:#9fd9b4; --accent:#e3342f; --accent2:#22c55e; }
     [data-theme="halloween"] { --bg:#140a04; --bg2:#1c0f06; --panel:#241408; --panel2:#301a0a; --border:#4a2a10; --text:#ffe9d6; --muted:#d8a06a; --accent:#ff7518; --accent2:#8b5cf6; }
@@ -1380,6 +1385,26 @@
             <div><label>VRChat Receive Port</label><input type="number" id="receiverPortInput" placeholder="9001" /></div>
           </div>
           <label class="switch" style="margin-top:12px"><input type="checkbox" id="enableReceive"> Enable VRChat OSC receive (needed for KAT auto-detect)</label>
+        </div>
+        <div class="card">
+          <h3>🎨 Theme</h3>
+          <label>Color theme</label>
+          <select id="themeSelect">
+            <option value="auto">Auto (seasonal — default Black &amp; Green, holidays override)</option>
+            <option value="blackgreen">Black &amp; Green (default)</option>
+            <option value="blackpurple">Black &amp; Purple</option>
+            <option value="blackpink">Black &amp; Pink</option>
+            <option value="blackcyan">Black &amp; Cyan</option>
+            <option value="blackgold">Black &amp; Gold</option>
+            <option value="midnight">Midnight (purple/cyan)</option>
+            <option value="dark">Dark (pink/cyan)</option>
+            <option value="neon">Neon</option>
+            <option value="pink">Pink</option>
+            <option value="green">Green</option>
+            <option value="rainbow">Rainbow (Pride)</option>
+            <option value="light">Light</option>
+          </select>
+          <div class="muted" style="font-size:.75rem;margin-top:6px">"Auto" defaults to Black &amp; Green. Halloween/Christmas/Pride/Easter always take over automatically during those windows — even over a custom pick below — then your pick resumes once the event ends.</div>
         </div>
         <div class="card">
           <h3>🚀 Startup</h3>

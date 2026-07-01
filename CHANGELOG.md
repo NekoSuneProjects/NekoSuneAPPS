@@ -6,6 +6,26 @@ This project follows [Semantic Versioning](https://semver.org/).
 ## Unreleased
 
 
+## [1.0.35] - 2026-07-01
+
+### Added
+- **User-selectable theme picker.** New "🎨 Theme" card in Settings with a dropdown
+  covering every theme (Auto, Black & Green, Black & Purple, Black & Pink, Black &
+  Cyan, Black & Gold, Midnight, Dark, Neon, Pink, Green, Rainbow, Light). The choice
+  is saved and re-applied live without a restart.
+- **Four new "black & ___" themes.** Black & Purple, Black & Pink, Black & Cyan, and
+  Black & Gold — modern near-black backgrounds with a single accent color.
+
+### Changed
+- **New default theme: Black & Green.** Replaces the old bright/saturated green that
+  was previously hardcoded as the year-round default outside holiday windows.
+- **Seasonal event themes now override any custom theme pick.** Halloween, Christmas,
+  Pride, and Easter always take over during their date window even if you've picked a
+  specific theme, then your pick automatically resumes once the event ends. Previously
+  themes were either fully seasonal or (with the new picker) fully manual; now the two
+  compose. Re-checks every 30 minutes so a window opening/closing mid-session still
+  recolors without a restart.
+
 ## [1.0.34] - 2026-06-29
 
 ### Added
