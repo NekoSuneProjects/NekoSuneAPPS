@@ -361,7 +361,7 @@
             <summary class="muted" style="cursor:pointer">Show all tokens</summary>
             <div class="muted" style="font-size:.78rem; line-height:1.7; margin-top:6px">
               <b>Time:</b> {time} {date}<br>
-              <b>Music:</b> {song} {artist} {title} <i>(song → "Not playing" when idle)</i><br>
+              <b>Music:</b> {song} {artist} {title} {songsource} {songtime} {songprogress} {songduration} {songbar} <i>(song -> "Not playing" when idle)</i><br>
               <b>System:</b> {cpu} {cputemp} {gpu} {gputemp} {ram} {ramused} {ramtotal}<br>
               <b>Network:</b> {down} {up} {ping}<br>
               <b>Heart rate:</b> {hr} {hravg} {hrmax} {hrmin}<br>
@@ -433,13 +433,28 @@
               <div class="muted" style="text-transform:uppercase; font-size:.7rem">Now Playing</div>
               <div id="nowPlayingTitle" style="font-weight:700">Detecting media...</div>
               <div id="nowPlayingMeta" class="muted">Windows media session</div>
+              <div id="nowPlayingTime" class="muted" style="font-size:.78rem;margin-top:4px">--:-- / --:--</div>
             </div>
             <span class="pill" id="nowPlayingSource">Windows</span>
+          </div>
+          <div style="height:8px;background:var(--bg);border:1px solid var(--border);border-radius:999px;overflow:hidden;margin-top:10px">
+            <div id="nowPlayingProgress" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .25s"></div>
           </div>
           <div class="row" style="margin-top:10px;align-items:center;gap:8px">
             <label style="min-width:96px">Media source</label>
             <select id="nowPlayingSourceSelect" style="flex:1"><option value="">Auto (recommended)</option></select>
             <button class="btn ghost" id="nowPlayingRefreshSources" title="Re-scan sources" style="padding:4px 10px;font-size:.75rem">↻</button>
+          </div>
+          <div class="row" style="margin-top:8px;align-items:center;gap:8px">
+            <label style="min-width:96px">Progress text</label>
+            <select id="nowPlayingBarStyle" style="flex:1">
+              <option value="bars">Bars [██░░]</option>
+              <option value="stars">Stars [★★☆☆]</option>
+              <option value="diamonds">Diamonds [◆◆◇◇]</option>
+              <option value="dots">Dots [●●○○]</option>
+              <option value="squares">Squares [■■□□]</option>
+              <option value="thin">Thin [▰▰▱▱]</option>
+            </select>
           </div>
           <div id="nowPlayingDiag" class="muted" style="margin-top:6px;font-size:.74rem"></div>
         </div>

@@ -356,11 +356,47 @@ let lastKatText = ''
 let katEnabled = false
 let chatboxNpEnabled = false
 let lastSongKey = ''
+const MEDIA_BAR_STYLES = {
+  bars: ['█', '░'],
+  stars: ['★', '☆'],
+  diamonds: ['◆', '◇'],
+  dots: ['●', '○'],
+  squares: ['■', '□'],
+  thin: ['▰', '▱']
+}
 
 function buildSong (m) {
   if (!m || !m.found || !m.title) return ''
   if (m.status && m.status !== 'Playing') return ''
   return [m.artist, m.title].filter(Boolean).join(' - ')
+}
+function formatMediaTime (ms) {
+  const total = Math.max(0, Math.floor((Number(ms) || 0) / 1000))
+  const h = Math.floor(total / 3600)
+  const m = Math.floor((total % 3600) / 60)
+  const s = total % 60
+  return h ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`
+}
+function mediaProgressBar (pct, styleKey) {
+  const pair = MEDIA_BAR_STYLES[styleKey] || MEDIA_BAR_STYLES.bars
+  const filled = Math.round(Math.max(0, Math.min(1, pct)) * 10)
+  return `[${pair[0].repeat(filled)}${pair[1].repeat(10 - filled)}]`
+}
+function mediaProgressInfo (m) {
+  const durationMs = Math.max(0, Number(m?.durationMs) || 0)
+  let progressMs = Math.max(0, Number(m?.progressMs) || 0)
+  if (m?.status === 'Playing' && Number(m?.fetchedAt)) progressMs += Math.max(0, Date.now() - Number(m.fetchedAt))
+  if (durationMs) progressMs = Math.min(progressMs, durationMs)
+  const pct = durationMs ? Math.max(0, Math.min(1, progressMs / durationMs)) : 0
+  return {
+    progressMs,
+    durationMs,
+    pct,
+    progress: durationMs ? formatMediaTime(progressMs) : '',
+    duration: durationMs ? formatMediaTime(durationMs) : '',
+    time: durationMs ? `${formatMediaTime(progressMs)}-${formatMediaTime(durationMs)}` : '',
+    bar: durationMs ? mediaProgressBar(pct, $('nowPlayingBarStyle')?.value) : ''
+  }
 }
 let npSourcesKey = '' // avoid rebuilding the dropdown every poll
 function syncNpSourceDropdown (sessions, preferred) {
@@ -381,6 +417,8 @@ function renderNowPlaying (m) {
   const diag = $('nowPlayingDiag')
   if (!m || !m.found) {
     setText('nowPlayingTitle', 'No media detected'); setText('nowPlayingMeta', 'No active session')
+    setText('nowPlayingTime', '--:-- / --:--')
+    if ($('nowPlayingProgress')) $('nowPlayingProgress').style.width = '0%'
     if (diag) {
       const n = (m && m.sessions && m.sessions.length) || 0
       diag.textContent = m && m.error
@@ -393,6 +431,9 @@ function renderNowPlaying (m) {
   setText('nowPlayingTitle', m.title || 'Unknown')
   setText('nowPlayingMeta', [m.artist, m.album, m.status].filter(Boolean).join(' · ') || 'Active')
   setText('nowPlayingSource', m.source || 'Windows')
+  const progress = mediaProgressInfo(m)
+  setText('nowPlayingTime', progress.time ? `${progress.progress} / ${progress.duration}` : 'No timeline available')
+  if ($('nowPlayingProgress')) $('nowPlayingProgress').style.width = `${Math.round(progress.pct * 100)}%`
 }
 async function initNowPlayingSources () {
   try { const r = await api.nowPlayingSources(); syncNpSourceDropdown(r.sources, r.preferred) } catch (_) {}
@@ -402,6 +443,10 @@ $('nowPlayingSourceSelect').addEventListener('change', async e => {
   refreshNowPlaying()
 })
 $('nowPlayingRefreshSources').addEventListener('click', async () => { npSourcesKey = ''; await initNowPlayingSources(); refreshNowPlaying() })
+$('nowPlayingBarStyle').addEventListener('change', async e => {
+  await api.saveSetting('nowPlayingBarStyle', e.target.value)
+  refreshNowPlaying()
+})
 function getKatSyncParamsSetting () {
   const mode = $('katSyncParamsMode').value
   if (mode === 'custom') {
@@ -557,7 +602,7 @@ function nowPlayingNeeded () {
   // Only spawn the PowerShell media query when something actually consumes it.
   return katEnabled || chatboxNpEnabled ||
     composer.modes.nowPlaying !== 'off' ||
-    (composer.modes.status === 'rotate' && /\{(song|artist|title)\}/.test($('presetsText').value)) ||
+    (composer.modes.status !== 'off' && /\{(song|artist|title|songsource|songtime|songprogress|songduration|songbar)\}/.test($('presetsText').value)) ||
     (discordConnected && $('discordShowNp') && $('discordShowNp').checked) ||
     ($('nowplaying') && $('nowplaying').offsetParent !== null) ||
     ($('spotiOscEnable') && $('spotiOscEnable').checked)
@@ -569,10 +614,16 @@ async function refreshNowPlaying () {
     renderNowPlaying(m)
     publishSpotiState(m)
     const song = buildSong(m)
+    const progress = mediaProgressInfo(m)
     composer.update({
       song: song || 'Not playing',
       artist: (m && m.found && m.artist) ? m.artist : '',
-      title: (m && m.found && m.title) ? m.title : ''
+      title: (m && m.found && m.title) ? m.title : '',
+      songSource: (m && m.found && m.source) ? m.source : '',
+      songTime: (m && m.found) ? progress.time : '',
+      songProgress: (m && m.found) ? progress.progress : '',
+      songDuration: (m && m.found) ? progress.duration : '',
+      songBar: (m && m.found) ? progress.bar : ''
     })
     lastKatText = song
     if (katText) katText.setText(song)
@@ -4552,6 +4603,7 @@ async function init () {
     $('katSyncParamsCustom').value = savedKatSyncParams
     $('katSyncParamsCustom').style.display = ''
   }
+  $('nowPlayingBarStyle').value = await api.getSetting('nowPlayingBarStyle', 'bars')
   initNowPlayingSources()
   chatboxNpEnabled = await api.getSetting('chatboxNowPlayingEnabled', false); $('enableChatboxNowPlaying').checked = chatboxNpEnabled
 

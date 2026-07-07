@@ -28,7 +28,7 @@ playing, Discord, world radar & more, in one polished themed app.
 | 💬 **Chatbox** | Type to VRChat + auto-rotate live data lines | — |
 | 📝 **Status presets** | Templated lines with `{tokens}` | — |
 | 🔊 **AudioLink** | Low/Bass/Mid/Treble spectrum over OSC | audio output device |
-| 🎵 **Now Playing** | Windows media + KAT + chatbox posting | Windows |
+| 🎵 **Now Playing** | Windows media + KAT + chatbox posting, with timestamp/progress tokens and custom text bars | Windows |
 | 🎬 **TikTok followers** | Live followers / viewers / new follows | creator must be **live** |
 | 🟣 **Twitch followers** | Follower total (Helix) | Client ID + OAuth token |
 | 🔑 **OAuth Accounts** | Shared provider applications, redirects and tokens | your provider app credentials |
@@ -86,6 +86,8 @@ The sidebar is grouped into **VRChat**, **Tools**, and **General**.
   Outgoing chatbox, params, AudioLink, KAT text, DiscordOSC, and Avatar Scaling
   messages are mirrored to extra send ports. OSC listeners can also hear the extra
   receive ports while receive is enabled or another feature is listening.
+- **Now Playing status tokens** include source, elapsed time, duration, and `{songbar}`;
+  the text progress bar can be styled as bars, stars, diamonds, dots, squares, or thin blocks.
 
 ---
 

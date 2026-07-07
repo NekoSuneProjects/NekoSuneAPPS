@@ -71,7 +71,7 @@ class ChatboxComposer {
     }
 
     this.data = {
-      song: '', artist: '', title: '', world: '',
+      song: '', artist: '', title: '', songSource: '', songTime: '', songProgress: '', songDuration: '', songBar: '', world: '',
       cpu: 0, cpuTemp: 0, gpu: 0, gpuTemp: 0, ramPct: 0, ramUsed: 0, ramTotal: 0,
       down: 0, up: 0, ping: 0,
       hr: 0, hrOnline: false, hrAvg: 0, hrMax: 0, hrMin: 0,
@@ -128,6 +128,8 @@ class ChatboxComposer {
       time: formatClock(), date: new Date().toLocaleDateString(),
       // media
       song: d.song, artist: d.artist, title: d.title,
+      songsource: d.songSource, songtime: d.songTime, songprogress: d.songProgress,
+      songduration: d.songDuration, songbar: d.songBar,
       // system
       cpu: d.cpu, cputemp: d.cpuTemp, gpu: d.gpu, gputemp: d.gpuTemp,
       ram: d.ramPct, ramused: d.ramUsed, ramtotal: d.ramTotal,
