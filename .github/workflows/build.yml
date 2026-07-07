@@ -2,10 +2,8 @@ name: Build NekoSuneAPPS
 
 on:
   push:
-    branches: [master, main]
-    tags: ['v*', '*']
-  pull_request:
-  workflow_dispatch:
+    tags:
+      - 'v*'
 
 # softprops/action-gh-release needs write access to create the release + upload assets.
 permissions:
