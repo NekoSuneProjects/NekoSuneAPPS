@@ -17,8 +17,9 @@ them one at a time.
 > background, centered, thick rounded strokes, consistent 2px-equivalent stroke weight,
 > no text, no drop shadow, no background shape, 256×256, modern UI app icon style. Subject:
 
-Generate all 32 with the SAME style sentence above so they match, only changing the
-"Subject:" part below. (`ranks.png` and `about.png` are the two currently missing.)
+Generate the full sidebar set with the SAME style sentence above so they match, only
+changing the "Subject:" part below. All current sidebar tabs listed here already have
+matching icon files.
 
 ## Icons (file name → subject prompt)
 
@@ -31,6 +32,7 @@ Generate all 32 with the SAME style sentence above so they match, only changing 
 | `vrchat.png` | VRChat | a VR headset (HMD) front view |
 | `radar.png` | Radar | a radar screen with a sweep line and a blip |
 | `friendden.png` | Friend Den | two friendly person silhouettes close together |
+| `ranks.png` | Community Ranks | an award medal hanging from a ribbon |
 | `eventscout.png` | Event Scout | a telescope |
 | `pawprints.png` | Pawprints | a single cat paw print |
 | `groups.png` | Groups | three person silhouettes as a group |
@@ -55,9 +57,14 @@ Generate all 32 with the SAME style sentence above so they match, only changing 
 | `tools.png` | Tools | a jigsaw puzzle piece |
 | `settings.png` | Settings | a gear / cog |
 | `docs.png` | Docs / Setup | an open book |
-| `log.png` | OSC Log | a scroll / lined document list |
-| `ranks.png` | Community Ranks | an award medal hanging from a ribbon |
 | `about.png` | About | a lowercase letter "i" information mark inside a circle |
+| `log.png` | OSC Log | a scroll / lined document list |
+
+## Legacy / unused
+
+| File (`assets/icons/...`) | Status |
+|---|---|
+| `osccontrol.png` | Kept as a legacy asset. The standalone OSC Control sidebar page was removed; OSC controls now live under Tools / OSC Apps. |
 
 ## Tip
 Generate them as one set in a single batch with the master style prompt so the stroke
