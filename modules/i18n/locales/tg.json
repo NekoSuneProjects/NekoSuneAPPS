@@ -23,6 +23,7 @@
   "nav.oscapps": "Барномаҳои OSC",
   "nav.vrctools": "Абзорҳои VRChat",
   "nav.live": "Зинда",
+  "nav.translation": "Тарҷума",
   "nav.oauth": "Ҳисобҳои OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Омор",
@@ -33,7 +34,6 @@
   "nav.docs": "Ҳуҷҷатнигорӣ / Насб",
   "nav.about": "Дар бораи барнома",
   "nav.log": "Сабти OSC",
-
   "common.save": "Нигоҳ доштан",
   "common.cancel": "Бекор кардан",
   "common.enable": "Фаъол кардан",
@@ -45,7 +45,6 @@
   "common.send": "Фиристодан",
   "common.clear": "Тоза кардан",
   "common.record": "Сабт кардан",
-
   "avatarScaling.title": "Андозагирии аватар",
   "avatarScaling.subtitle": "Андозагирии баландии OSC-и худи VRChat — бо ҳар аватар кор мекунад",
   "avatarScaling.enable": "Фаъол кардани андозагирии аватар",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Сабти тугмаи хурдкунӣ",
   "avatarScaling.hotkeyHint": "Тугмаҳои тез дар ҳама ҷо кор мекунанд (ҳатто вақте ки фокус дар VRChat қарор дорад). Агар тугма сабт нашавад, шумо ҳанӯз метавонед лағзонаки болоро истифода баред.",
   "avatarScaling.off": "Андозагирии аватар хомӯш аст",
-
   "translator.title": "Тарҷумон",
   "translator.provider": "Провайдер",
   "translator.endpoint": "URL-и нуқтаи ниҳоӣ",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Забони ҳадаф",
   "translator.aiGrammarFix": "Аввал грамматикаро бо AI ислоҳ кунед (провайдери IntelliChat дар болоро истифода мебарад)",
   "translator.note": "Аз ин барои имконияти тарҷумаи чатбокси Live Typing ва дар ҳама ҷойҳои дигари барнома, ки \"Тарҷума пеш аз фиристодан\"-ро пешниҳод мекунанд, истифода мешавад.",
-
   "liveTyping.title": "Ҳарфзании зинда",
   "liveTyping.subtitle": "ҳангоми навиштан мефиристад, мисли чатбокси худи VRChat",
   "liveTyping.placeholder": "Дар ин ҷо нависед — ин ба таври худкор ҳар чанд сония ҳангоми навиштан ба чатбокс фиристода мешавад. Навиштанро аз 144 аломат зиёдтар идома диҳед; VRChat '…' + охири паёми шуморо нишон медиҳад.",
   "liveTyping.previewLabel": "Пешнамоиш (он чизе, ки VRChat нишон медиҳад):",
   "liveTyping.translateLabel": "Тарҷума пеш аз фиристодан (танзимоти Тарҷумонро истифода мебарад)",
-
   "languagePicker.title": "Забони худро интихоб кунед",
   "languagePicker.subtitle": "Шумо метавонед ин корро дар оянда дар Танзимот тағир диҳед.",
   "languagePicker.continue": "Идома",
-
   "settingsLanguage.title": "Забон",
   "settingsLanguage.label": "Забони барнома"
 }

@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC መተግበሪታት",
   "nav.vrctools": "ናይ VRChat ናውቲ",
   "nav.live": "ቀጥታ",
+  "nav.translation": "ትርጉም",
   "nav.oauth": "OAuth ሕሳባት",
   "nav.discord": "Discord",
   "nav.stats": "ስታትስቲክስ",
@@ -33,7 +34,6 @@
   "nav.docs": "ሰነዳት / ምድላው",
   "nav.about": "ብዛዕባ",
   "nav.log": "OSC ምዝገባ",
-
   "common.save": "ኣቐምጥ",
   "common.cancel": "ሰርዝ",
   "common.enable": "ኣንቅሕ",
@@ -45,7 +45,6 @@
   "common.send": "ስደድ",
   "common.clear": "ኣጽርይ",
   "common.record": "መዝግብ",
-
   "avatarScaling.title": "ምዕቃን ኣቫታር",
   "avatarScaling.subtitle": "ናይ VRChat ውሽጣዊ OSC ናይ ቁመት ምዕቃን — ኣብ ዝኾነ ኣቫታር ይሰርሕ",
   "avatarScaling.enable": "ምዕቃን ኣቫታር ኣንቅሕ",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "መፍትሕ ናይ ጉድለት መዝግብ",
   "avatarScaling.hotkeyHint": "ናይ ቅልጡፍ መፍትሕ ኣብ ኩሉ ቦታ ይሰርሕ (VRChat ትኹረት ኣብ ዘለዎ እዋን እውን)። መፍትሕ ክምዝገብ ዘይከኣለ እንተኾይኑ፣ ኣብ ላዕሊ ዘሎ ተንሸራታች ክትጠቕም ትኽእል ኢኻ።",
   "avatarScaling.off": "ምዕቃን ኣቫታር ጠፊኡ ኣሎ",
-
   "translator.title": "ተርጓሚ",
   "translator.provider": "ኣቕራቢ",
   "translator.endpoint": "ናይ መጠረሽታ URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "ዕላማ ቋንቋ",
   "translator.aiGrammarFix": "ቀዳምነት ብ AI ሰዋስው ኣረም (ንላዕሊ ዘሎ IntelliChat ኣቕራቢ ይጠቅም)",
   "translator.note": "ብ Live Typing ናይ ዝርርብ ሳንዱቕ ናይ ትርጉም ኣማራጺ ከምኡውን ኣብ ካልእ ቦታ ናይ ኣፕሊኬሽን \"ቅድሚ ምልኣኽ ተርጉም\" ዝብል ኣማራጺ ዘሎ ይጥቀም።",
-
   "liveTyping.title": "ቀጥታዊ ጽሕፈት",
   "liveTyping.subtitle": "ከምቲ ናይ VRChat ናይ ገዛእ ርእሱ ዝርርብ ሳንዱቕ፣ ኣብ ግዜ ምጽሓፍካ ይልእክ",
   "liveTyping.placeholder": "ኣብዚ ጽሓፍ — እዚ ኣብ ግዜ ምጽሓፍካ ኣብ ውሽጢ ውሑድ ካልኢታት ብቐጥታ ናብ ዝርርብ ሳንዱቕ ይልኣኽ። ልዕሊ 144 ፊደላት ምጽሓፍ ቀጽል፣ VRChat '…' ምስ መወዳእታ ናይ መልእክትኻ ከርኢ እዩ።",
   "liveTyping.previewLabel": "ቅድመ-ትርኢት (እንታይ ከም VRChat ከርኢ):",
   "liveTyping.translateLabel": "ቅድሚ ምልኣኽ ተርጉም (ናይ ተርጓሚ ቅንብራት ይጠቅም)",
-
   "languagePicker.title": "ቋንቋኻ ምረጽ",
   "languagePicker.subtitle": "እዚ ጸኒሑ ኣብ ቅንብራት ክትቅይሮ ትኽእል ኢኻ።",
   "languagePicker.continue": "ቀጺል",
-
   "settingsLanguage.title": "ቋንቋ",
   "settingsLanguage.label": "ቋንቋ ኣፕሊኬሽን"
 }

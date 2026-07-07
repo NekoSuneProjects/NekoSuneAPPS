@@ -6,6 +6,41 @@ This project follows [Semantic Versioning](https://semver.org/).
 ## Unreleased
 
 
+## [1.0.41] - 2026-07-07
+
+### Added
+- **Avatar Scaling.** New OSC card using VRChat's native `/avatar/eyeheight*` height-scaling
+  API — works on any avatar, no exposed avatar parameters needed. Safety limits, save-scale-
+  between-worlds, smoothing, and global hold-to-scale hotkeys (via a PowerShell
+  `System.Speech`/`WH_KEYBOARD_LL`-style hook, no bundled native binary).
+- **Translator.** New Settings card — DeepL, Google Translate, LibreTranslate (including a
+  ready-to-use NekoSuneVR-hosted instance), and MyMemory (no key needed), with an optional
+  "fix grammar with AI first" pass through the existing IntelliChat provider.
+- **Live Typing chatbox.** Sends as you type (throttled), shows VRChat's real 144-char
+  overflow behavior ("…" + tail) live, with an optional translate-before-send toggle.
+- **Localization.** Full i18n foundation — first-run language picker, live language switching
+  (no restart), 102 seeded languages. Covers the sidebar nav, common buttons, and all new UI
+  added this release; broader legacy-string coverage is ongoing.
+- **Desktop speech-to-text.** Listens to shared desktop/system audio and transcribes it, both
+  cloud (OpenAI/Groq Whisper) and fully local/offline (WASM Whisper), feeding into the
+  Translator and chatbox/TTS.
+- **OCR screen-translate.** Reads on-screen text from a shared window (e.g. VRChat) and
+  translates it to chatbox.
+- **Text-to-speech**, four selectable engines: Windows built-in (SAPI), TikTok TTS, ElevenLabs
+  (cloud), and self-hosted (Piper/XTTS/other), plus an output-device picker.
+- **Voice assistant.** Wake-word activated ("Nova" by default, customizable) — ask about a
+  friend's online status and world, who's online, your own status, or change your status text
+  (never the bio). Manual-only SOS (spoken command or button) invites a configured trusted-
+  friends list and shares a rolling instant-replay clip (1/5/10 min) via a Discord webhook.
+  Includes a soft, text-based emotional check-in that only ever asks if you're okay — it never
+  auto-triggers anything.
+
+### Fixed
+- **KAT (KillFrenzy AvatarText) sync-param auto-detection.** Previously under-detected sync
+  params (e.g. reporting 4 on a 16-param avatar) because the probe reset before VRChat's
+  throttled OSC echoes had a chance to arrive. Now holds the probe for longer and also checks
+  VRChat's own avatar OSC config file directly. Added a manual override as a fallback.
+
 ## [1.0.35] - 2026-07-01
 
 ### Added

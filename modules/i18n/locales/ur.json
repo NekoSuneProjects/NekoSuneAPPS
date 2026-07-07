@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC ایپس",
   "nav.vrctools": "VRChat ٹولز",
   "nav.live": "لائیو",
+  "nav.translation": "ترجمہ",
   "nav.oauth": "OAuth اکاؤنٹس",
   "nav.discord": "Discord",
   "nav.stats": "اعداد و شمار",
@@ -33,7 +34,6 @@
   "nav.docs": "دستاویزات / سیٹ اپ",
   "nav.about": "بارے میں",
   "nav.log": "OSC لاگ",
-
   "common.save": "محفوظ کریں",
   "common.cancel": "منسوخ کریں",
   "common.enable": "فعال کریں",
@@ -45,7 +45,6 @@
   "common.send": "بھیجیں",
   "common.clear": "صاف کریں",
   "common.record": "ریکارڈ کریں",
-
   "avatarScaling.title": "اوتار اسکیلنگ",
   "avatarScaling.subtitle": "VRChat کی اپنی OSC اونچائی اسکیلنگ — کسی بھی اوتار پر کام کرتی ہے",
   "avatarScaling.enable": "اوتار اسکیلنگ فعال کریں",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "کم کرنے والی کلید ریکارڈ کریں",
   "avatarScaling.hotkeyHint": "ہاٹ کیز عالمی سطح پر کام کرتی ہیں (یہاں تک کہ جب VRChat فوکس میں ہو)۔ اگر کوئی کلید ریکارڈ نہ ہو تو آپ اوپر دیے گئے سلائیڈر کو استعمال کر سکتے ہیں۔",
   "avatarScaling.off": "اوتار اسکیلنگ بند ہے",
-
   "translator.title": "مترجم",
   "translator.provider": "فراہم کنندہ",
   "translator.endpoint": "اینڈ پوائنٹ URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "ہدف زبان",
   "translator.aiGrammarFix": "پہلے AI سے گرامر درست کریں (اوپر دیے گئے IntelliChat فراہم کنندہ کو استعمال کرتا ہے)",
   "translator.note": "یہ Live Typing چیٹ باکس ترجمہ آپشن اور ایپ میں کہیں بھی جہاں \"بھیجنے سے پہلے ترجمہ کریں\" کا آپشن موجود ہو، وہاں استعمال ہوتا ہے۔",
-
   "liveTyping.title": "لائیو ٹائپنگ",
   "liveTyping.subtitle": "ٹائپ کرتے ہی بھیج دیتا ہے، VRChat کے اپنے چیٹ باکس کی طرح",
   "liveTyping.placeholder": "یہاں ٹائپ کریں — یہ ٹائپ کرتے ہوئے ہر چند سیکنڈ بعد خود بخود چیٹ باکس میں بھیج دیا جاتا ہے۔ 144 حروف سے آگے ٹائپ کرتے رہیں؛ VRChat '…' اور آپ کے پیغام کا آخری حصہ دکھائے گا۔",
   "liveTyping.previewLabel": "پیش منظر (VRChat کیا دکھائے گا):",
   "liveTyping.translateLabel": "بھیجنے سے پہلے ترجمہ کریں (مترجم کی ترتیبات استعمال کرتا ہے)",
-
   "languagePicker.title": "اپنی زبان منتخب کریں",
   "languagePicker.subtitle": "آپ اسے بعد میں ترتیبات میں تبدیل کر سکتے ہیں۔",
   "languagePicker.continue": "جاری رکھیں",
-
   "settingsLanguage.title": "زبان",
   "settingsLanguage.label": "ایپ کی زبان"
 }

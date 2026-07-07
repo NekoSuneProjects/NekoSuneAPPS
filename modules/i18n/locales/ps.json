@@ -23,6 +23,7 @@
   "nav.oscapps": "د OSC اپلیکیشنونه",
   "nav.vrctools": "د VRChat وسایل",
   "nav.live": "مستقیم",
+  "nav.translation": "ژباړه",
   "nav.oauth": "د OAuth حسابونه",
   "nav.discord": "Discord",
   "nav.stats": "احصایې",
@@ -33,7 +34,6 @@
   "nav.docs": "لاسوند / تنظیم",
   "nav.about": "په اړه",
   "nav.log": "د OSC ثبت",
-
   "common.save": "خوندي کړه",
   "common.cancel": "لغوه کړه",
   "common.enable": "فعاله کړه",
@@ -45,7 +45,6 @@
   "common.send": "ولېږه",
   "common.clear": "پاکه کړه",
   "common.record": "ثبت کړه",
-
   "avatarScaling.title": "د اواتار اندازه کول",
   "avatarScaling.subtitle": "د VRChat اصلي OSC د لوړوالي اندازه کول — په هر اواتار کار کوي",
   "avatarScaling.enable": "د اواتار اندازه کول فعال کړه",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "د ټیټولو کیلي ثبت کړه",
   "avatarScaling.hotkeyHint": "د تیزلارې کیلي په ټوله توګه کار کوي (حتی کله چې VRChat تمرکز ولري). که کیلي ثبت نشي، بیا هم کولی شئ له پورتني سلایډر څخه کار واخلئ.",
   "avatarScaling.off": "د اواتار اندازه کول غیرفعال دي",
-
   "translator.title": "ژباړن",
   "translator.provider": "چمتوکوونکی",
   "translator.endpoint": "د پای ټکي URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "موخه ژبه",
   "translator.aiGrammarFix": "لومړی د AI په مرسته ګرامر سمه کړه (پورتني IntelliChat چمتوکوونکی کاروي)",
   "translator.note": "د Live Typing چېټ بکس د ژباړې انتخاب او هرچیرې چې په اپلیکیشن کې د \"د لیږلو مخکې ژباړل\" انتخاب شتون ولري کارول کیږي.",
-
   "liveTyping.title": "ژوندۍ لیکنه",
   "liveTyping.subtitle": "لکه څنګه چې لیکئ لیږي، لکه د VRChat خپل چېټ بکس",
   "liveTyping.placeholder": "دلته ولیکئ — دا متن په اتومات ډول هر څو ثانیو کې، لکه څنګه چې تاسو لیکئ، چېټ بکس ته لیږل کیږي. له ۱۴۴ حروفو وروسته هم لیکل ته دوام ورکړئ؛ VRChat به «…» + د خپل پیغام پای ښکاره کړي.",
   "liveTyping.previewLabel": "مخکتنه (هغه څه چې VRChat به ښکاره کړي):",
   "liveTyping.translateLabel": "د لیږلو مخکې ژباړل (د ژباړن ترتیبات کاروي)",
-
   "languagePicker.title": "خپله ژبه غوره کړئ",
   "languagePicker.subtitle": "تاسو یې کولی شئ وروسته په ترتیباتو کې بدل کړئ.",
   "languagePicker.continue": "دوام ورکړئ",
-
   "settingsLanguage.title": "ژبه",
   "settingsLanguage.label": "د اپلیکیشن ژبه"
 }

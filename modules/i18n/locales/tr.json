@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC Uygulamaları",
   "nav.vrctools": "VRChat Araçları",
   "nav.live": "Canlı",
+  "nav.translation": "Çeviri",
   "nav.oauth": "OAuth Hesapları",
   "nav.discord": "Discord",
   "nav.stats": "İstatistikler",
@@ -33,7 +34,6 @@
   "nav.docs": "Belgeler / Kurulum",
   "nav.about": "Hakkında",
   "nav.log": "OSC Günlüğü",
-
   "common.save": "Kaydet",
   "common.cancel": "İptal",
   "common.enable": "Etkinleştir",
@@ -45,7 +45,6 @@
   "common.send": "Gönder",
   "common.clear": "Temizle",
   "common.record": "Kayda Al",
-
   "avatarScaling.title": "Avatar Ölçekleme",
   "avatarScaling.subtitle": "VRChat'in yerel OSC boy ölçekleme özelliği — her avatarda çalışır",
   "avatarScaling.enable": "Avatar ölçeklemeyi etkinleştir",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Küçültme tuşunu kaydet",
   "avatarScaling.hotkeyHint": "Kısayol tuşları genel olarak çalışır (VRChat odaktayken bile). Bir tuş kaydedilemiyorsa yukarıdaki kaydırıcıyı kullanabilirsiniz.",
   "avatarScaling.off": "Avatar ölçekleme kapalı",
-
   "translator.title": "Çevirmen",
   "translator.provider": "Sağlayıcı",
   "translator.endpoint": "Uç Nokta URL'si",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Hedef dil",
   "translator.aiGrammarFix": "Önce yapay zeka ile dil bilgisini düzelt (yukarıdaki IntelliChat sağlayıcısını kullanır)",
   "translator.note": "Live Typing sohbet kutusu çeviri seçeneği ve uygulamada \"Göndermeden önce çevir\" seçeneği sunulan diğer her yerde kullanılır.",
-
   "liveTyping.title": "Canlı Yazma",
   "liveTyping.subtitle": "VRChat'in kendi sohbet kutusu gibi, yazarken gönderir",
   "liveTyping.placeholder": "Buraya yazın — yazdıkça birkaç saniyede bir otomatik olarak sohbet kutusuna gönderilir. 144 karakterin üzerinde yazmaya devam edin; VRChat '…' ve mesajınızın sonunu gösterecektir.",
   "liveTyping.previewLabel": "Önizleme (VRChat'in göstereceği şey):",
   "liveTyping.translateLabel": "Göndermeden önce çevir (Çevirmen ayarlarını kullanır)",
-
   "languagePicker.title": "Dilinizi seçin",
   "languagePicker.subtitle": "Bunu daha sonra Ayarlar'dan değiştirebilirsiniz.",
   "languagePicker.continue": "Devam Et",
-
   "settingsLanguage.title": "Dil",
   "settingsLanguage.label": "Uygulama dili"
 }

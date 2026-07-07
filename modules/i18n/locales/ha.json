@@ -23,6 +23,7 @@
   "nav.oscapps": "Manhajojin OSC",
   "nav.vrctools": "Kayan Aikin VRChat",
   "nav.live": "Kai Tsaye",
+  "nav.translation": "Fassara",
   "nav.oauth": "Asusun OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Kididdiga",
@@ -33,7 +34,6 @@
   "nav.docs": "Takardu / Saitawa",
   "nav.about": "Game da Shirin",
   "nav.log": "Rijistar OSC",
-
   "common.save": "Ajiye",
   "common.cancel": "Soke",
   "common.enable": "Kunna",
@@ -45,7 +45,6 @@
   "common.send": "Aika",
   "common.clear": "Share",
   "common.record": "Rikodi",
-
   "avatarScaling.title": "Daidaita Girman Avatar",
   "avatarScaling.subtitle": "Tsarin daidaita tsayi na OSC na VRChat — yana aiki akan kowane avatar",
   "avatarScaling.enable": "Kunna daidaita girman avatar",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Rikodin maɓallin rage girma",
   "avatarScaling.hotkeyHint": "Maɓallan gaggawa suna aiki ko'ina (ko da VRChat yana kan fuska). Idan maɓalli bai yi rikodi ba, za ku iya amfani da mai daidaitawa da ke sama.",
   "avatarScaling.off": "An kashe daidaita girman avatar",
-
   "translator.title": "Mai Fassara",
   "translator.provider": "Mai Bayarwa",
   "translator.endpoint": "URL na Endpoint",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Yaren da ake fassara zuwa",
   "translator.aiGrammarFix": "Gyara nahawu da AI tukuna (yana amfani da mai bayarwa na IntelliChat da ke sama)",
   "translator.note": "Ana amfani da shi ta zaɓin fassarar akwatin hira na Live Typing da kuma ko'ina a cikin manhajar da ake ba da zaɓin \"Fassara kafin aikawa.\"",
-
   "liveTyping.title": "Rubutu Kai Tsaye",
   "liveTyping.subtitle": "yana aikawa yayin da kake rubutu, kamar akwatin hirar VRChat da kanta",
   "liveTyping.placeholder": "Rubuta a nan — wannan yana aikawa zuwa akwatin hira ta atomatik kowane ƴan daƙiƴoi yayin da kake rubutu. Ci gaba da rubutu bayan haruffa 144; VRChat zai nuna '…' + ƙarshen saƙonka.",
   "liveTyping.previewLabel": "Gani (abin da VRChat zai nuna):",
   "liveTyping.translateLabel": "Fassara kafin aikawa (yana amfani da saitunan Mai Fassara)",
-
   "languagePicker.title": "Zaɓi yarenka",
   "languagePicker.subtitle": "Za ka iya canza wannan daga baya a Saituna.",
   "languagePicker.continue": "Ci gaba",
-
   "settingsLanguage.title": "Yare",
   "settingsLanguage.label": "Yaren manhaja"
 }

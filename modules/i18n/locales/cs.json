@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC aplikace",
   "nav.vrctools": "Nástroje VRChat",
   "nav.live": "Naživo",
+  "nav.translation": "Překlad",
   "nav.oauth": "OAuth účty",
   "nav.discord": "Discord",
   "nav.stats": "Statistiky",
@@ -33,7 +34,6 @@
   "nav.docs": "Dokumentace / Konfigurace",
   "nav.about": "O aplikaci",
   "nav.log": "OSC protokol",
-
   "common.save": "Uložit",
   "common.cancel": "Zrušit",
   "common.enable": "Povolit",
@@ -45,7 +45,6 @@
   "common.send": "Odeslat",
   "common.clear": "Vymazat",
   "common.record": "Nahrát",
-
   "avatarScaling.title": "Škálování avatara",
   "avatarScaling.subtitle": "Nativní OSC škálování výšky VRChatu — funguje na jakémkoli avatarovi",
   "avatarScaling.enable": "Povolit škálování avatara",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Nahrát klávesu pro zmenšení",
   "avatarScaling.hotkeyHint": "Klávesové zkratky fungují globálně (i když je VRChat aktivní v popředí). Pokud se klávesu nepodaří nahrát, můžeš stále použít posuvník výše.",
   "avatarScaling.off": "Škálování avatara je vypnuté",
-
   "translator.title": "Překladač",
   "translator.provider": "Poskytovatel",
   "translator.endpoint": "URL koncového bodu",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Cílový jazyk",
   "translator.aiGrammarFix": "Nejprve opravit gramatiku pomocí AI (používá poskytovatele IntelliChat výše)",
   "translator.note": "Používá se u možnosti překladu chatboxu Live Typing a kdekoli jinde v aplikaci, kde je nabízeno \"Přeložit před odesláním.\"",
-
   "liveTyping.title": "Psaní naživo",
   "liveTyping.subtitle": "odesílá se, jak píšeš, stejně jako vlastní chatbox VRChatu",
   "liveTyping.placeholder": "Piš sem — tohle se automaticky odesílá do chatboxu každých několik sekund, jak píšeš. Klidně pokračuj v psaní i po 144 znacích; VRChat zobrazí '…' + konec tvé zprávy.",
   "liveTyping.previewLabel": "Náhled (co VRChat zobrazí):",
   "liveTyping.translateLabel": "Přeložit před odesláním (používá nastavení Překladače)",
-
   "languagePicker.title": "Vyber svůj jazyk",
   "languagePicker.subtitle": "Toto můžeš později změnit v Nastavení.",
   "languagePicker.continue": "Pokračovat",
-
   "settingsLanguage.title": "Jazyk",
   "settingsLanguage.label": "Jazyk aplikace"
 }

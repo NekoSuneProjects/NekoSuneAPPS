@@ -23,6 +23,7 @@
   "nav.oscapps": "ແອັບ OSC",
   "nav.vrctools": "ເຄື່ອງມື VRChat",
   "nav.live": "ສົດ",
+  "nav.translation": "ການແປ",
   "nav.oauth": "ບັນຊີ OAuth",
   "nav.discord": "Discord",
   "nav.stats": "ສະຖິຕິ",
@@ -33,7 +34,6 @@
   "nav.docs": "ເອກກະສານ / ຕິດຕັ້ງ",
   "nav.about": "ກ່ຽວກັບ",
   "nav.log": "ບັນທຶກ OSC",
-
   "common.save": "ບັນທຶກ",
   "common.cancel": "ຍົກເລີກ",
   "common.enable": "ເປີດໃຊ້",
@@ -45,7 +45,6 @@
   "common.send": "ສົ່ງ",
   "common.clear": "ລ້າງ",
   "common.record": "ອັດ",
-
   "avatarScaling.title": "ການປັບຂະໜາດອາວາຕາ",
   "avatarScaling.subtitle": "ລະບົບປັບຄວາມສູງແບບ OSC ຂອງ VRChat ເອງ — ໃຊ້ໄດ້ກັບອາວາຕາທຸກຕົວ",
   "avatarScaling.enable": "ເປີດໃຊ້ການປັບຂະໜາດອາວາຕາ",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "ອັດປຸ່ມຫຼຸດຂະໜາດ",
   "avatarScaling.hotkeyHint": "ປຸ່ມລັດເຮັດວຽກໄດ້ທົ່ວລະບົບ (ເຖິງແມ່ນວ່າ VRChat ຈະໂຟກັດຢູ່). ຖ້າປຸ່ມບໍ່ສາມາດອັດໄດ້, ທ່ານຍັງສາມາດໃຊ້ແຖບປັບຢູ່ຂ້າງເທິງໄດ້.",
   "avatarScaling.off": "ການປັບຂະໜາດອາວາຕາປິດຢູ່",
-
   "translator.title": "ຕົວແປພາສາ",
   "translator.provider": "ຜູ້ໃຫ້ບໍລິການ",
   "translator.endpoint": "URL ຈຸດປາຍທາງ",
@@ -67,17 +65,14 @@
   "translator.targetLang": "ພາສາປາຍທາງ",
   "translator.aiGrammarFix": "ແກ້ໄວຍະກອນໃຫ້ຖືກຕ້ອງກ່ອນດ້ວຍ AI (ໃຊ້ຜູ້ໃຫ້ບໍລິການ IntelliChat ຂ້າງເທິງ)",
   "translator.note": "ໃຊ້ໂດຍຕົວເລືອກແປພາສາຂອງກ່ອງແຊດ Live Typing ແລະບ່ອນອື່ນໆໃນແອັບທີ່ມີຕົວເລືອກ \"ແປກ່ອນສົ່ງ.\"",
-
   "liveTyping.title": "ພິມສົດ",
   "liveTyping.subtitle": "ສົ່ງໃນຂະນະທີ່ທ່ານພິມ, ຄືກັນກັບກ່ອງແຊດຂອງ VRChat ເອງ",
   "liveTyping.placeholder": "ພິມທີ່ນີ້ — ຂໍ້ຄວາມນີ້ຈະຖືກສົ່ງໄປຫາກ່ອງແຊດໂດຍອັດຕະໂນມັດທຸກສອງສາມວິນາທີໃນຂະນະທີ່ທ່ານພິມ. ພິມຕໍ່ໄປໄດ້ເກີນ 144 ຕົວອັກສອນ; VRChat ຈະສະແດງ '…' ບວກກັບຕອນທ້າຍຂອງຂໍ້ຄວາມຂອງທ່ານ.",
   "liveTyping.previewLabel": "ສະແດງຕົວຢ່າງ (ສິ່ງທີ່ VRChat ຈະສະແດງ):",
   "liveTyping.translateLabel": "ແປກ່ອນສົ່ງ (ໃຊ້ການຕັ້ງຄ່າຕົວແປພາສາ)",
-
   "languagePicker.title": "ເລືອກພາສາຂອງທ່ານ",
   "languagePicker.subtitle": "ທ່ານສາມາດປ່ຽນສິ່ງນີ້ພາຍຫຼັງໄດ້ໃນການຕັ້ງຄ່າ.",
   "languagePicker.continue": "ດຳເນີນຕໍ່",
-
   "settingsLanguage.title": "ພາສາ",
   "settingsLanguage.label": "ພາສາແອັບ"
 }

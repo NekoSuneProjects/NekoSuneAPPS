@@ -564,9 +564,126 @@
       <!-- TRANSLATION / SPEECH -->
       <section id="translation" class="tabpanel">
         <div id="translationCards" class="grid cols-2"></div>
+
         <div class="card">
-          <h3>Speech Translation Roadmap</h3>
-          <div class="muted" style="font-size:.75rem">Upcoming: desktop-audio STT, OCR screen translation, and selectable TTS output engines.</div>
+          <h3>🔊 Text-to-Speech</h3>
+          <label>Engine</label>
+          <select id="ttsEngine">
+            <option value="sapi">Windows built-in (SAPI)</option>
+            <option value="tiktok">TikTok TTS</option>
+            <option value="elevenlabs">ElevenLabs (cloud)</option>
+            <option value="selfhosted">Self-hosted (Piper / XTTS / other)</option>
+          </select>
+          <div id="ttsSapiRow" class="grid cols-2" style="margin-top:8px">
+            <div><label>Voice</label><select id="ttsSapiVoice"></select></div>
+            <div><label>Rate</label><input type="range" id="ttsSapiRate" min="-10" max="10" step="1" value="0" /></div>
+          </div>
+          <div id="ttsElevenRow" style="margin-top:8px">
+            <label>API key</label><input type="password" id="ttsElevenKey" placeholder="key" />
+            <label style="margin-top:8px">Voice ID</label><input type="text" id="ttsElevenVoiceId" placeholder="voice id" />
+          </div>
+          <div id="ttsSelfHostedRow" style="margin-top:8px">
+            <label>Endpoint URL</label><input type="text" id="ttsSelfHostedEndpoint" placeholder="http://localhost:5000/api/tts" />
+          </div>
+          <label style="margin-top:8px">Output device <span class="muted" style="font-size:.7rem">(install a virtual audio cable yourself to route this into VRChat's mic input)</span></label>
+          <select id="ttsOutputDevice"><option value="">System default</option></select>
+          <div class="row" style="margin-top:8px">
+            <input type="text" id="ttsEngineTestText" placeholder="Type something to speak..." style="flex:1" />
+            <button class="btn" id="ttsEngineTestSpeak">Speak</button>
+          </div>
+          <audio id="ttsEngineAudio" style="display:none"></audio>
+          <div class="muted" id="ttsEngineStatus" style="margin-top:6px;font-size:.78rem"></div>
+        </div>
+
+        <div class="card">
+          <h3>🎙 Desktop Speech-to-Text</h3>
+          <div class="muted" style="font-size:.75rem;margin-bottom:8px">Listens to shared desktop/system audio, transcribes speech, and can translate + send it to the chatbox or speak the translation aloud.</div>
+          <label>Engine</label>
+          <select id="sttEngine">
+            <option value="cloud">Cloud (OpenAI / Groq Whisper)</option>
+            <option value="local">Local (offline, downloads a model on first use)</option>
+          </select>
+          <div id="sttCloudRow" class="grid cols-2" style="margin-top:8px">
+            <div><label>Provider</label><select id="sttCloudProvider"><option value="openai">OpenAI</option><option value="groq">Groq</option></select></div>
+            <div><label>API key</label><input type="password" id="sttCloudKey" placeholder="key" /></div>
+          </div>
+          <div id="sttLocalRow" style="margin-top:8px">
+            <label>Model size</label>
+            <select id="sttLocalModel">
+              <option value="tiny">Tiny (fastest, least accurate)</option>
+              <option value="base">Base</option>
+              <option value="small">Small (slower, more accurate)</option>
+            </select>
+          </div>
+          <div class="grid cols-2" style="margin-top:8px">
+            <div><label>Source language</label><select id="sttSourceLang"><option value="auto">Auto-detect</option></select></div>
+            <div><label>Clip length (s)</label><input type="number" id="sttClipSeconds" min="3" max="15" value="6" /></div>
+          </div>
+          <div class="row" style="margin-top:8px;flex-wrap:wrap;gap:14px">
+            <label class="switch" style="margin:0"><input type="checkbox" id="sttToChatbox"> Send to chatbox</label>
+            <label class="switch" style="margin:0"><input type="checkbox" id="sttSpeakTranslation"> Speak the translation</label>
+          </div>
+          <div class="row" style="margin-top:10px"><button class="btn" id="sttToggle">Start listening</button></div>
+          <div class="muted" id="sttStatus" style="margin-top:8px;font-size:.78rem">Stopped</div>
+          <div class="muted" id="sttLastText" style="margin-top:4px;font-size:.78rem"></div>
+        </div>
+
+        <div class="card">
+          <h3>🔎 OCR Screen Translate</h3>
+          <div class="muted" style="font-size:.75rem;margin-bottom:8px">Reads text from a shared screen/window (e.g. VRChat) and can translate + send it to the chatbox.</div>
+          <div class="grid cols-2">
+            <div><label>OCR language</label>
+              <select id="ocrLang">
+                <option value="eng">English</option>
+                <option value="jpn">Japanese</option>
+                <option value="spa">Spanish</option>
+                <option value="rus">Russian</option>
+                <option value="deu">German</option>
+                <option value="fra">French</option>
+                <option value="chi_sim">Chinese (Simplified)</option>
+                <option value="kor">Korean</option>
+                <option value="ara">Arabic</option>
+                <option value="por">Portuguese</option>
+                <option value="ita">Italian</option>
+                <option value="nld">Dutch</option>
+                <option value="pol">Polish</option>
+                <option value="ukr">Ukrainian</option>
+                <option value="vie">Vietnamese</option>
+              </select>
+            </div>
+            <div><label>Scan interval (ms)</label><input type="number" id="ocrInterval" min="1000" max="15000" step="500" value="3000" /></div>
+          </div>
+          <label class="switch" style="margin-top:8px"><input type="checkbox" id="ocrToChatbox"> Send to chatbox</label>
+          <div class="row" style="margin-top:10px"><button class="btn" id="ocrToggle">Start reading</button></div>
+          <div class="muted" id="ocrStatus" style="margin-top:8px;font-size:.78rem">Stopped</div>
+          <div class="muted" id="ocrLastText" style="margin-top:4px;font-size:.78rem"></div>
+        </div>
+
+        <div class="card">
+          <h3>🤖 Voice Assistant</h3>
+          <div class="muted" style="font-size:.75rem;margin-bottom:8px">Say your wake word, then a command — checks a friend's status, who's online, your own status, changes your status text (never your bio), or sends an SOS to trusted friends. Uses the Desktop STT engine/settings above.</div>
+          <div class="grid cols-2">
+            <div><label>Wake word</label><input type="text" id="assistantWakeWord" placeholder="e.g. nova" /></div>
+            <div><label>Clip length (s)</label><input type="number" id="assistantClipSeconds" min="2" max="10" value="4" /></div>
+          </div>
+          <label style="margin-top:8px">Trusted friends (for SOS) <span class="muted" style="font-size:.7rem">comma-separated display names, must be on your friends list</span></label>
+          <input type="text" id="assistantTrustedFriends" placeholder="name1, name2" />
+          <div class="grid cols-2" style="margin-top:8px">
+            <div><label>Instant-replay length</label>
+              <select id="assistantReplayMinutes">
+                <option value="1">1 minute</option>
+                <option value="5" selected>5 minutes</option>
+                <option value="10">10 minutes</option>
+              </select>
+            </div>
+            <div><label>SOS webhook URL <span class="muted" style="font-size:.7rem">(Discord, optional — sends the replay clip)</span></label><input type="text" id="assistantSosWebhook" placeholder="https://discord.com/api/webhooks/..." /></div>
+          </div>
+          <div class="row" style="margin-top:10px;gap:8px">
+            <button class="btn" id="assistantToggle">Start listening</button>
+            <button class="btn ghost" id="assistantSosButton">🆘 Trigger SOS now</button>
+          </div>
+          <div class="muted" id="assistantStatus" style="margin-top:8px;font-size:.78rem">Stopped</div>
+          <div class="muted" id="assistantHeard" style="margin-top:4px;font-size:.78rem"></div>
         </div>
       </section>
 

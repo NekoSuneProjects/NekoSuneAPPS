@@ -23,6 +23,7 @@
   "nav.oscapps": "Aplikasi OSC",
   "nav.vrctools": "Alat VRChat",
   "nav.live": "Live",
+  "nav.translation": "Terjemahan",
   "nav.oauth": "Akun OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Statistik",
@@ -33,7 +34,6 @@
   "nav.docs": "Dokumentasi / Pengaturan Awal",
   "nav.about": "Tentang",
   "nav.log": "Log OSC",
-
   "common.save": "Simpan",
   "common.cancel": "Batal",
   "common.enable": "Aktifkan",
@@ -45,7 +45,6 @@
   "common.send": "Kirim",
   "common.clear": "Hapus",
   "common.record": "Rekam",
-
   "avatarScaling.title": "Penskalaan Avatar",
   "avatarScaling.subtitle": "Penskalaan tinggi OSC bawaan VRChat — berfungsi di avatar apa pun",
   "avatarScaling.enable": "Aktifkan penskalaan avatar",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Rekam tombol perkecil skala",
   "avatarScaling.hotkeyHint": "Hotkey berfungsi secara global (bahkan saat VRChat sedang fokus). Jika tombol tidak bisa direkam, Anda tetap bisa menggunakan slider di atas.",
   "avatarScaling.off": "Penskalaan avatar sedang nonaktif",
-
   "translator.title": "Penerjemah",
   "translator.provider": "Penyedia",
   "translator.endpoint": "URL Endpoint",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Bahasa tujuan",
   "translator.aiGrammarFix": "Perbaiki tata bahasa dengan AI terlebih dahulu (menggunakan penyedia IntelliChat di atas)",
   "translator.note": "Digunakan oleh opsi terjemahan chatbox Live Typing dan di mana pun di aplikasi yang menawarkan \"Terjemahkan sebelum mengirim.\"",
-
   "liveTyping.title": "Live Typing",
   "liveTyping.subtitle": "mengirim saat Anda mengetik, seperti chatbox VRChat sendiri",
   "liveTyping.placeholder": "Ketik di sini — ini otomatis terkirim ke chatbox setiap beberapa detik saat Anda mengetik. Teruslah mengetik lebih dari 144 karakter; VRChat akan menampilkan '…' + akhir pesan Anda.",
   "liveTyping.previewLabel": "Pratinjau (yang akan ditampilkan VRChat):",
   "liveTyping.translateLabel": "Terjemahkan sebelum mengirim (menggunakan pengaturan Penerjemah)",
-
   "languagePicker.title": "Pilih bahasa Anda",
   "languagePicker.subtitle": "Anda dapat mengubahnya nanti di Pengaturan.",
   "languagePicker.continue": "Lanjutkan",
-
   "settingsLanguage.title": "Bahasa",
   "settingsLanguage.label": "Bahasa aplikasi"
 }

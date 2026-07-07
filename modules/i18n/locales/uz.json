@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC ilovalari",
   "nav.vrctools": "VRChat vositalari",
   "nav.live": "Jonli efir",
+  "nav.translation": "Tarjima",
   "nav.oauth": "OAuth hisoblari",
   "nav.discord": "Discord",
   "nav.stats": "Statistika",
@@ -33,7 +34,6 @@
   "nav.docs": "Hujjatlar / Sozlash",
   "nav.about": "Dastur haqida",
   "nav.log": "OSC jurnali",
-
   "common.save": "Saqlash",
   "common.cancel": "Bekor qilish",
   "common.enable": "Yoqish",
@@ -45,7 +45,6 @@
   "common.send": "Yuborish",
   "common.clear": "Tozalash",
   "common.record": "Yozib olish",
-
   "avatarScaling.title": "Avatar o'lchamini o'zgartirish",
   "avatarScaling.subtitle": "VRChat'ning o'zining OSC bo'y o'lchamini sozlash imkoniyati — har qanday avatarda ishlaydi",
   "avatarScaling.enable": "Avatar o'lchamini o'zgartirishni yoqish",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Kichiklashtirish tugmasini yozib olish",
   "avatarScaling.hotkeyHint": "Tezkor tugmalar global tarzda ishlaydi (VRChat fokusda bo'lgan paytda ham). Agar tugma yozib olinmasa, yuqoridagi slayderdan foydalanishingiz mumkin.",
   "avatarScaling.off": "Avatar o'lchamini o'zgartirish o'chirilgan",
-
   "translator.title": "Tarjimon",
   "translator.provider": "Provayder",
   "translator.endpoint": "Endpoint URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Maqsad til",
   "translator.aiGrammarFix": "Avval grammatikani AI bilan tuzatish (yuqoridagi IntelliChat provayderidan foydalanadi)",
   "translator.note": "Live Typing chatbox tarjima opsiyasi va ilovada \"Yuborishdan oldin tarjima qilish\" imkoniyati mavjud boshqa barcha joylarda ishlatiladi.",
-
   "liveTyping.title": "Jonli yozish",
   "liveTyping.subtitle": "VRChat'ning o'z chatboxi kabi, siz yozayotganda yuboriladi",
   "liveTyping.placeholder": "Bu yerga yozing — siz yozayotganda bu har necha soniyada avtomatik ravishda chatboxga yuboriladi. 144 belgidan keyin ham yozishda davom eting; VRChat '…' va xabaringizning oxirini ko'rsatadi.",
   "liveTyping.previewLabel": "Oldindan ko'rish (VRChat nima ko'rsatadi):",
   "liveTyping.translateLabel": "Yuborishdan oldin tarjima qilish (Tarjimon sozlamalaridan foydalanadi)",
-
   "languagePicker.title": "Tilingizni tanlang",
   "languagePicker.subtitle": "Buni keyinroq Sozlamalarda o'zgartirishingiz mumkin.",
   "languagePicker.continue": "Davom etish",
-
   "settingsLanguage.title": "Til",
   "settingsLanguage.label": "Ilova tili"
 }

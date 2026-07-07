@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC тиркемелери",
   "nav.vrctools": "VRChat куралдары",
   "nav.live": "Түз эфир",
+  "nav.translation": "Кооткоруу",
   "nav.oauth": "OAuth каттоо эсептери",
   "nav.discord": "Discord",
   "nav.stats": "Статистика",
@@ -33,7 +34,6 @@
   "nav.docs": "Документтер / Орнотуу",
   "nav.about": "Жөнүндө",
   "nav.log": "OSC журналы",
-
   "common.save": "Сактоо",
   "common.cancel": "Жокко чыгаруу",
   "common.enable": "Күйгүзүү",
@@ -45,7 +45,6 @@
   "common.send": "Жөнөтүү",
   "common.clear": "Тазалоо",
   "common.record": "Жаздыруу",
-
   "avatarScaling.title": "Аватар өлчөмү",
   "avatarScaling.subtitle": "VRChat'тын OSC аркылуу боюн өлчөө функциясы — бардык аватарларда иштейт",
   "avatarScaling.enable": "Аватар өлчөмүн иштетүү",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Өлчөмдү кичирейтүү баскычын жаздыруу",
   "avatarScaling.hotkeyHint": "Ыстык баскычтар бардык жерде иштейт (VRChat активдүү болсо да). Эгер баскыч жаздырылбай жатса, жогорудагы сүргүчтү колдонсоңуз болот.",
   "avatarScaling.off": "Аватар өлчөмү өчүрүлгөн",
-
   "translator.title": "Котормочу",
   "translator.provider": "Провайдер",
   "translator.endpoint": "Эндпоинт URL дареги",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Максаттуу тил",
   "translator.aiGrammarFix": "Алгач грамматиканы AI менен түзөтүү (жогорудагы IntelliChat провайдерин колдонот)",
   "translator.note": "Live Typing чат-бокстун котормо функциясында жана колдонмодо \"Жөнөтүүдөн мурун которуу\" сунушталган башка бардык жерде колдонулат.",
-
   "liveTyping.title": "Түз жазуу",
   "liveTyping.subtitle": "жазып жатканда өзү жөнөтөт, VRChat'тын өз чат-боксу сыяктуу",
   "liveTyping.placeholder": "Бул жерге жазыңыз — жазып жатканыңызда бул чат-бокско бир нече секунд сайын автоматтык түрдө жөнөтүлөт. 144 белгиден ашык жазсаңыз болот; VRChat '…' белгисин жана билдирүүңүздүн аягын көрсөтөт.",
   "liveTyping.previewLabel": "Алдын ала көрүү (VRChat эмнени көрсөтөт):",
   "liveTyping.translateLabel": "Жөнөтүүдөн мурун которуу (Котормочу тууралоолорун колдонот)",
-
   "languagePicker.title": "Тилиңизди тандаңыз",
   "languagePicker.subtitle": "Муну кийинчерээк Тууралоолордо өзгөртүүгө болот.",
   "languagePicker.continue": "Улантуу",
-
   "settingsLanguage.title": "Тил",
   "settingsLanguage.label": "Колдонмо тили"
 }

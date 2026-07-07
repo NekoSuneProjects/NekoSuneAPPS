@@ -27,6 +27,9 @@ const { startKick, stopKick } = require('./modules/live/kickModule')
 const { getTikTokTtsAudio, TIKTOK_VOICES } = require('./modules/live/tiktokTts')
 const { intelliRewrite, AI_PROVIDERS } = require('./modules/ai/intelliChat')
 const { translateText, TRANSLATE_PROVIDERS } = require('./modules/ai/translateProviders')
+const { speak, listSapiVoices, TTS_PROVIDERS } = require('./modules/ai/ttsProviders')
+const { transcribeCloud, transcribeLocal, STT_CLOUD_PROVIDERS, STT_LOCAL_MODELS } = require('./modules/ai/speechToText')
+const { interpretCommand } = require('./modules/ai/assistantBrain')
 const i18n = require('./modules/i18n/i18n')
 const { loginTwitch, TWITCH_REDIRECT } = require('./modules/oauth/providers/twitch')
 const twitchInteractive = require('./modules/live/twitch/interactive')
@@ -979,6 +982,26 @@ ipcMain.handle('translate:providers', () => TRANSLATE_PROVIDERS)
 /* ------------------------------------------------------------------ */
 ipcMain.handle('i18n:languages', () => i18n.listLanguages())
 ipcMain.handle('i18n:strings', (e, lang) => i18n.getStrings(lang))
+
+/* ------------------------------------------------------------------ */
+/* Text-to-speech (SAPI / TikTok / ElevenLabs / self-hosted)           */
+/* ------------------------------------------------------------------ */
+ipcMain.handle('tts:speak', (e, opts) => speak(opts))
+ipcMain.handle('tts:providers', () => TTS_PROVIDERS)
+ipcMain.handle('tts:sapiVoices', () => listSapiVoices())
+
+/* ------------------------------------------------------------------ */
+/* Speech-to-text (cloud OpenAI/Groq + local Whisper via transformers) */
+/* ------------------------------------------------------------------ */
+ipcMain.handle('stt:transcribeCloud', (e, opts) => transcribeCloud(opts))
+ipcMain.handle('stt:transcribeLocal', (e, opts) => transcribeLocal(opts))
+ipcMain.handle('stt:cloudProviders', () => STT_CLOUD_PROVIDERS)
+ipcMain.handle('stt:localModels', () => STT_LOCAL_MODELS)
+
+/* ------------------------------------------------------------------ */
+/* Voice assistant command interpretation (wake-word body -> action)   */
+/* ------------------------------------------------------------------ */
+ipcMain.handle('assistant:interpret', (e, opts) => interpretCommand(opts))
 
 /* ------------------------------------------------------------------ */
 /* Shared OAuth providers                                              */

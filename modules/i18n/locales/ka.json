@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC აპლიკაციები",
   "nav.vrctools": "VRChat ხელსაწყოები",
   "nav.live": "ლაივი",
+  "nav.translation": "თარგმანი",
   "nav.oauth": "OAuth ანგარიშები",
   "nav.discord": "Discord",
   "nav.stats": "სტატისტიკა",
@@ -33,7 +34,6 @@
   "nav.docs": "დოკუმენტაცია / დაყენება",
   "nav.about": "შესახებ",
   "nav.log": "OSC ჟურნალი",
-
   "common.save": "შენახვა",
   "common.cancel": "გაუქმება",
   "common.enable": "ჩართვა",
@@ -45,7 +45,6 @@
   "common.send": "გაგზავნა",
   "common.clear": "გასუფთავება",
   "common.record": "ჩაწერა",
-
   "avatarScaling.title": "ავატარის მასშტაბირება",
   "avatarScaling.subtitle": "VRChat-ის საკუთარი OSC სიმაღლის მასშტაბირება — მუშაობს ყველა ავატარზე",
   "avatarScaling.enable": "ავატარის მასშტაბირების ჩართვა",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "შემცირების კლავიშის ჩაწერა",
   "avatarScaling.hotkeyHint": "ცხელი კლავიშები მუშაობს გლობალურად (თუნდაც VRChat-ს ჰქონდეს ფოკუსი). თუ კლავიში არ ჩაწერდა, შეგიძლიათ გამოიყენოთ ზემოთ მოცემული სლაიდერი.",
   "avatarScaling.off": "ავატარის მასშტაბირება გამორთულია",
-
   "translator.title": "თარჯიმანი",
   "translator.provider": "პროვაიდერი",
   "translator.endpoint": "წერტილის URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "სამიზნე ენა",
   "translator.aiGrammarFix": "გრამატიკის გასწორება AI-ით ჯერ (იყენებს ზემოთ მითითებულ IntelliChat პროვაიდერს)",
   "translator.note": "გამოიყენება Live Typing ჩატბოქსის თარგმანის ოპციაში და ყველგან აპლიკაციაში, სადაც შემოთავაზებულია „გაგზავნამდე თარგმნა“.",
-
   "liveTyping.title": "ლაივ ტაიპინგი",
   "liveTyping.subtitle": "იგზავნება წერის დროს, VRChat-ის საკუთარი ჩატბოქსის მსგავსად",
   "liveTyping.placeholder": "დაწერეთ აქ — ეს ავტომატურად იგზავნება ჩატბოქსში ყოველ რამდენიმე წამში წერის დროს. განაგრძეთ წერა 144 სიმბოლოს შემდეგაც; VRChat აჩვენებს „…“-ს + თქვენი შეტყობინების დასასრულს.",
   "liveTyping.previewLabel": "გადახედვა (რას გამოაჩენს VRChat):",
   "liveTyping.translateLabel": "გაგზავნამდე თარგმნა (იყენებს თარჯიმნის პარამეტრებს)",
-
   "languagePicker.title": "აირჩიეთ თქვენი ენა",
   "languagePicker.subtitle": "ეს შემდეგში შეგეძლებათ შეცვალოთ პარამეტრებში.",
   "languagePicker.continue": "გაგრძელება",
-
   "settingsLanguage.title": "ენა",
   "settingsLanguage.label": "აპლიკაციის ენა"
 }

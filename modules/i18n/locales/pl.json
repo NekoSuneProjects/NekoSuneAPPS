@@ -23,6 +23,7 @@
   "nav.oscapps": "Aplikacje OSC",
   "nav.vrctools": "Narzędzia VRChat",
   "nav.live": "Na żywo",
+  "nav.translation": "Tłumaczenie",
   "nav.oauth": "Konta OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Statystyki",
@@ -33,7 +34,6 @@
   "nav.docs": "Dokumentacja / Konfiguracja",
   "nav.about": "O aplikacji",
   "nav.log": "Log OSC",
-
   "common.save": "Zapisz",
   "common.cancel": "Anuluj",
   "common.enable": "Włącz",
@@ -45,7 +45,6 @@
   "common.send": "Wyślij",
   "common.clear": "Wyczyść",
   "common.record": "Nagraj",
-
   "avatarScaling.title": "Skalowanie awatara",
   "avatarScaling.subtitle": "Natywne skalowanie wzrostu OSC VRChat — działa z każdym awatarem",
   "avatarScaling.enable": "Włącz skalowanie awatara",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Nagraj klawisz zmniejszania",
   "avatarScaling.hotkeyHint": "Skróty klawiszowe działają globalnie (nawet gdy VRChat jest aktywny). Jeśli klawisz nie daje się nagrać, możesz użyć slidera powyżej.",
   "avatarScaling.off": "Skalowanie awatara jest wyłączone",
-
   "translator.title": "Tłumacz",
   "translator.provider": "Dostawca",
   "translator.endpoint": "Adres URL endpointu",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Język docelowy",
   "translator.aiGrammarFix": "Najpierw poprawiaj gramatykę za pomocą AI (używa dostawcy IntelliChat powyżej)",
   "translator.note": "Używane przez opcję tłumaczenia Live Typing w czacie oraz wszędzie w aplikacji, gdzie dostępna jest opcja „Tłumacz przed wysłaniem”.",
-
   "liveTyping.title": "Pisanie na żywo",
   "liveTyping.subtitle": "wysyła w trakcie pisania, jak własny czat VRChat",
   "liveTyping.placeholder": "Pisz tutaj — tekst jest automatycznie wysyłany do czatu co kilka sekund podczas pisania. Możesz pisać dalej po przekroczeniu 144 znaków; VRChat pokaże „…” i koniec Twojej wiadomości.",
   "liveTyping.previewLabel": "Podgląd (co pokaże VRChat):",
   "liveTyping.translateLabel": "Tłumacz przed wysłaniem (używa ustawień Tłumacza)",
-
   "languagePicker.title": "Wybierz swój język",
   "languagePicker.subtitle": "Możesz to później zmienić w Ustawieniach.",
   "languagePicker.continue": "Dalej",
-
   "settingsLanguage.title": "Język",
   "settingsLanguage.label": "Język aplikacji"
 }

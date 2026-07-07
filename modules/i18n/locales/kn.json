@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC ಅಪ್ಲಿಕೇಶನ್‌ಗಳು",
   "nav.vrctools": "VRChat ಟೂಲ್ಸ್",
   "nav.live": "ಲೈವ್",
+  "nav.translation": "ಅನುವಾದ",
   "nav.oauth": "OAuth ಖಾತೆಗಳು",
   "nav.discord": "Discord",
   "nav.stats": "ಅಂಕಿಅಂಶಗಳು",
@@ -33,7 +34,6 @@
   "nav.docs": "ದಸ್ತಾವೇಜುಗಳು / ಸೆಟಪ್",
   "nav.about": "ಪರಿಚಯ",
   "nav.log": "OSC ಲಾಗ್",
-
   "common.save": "ಉಳಿಸಿ",
   "common.cancel": "ರದ್ದುಮಾಡಿ",
   "common.enable": "ಸಕ್ರಿಯಗೊಳಿಸಿ",
@@ -45,7 +45,6 @@
   "common.send": "ಕಳುಹಿಸಿ",
   "common.clear": "ಅಳಿಸಿ",
   "common.record": "ರೆಕಾರ್ಡ್ ಮಾಡಿ",
-
   "avatarScaling.title": "ಅವತಾರ್ ಸ್ಕೇಲಿಂಗ್",
   "avatarScaling.subtitle": "VRChat ನ ಸ್ಥಳೀಯ OSC ಎತ್ತರ ಸ್ಕೇಲಿಂಗ್ — ಯಾವುದೇ ಅವತಾರ್‌ನಲ್ಲಿ ಕಾರ್ಯನಿರ್ವಹಿಸುತ್ತದೆ",
   "avatarScaling.enable": "ಅವತಾರ್ ಸ್ಕೇಲಿಂಗ್ ಸಕ್ರಿಯಗೊಳಿಸಿ",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "ಸ್ಕೇಲ್-ಡೌನ್ ಕೀ ರೆಕಾರ್ಡ್ ಮಾಡಿ",
   "avatarScaling.hotkeyHint": "ಹಾಟ್‌ಕೀಗಳು ಜಾಗತಿಕವಾಗಿ ಕಾರ್ಯನಿರ್ವಹಿಸುತ್ತವೆ (VRChat ಫೋಕಸ್‌ನಲ್ಲಿದ್ದಾಗಲೂ). ಒಂದು ಕೀ ರೆಕಾರ್ಡ್ ಆಗದಿದ್ದರೆ, ನೀವು ಮೇಲಿನ ಸ್ಲೈಡರ್ ಅನ್ನು ಬಳಸಬಹುದು.",
   "avatarScaling.off": "ಅವತಾರ್ ಸ್ಕೇಲಿಂಗ್ ಆಫ್ ಆಗಿದೆ",
-
   "translator.title": "ಅನುವಾದಕ",
   "translator.provider": "ಪ್ರೊವೈಡರ್",
   "translator.endpoint": "ಎಂಡ್‌ಪಾಯಿಂಟ್ URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "ಗುರಿ ಭಾಷೆ",
   "translator.aiGrammarFix": "ಮೊದಲು AI ಮೂಲಕ ವ್ಯಾಕರಣ ಸರಿಪಡಿಸಿ (ಮೇಲಿನ IntelliChat ಪ್ರೊವೈಡರ್ ಅನ್ನು ಬಳಸುತ್ತದೆ)",
   "translator.note": "ಇದನ್ನು ಲೈವ್ ಟೈಪಿಂಗ್ ಚಾಟ್‌ಬಾಕ್ಸ್ ಅನುವಾದ ಆಯ್ಕೆ ಮತ್ತು ಅಪ್ಲಿಕೇಶನ್‌ನಲ್ಲಿ \"ಕಳುಹಿಸುವ ಮೊದಲು ಅನುವಾದಿಸಿ\" ಎಂಬ ಆಯ್ಕೆಯನ್ನು ನೀಡುವ ಪ್ರತಿ ಸ್ಥಳದಲ್ಲಿ ಬಳಸಲಾಗುತ್ತದೆ.",
-
   "liveTyping.title": "ಲೈವ್ ಟೈಪಿಂಗ್",
   "liveTyping.subtitle": "ನೀವು ಟೈಪ್ ಮಾಡುತ್ತಿದ್ದಂತೆ ಕಳುಹಿಸುತ್ತದೆ, VRChat ನ ಸ್ವಂತ ಚಾಟ್‌ಬಾಕ್ಸ್‌ನಂತೆ",
   "liveTyping.placeholder": "ಇಲ್ಲಿ ಟೈಪ್ ಮಾಡಿ — ನೀವು ಟೈಪ್ ಮಾಡುತ್ತಿದ್ದಂತೆ ಇದು ಪ್ರತಿ ಕೆಲವು ಸೆಕೆಂಡುಗಳಿಗೊಮ್ಮೆ ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಚಾಟ್‌ಬಾಕ್ಸ್‌ಗೆ ಕಳುಹಿಸಲ್ಪಡುತ್ತದೆ. 144 ಅಕ್ಷರಗಳ ನಂತರವೂ ಟೈಪ್ ಮಾಡುತ್ತಿರಿ; VRChat '…' + ನಿಮ್ಮ ಸಂದೇಶದ ಅಂತ್ಯವನ್ನು ತೋರಿಸುತ್ತದೆ.",
   "liveTyping.previewLabel": "ಪೂರ್ವವೀಕ್ಷಣೆ (VRChat ಏನು ತೋರಿಸುತ್ತದೆ):",
   "liveTyping.translateLabel": "ಕಳುಹಿಸುವ ಮೊದಲು ಅನುವಾದಿಸಿ (ಅನುವಾದಕ ಸೆಟ್ಟಿಂಗ್‌ಗಳನ್ನು ಬಳಸುತ್ತದೆ)",
-
   "languagePicker.title": "ನಿಮ್ಮ ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ",
   "languagePicker.subtitle": "ನೀವು ಇದನ್ನು ನಂತರ ಸೆಟ್ಟಿಂಗ್‌ಗಳಲ್ಲಿ ಬದಲಾಯಿಸಬಹುದು.",
   "languagePicker.continue": "ಮುಂದುವರಿಸಿ",
-
   "settingsLanguage.title": "ಭಾಷೆ",
   "settingsLanguage.label": "ಅಪ್ಲಿಕೇಶನ್ ಭಾಷೆ"
 }

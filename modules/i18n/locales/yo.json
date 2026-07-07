@@ -23,6 +23,7 @@
   "nav.oscapps": "Èrọ OSC",
   "nav.vrctools": "Irinṣẹ́ VRChat",
   "nav.live": "Tààrà",
+  "nav.translation": "Ìtumọ̀",
   "nav.oauth": "Àkọọ́lẹ̀ OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Ìṣirò",
@@ -33,7 +34,6 @@
   "nav.docs": "Ìwé Ìṣàlàyé / Ìṣètò",
   "nav.about": "Nípa",
   "nav.log": "Àkọsílẹ̀ OSC",
-
   "common.save": "Fi Pamọ́",
   "common.cancel": "Fagilé",
   "common.enable": "Mú Ṣiṣẹ́",
@@ -45,7 +45,6 @@
   "common.send": "Fi Ránṣẹ́",
   "common.clear": "Yọ Kúrò",
   "common.record": "Gbasilẹ̀",
-
   "avatarScaling.title": "Ìyípadà Ìwọ̀n Avatar",
   "avatarScaling.subtitle": "Ìwọ̀n gíga OSC àdánidá VRChat — ó ń ṣiṣẹ́ lórí avatar èyíkéyìí",
   "avatarScaling.enable": "Mú ìyípadà ìwọ̀n avatar ṣiṣẹ́",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Gbasilẹ̀ bọtìnì fún dídín ìwọ̀n kù",
   "avatarScaling.hotkeyHint": "Àwọn bọtìnì àṣínà ń ṣiṣẹ́ ní gbogbogbòò (kódà nígbà tí VRChat bá wà lójú ìṣàkóso). Tí bọtìnì kò bá lè gbasilẹ̀, o ṣì lè lo àbọ̀ tí ó wà lókè.",
   "avatarScaling.off": "Ìyípadà ìwọ̀n avatar ti dúró",
-
   "translator.title": "Atúmọ̀ Èdè",
   "translator.provider": "Olùpèsè",
   "translator.endpoint": "URL Endpoint",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Èdè Àfojúsùn",
   "translator.aiGrammarFix": "Tọ́ ìlò gírámà ṣe pẹ̀lú AI ná (ó ń lo olùpèsè IntelliChat tí ó wà lókè)",
   "translator.note": "Èyí ni a ń lò fún àṣàyàn ìtúmọ̀ àpótí ìfọ̀rọ̀wérọ Live Typing àti níbikíbi mìíràn nínú app tí ó bá fúnni ní àṣàyàn \"Túmọ̀ kí ó tó fi ránṣẹ́.\"",
-
   "liveTyping.title": "Ìkọ̀wé Tààrà",
   "liveTyping.subtitle": "ó ń fi ránṣẹ́ bí o ń kọ̀wé, gẹ́gẹ́ bí àpótí ìfọ̀rọ̀wérọ ti VRChat fúnra rẹ̀",
   "liveTyping.placeholder": "Kọ̀wé síbí — èyí a máa fi ránṣẹ́ sí àpótí ìfọ̀rọ̀wérọ láìfọwọ́sowọ́pọ̀ ní gbogbo ìṣẹ́jú àáyá díẹ̀ bí o ń kọ̀wé. Máa kọ̀wé kọjá lẹ́tà 144; VRChat yóò fi hàn '…' + ìparí ọ̀rọ̀ rẹ.",
   "liveTyping.previewLabel": "Ìwòye Kíákíá (ohun tí VRChat yóò fi hàn):",
   "liveTyping.translateLabel": "Túmọ̀ kí ó tó fi ránṣẹ́ (ó ń lo ètò Atúmọ̀ Èdè)",
-
   "languagePicker.title": "Yan Èdè Rẹ",
   "languagePicker.subtitle": "O lè yí èyí padà nígbà mìíràn nínú Ètò.",
   "languagePicker.continue": "Tẹ̀síwájú",
-
   "settingsLanguage.title": "Èdè",
   "settingsLanguage.label": "Èdè App"
 }

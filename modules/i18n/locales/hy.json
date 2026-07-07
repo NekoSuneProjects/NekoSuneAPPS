@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC հավելվածներ",
   "nav.vrctools": "VRChat գործիքներ",
   "nav.live": "Ուղիղ",
+  "nav.translation": "Թարգմանություն",
   "nav.oauth": "OAuth հաշիվներ",
   "nav.discord": "Discord",
   "nav.stats": "Վիճակագրություն",
@@ -33,7 +34,6 @@
   "nav.docs": "Փաստաթղթեր / Կարգավորում",
   "nav.about": "Ծրագրի մասին",
   "nav.log": "OSC մատյան",
-
   "common.save": "Պահպանել",
   "common.cancel": "Չեղարկել",
   "common.enable": "Միացնել",
@@ -45,7 +45,6 @@
   "common.send": "Ուղարկել",
   "common.clear": "Մաքրել",
   "common.record": "Ձայնագրել",
-
   "avatarScaling.title": "Ավատարի մասշտաբավորում",
   "avatarScaling.subtitle": "VRChat-ի սեփական OSC բարձրության մասշտաբավորումը — աշխատում է ցանկացած ավատարի հետ",
   "avatarScaling.enable": "Միացնել ավատարի մասշտաբավորումը",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Ձայնագրել փոքրացման ստեղնը",
   "avatarScaling.hotkeyHint": "Դյուրանցումները աշխատում են գլոբալ կերպով (նույնիսկ երբ VRChat-ը ֆոկուսի մեջ է)։ Եթե ստեղնը չի ձայնագրվում, կարող եք դեռ օգտագործել վերևի սլայդերը։",
   "avatarScaling.off": "Ավատարի մասշտաբավորումն անջատված է",
-
   "translator.title": "Թարգմանիչ",
   "translator.provider": "Մատակարար",
   "translator.endpoint": "Վերջնակետի URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Նպատակային լեզու",
   "translator.aiGrammarFix": "Նախ ուղղել քերականությունը AI-ով (օգտագործում է վերևի IntelliChat մատակարարը)",
   "translator.note": "Օգտագործվում է Live Typing չաթի պատուհանի թարգմանության ընտրանքով և ամենուր հավելվածում, որտեղ առկա է «Թարգմանել ուղարկելուց առաջ» ընտրանքը։",
-
   "liveTyping.title": "Ուղիղ մուտքագրում",
   "liveTyping.subtitle": "ուղարկում է մուտքագրելիս, ինչպես VRChat-ի սեփական չաթի պատուհանը",
   "liveTyping.placeholder": "Մուտքագրեք այստեղ — սա ինքնաբերաբար ուղարկվում է չաթի պատուհան մի քանի վայրկյան պահով, մինչ դուք մուտքագրում եք։ Շարունակեք մուտքագրել 144 նշանից հետո; VRChat-ը կցուցադրի '…' + ձեր հաղորդագրության վերջը։",
   "liveTyping.previewLabel": "Նախադիտում (ինչ կցուցադրի VRChat-ը).",
   "liveTyping.translateLabel": "Թարգմանել ուղարկելուց առաջ (օգտագործում է Թարգմանչի կարգավորումները)",
-
   "languagePicker.title": "Ընտրեք ձեր լեզուն",
   "languagePicker.subtitle": "Դուք կարող եք փոխել սա ավելի ուշ Կարգավորումներում։",
   "languagePicker.continue": "Շարունակել",
-
   "settingsLanguage.title": "Լեզու",
   "settingsLanguage.label": "Հավելվածի լեզու"
 }

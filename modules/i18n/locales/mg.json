@@ -23,6 +23,7 @@
   "nav.oscapps": "Rindrankely OSC",
   "nav.vrctools": "Fitaovana VRChat",
   "nav.live": "Mivantana",
+  "nav.translation": "Fandikan-teny",
   "nav.oauth": "Kaonty OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Antontan'isa",
@@ -33,7 +34,6 @@
   "nav.docs": "Antontan-taratasy / Fametrahana",
   "nav.about": "Mombamomba",
   "nav.log": "Log OSC",
-
   "common.save": "Tahiry",
   "common.cancel": "Foano",
   "common.enable": "Ampandehanina",
@@ -45,7 +45,6 @@
   "common.send": "Alefaso",
   "common.clear": "Fafao",
   "common.record": "Rakitra",
-
   "avatarScaling.title": "Fanovana Haben'ny Avatara",
   "avatarScaling.subtitle": "Ny fanovan-haben'ny OSC efa napetrak'ny VRChat — mety amin'ny avatara rehetra",
   "avatarScaling.enable": "Ampandehano ny fanovana haben'ny avatara",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Rakitra ny kitendry hanakely",
   "avatarScaling.hotkeyHint": "Miasa manerana ny rafitra ny kitendry maika (na dia mifantoka amin'ny VRChat aza). Raha tsy voarakitra ny kitendry iray, azonao ampiasaina foana ny tsipika eo ambony.",
   "avatarScaling.off": "Tsy mandeha ny fanovana haben'ny avatara",
-
   "translator.title": "Mpandika Teny",
   "translator.provider": "Mpanome Tolotra",
   "translator.endpoint": "URL Endpoint",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Fiteny Kendrena",
   "translator.aiGrammarFix": "Ahitsio aloha ny fitsipi-pitenenana amin'ny AI (mampiasa ny mpanome tolotra IntelliChat etsy ambony)",
   "translator.note": "Ampiasain'ny safidin'ny fandikan-tenin'ny efitra resaka Live Typing sy na aiza na aiza ao amin'ny app izay manolotra \"Adikao alohan'ny handefasana.\"",
-
   "liveTyping.title": "Fanoratana Mivantana",
   "liveTyping.subtitle": "alefa raha mbola manoratra ianao, tahaka ny efitra resak'ny VRChat mihitsy",
   "liveTyping.placeholder": "Manorata eto — alefa ho any amin'ny efitra resaka ho azy io isaky ny segondra vitsivitsy raha mbola manoratra ianao. Mitohiza manoratra mihoatra ny 144 tarehin-tsoratra; hasehon'ny VRChat ny '…' + ny faran'ny hafatrao.",
   "liveTyping.previewLabel": "Topi-maso mialoha (izay hasehon'ny VRChat):",
   "liveTyping.translateLabel": "Adikao alohan'ny handefasana (mampiasa ny fandrindrana Mpandika Teny)",
-
   "languagePicker.title": "Safidio ny fiteninao",
   "languagePicker.subtitle": "Azonao ovaina any aoriana any amin'ny Fandrindrana.",
   "languagePicker.continue": "Manohy",
-
   "settingsLanguage.title": "Fiteny",
   "settingsLanguage.label": "Fitenin'ny App"
 }

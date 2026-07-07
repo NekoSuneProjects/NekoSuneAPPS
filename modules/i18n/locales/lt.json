@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC programos",
   "nav.vrctools": "VRChat įrankiai",
   "nav.live": "Tiesiogiai",
+  "nav.translation": "Vertimas",
   "nav.oauth": "OAuth paskyros",
   "nav.discord": "Discord",
   "nav.stats": "Statistika",
@@ -33,7 +34,6 @@
   "nav.docs": "Dokumentacija / Sąranka",
   "nav.about": "Apie programą",
   "nav.log": "OSC žurnalas",
-
   "common.save": "Išsaugoti",
   "common.cancel": "Atšaukti",
   "common.enable": "Įjungti",
@@ -45,7 +45,6 @@
   "common.send": "Siųsti",
   "common.clear": "Išvalyti",
   "common.record": "Įrašyti",
-
   "avatarScaling.title": "Avataro mastelis",
   "avatarScaling.subtitle": "VRChat integruotas OSC ūgio keitimas — veikia su bet kuriuo avataru",
   "avatarScaling.enable": "Įjungti avataro mastelio keitimą",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Įrašyti mažinimo klavišą",
   "avatarScaling.hotkeyHint": "Spartieji klavišai veikia visur (net kai VRChat yra aktyvus langas). Jei klavišo nepavyksta įrašyti, vis tiek galite naudoti slankiklį viršuje.",
   "avatarScaling.off": "Avataro mastelio keitimas išjungtas",
-
   "translator.title": "Vertėjas",
   "translator.provider": "Teikėjas",
   "translator.endpoint": "Galinio punkto URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Paskirties kalba",
   "translator.aiGrammarFix": "Pirmiausia pataisyti gramatiką naudojant AI (naudoja aukščiau nurodytą IntelliChat teikėją)",
   "translator.note": "Naudojama Live Typing pokalbių lango vertimo funkcijoje ir visur kitur programoje, kur pasiūloma \"Versti prieš siunčiant.\"",
-
   "liveTyping.title": "Rašymas tiesiogiai",
   "liveTyping.subtitle": "siunčia tekstą rašant, kaip ir pačios VRChat pokalbių langas",
   "liveTyping.placeholder": "Rašykite čia — tai automatiškai siunčiama į pokalbių langą kas kelias sekundes, kol rašote. Rašykite ir toliau, viršijus 144 simbolius; VRChat parodys '…' + jūsų žinutės pabaigą.",
   "liveTyping.previewLabel": "Peržiūra (ką rodys VRChat):",
   "liveTyping.translateLabel": "Versti prieš siunčiant (naudoja Vertėjo nustatymus)",
-
   "languagePicker.title": "Pasirinkite savo kalbą",
   "languagePicker.subtitle": "Tai galėsite pakeisti vėliau Nustatymuose.",
   "languagePicker.continue": "Tęsti",
-
   "settingsLanguage.title": "Kalba",
   "settingsLanguage.label": "Programos kalba"
 }

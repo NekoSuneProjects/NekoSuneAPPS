@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC қолданбалары",
   "nav.vrctools": "VRChat құралдары",
   "nav.live": "Тікелей эфир",
+  "nav.translation": "Аударма",
   "nav.oauth": "OAuth есептік жазбалары",
   "nav.discord": "Discord",
   "nav.stats": "Статистика",
@@ -33,7 +34,6 @@
   "nav.docs": "Құжаттама / Орнату",
   "nav.about": "Бағдарлама туралы",
   "nav.log": "OSC журналы",
-
   "common.save": "Сақтау",
   "common.cancel": "Бас тарту",
   "common.enable": "Қосу",
@@ -45,7 +45,6 @@
   "common.send": "Жіберу",
   "common.clear": "Тазалау",
   "common.record": "Жазу",
-
   "avatarScaling.title": "Аватарды масштабтау",
   "avatarScaling.subtitle": "VRChat-тың меншікті OSC биіктік масштабтау мүмкіндігі — кез келген аватарда жұмыс істейді",
   "avatarScaling.enable": "Аватар масштабтауын қосу",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Кішірейту пернесін жазу",
   "avatarScaling.hotkeyHint": "Жылдам пернелер жаппай жұмыс істейді (VRChat фокуста болса да). Егер перне жазылмаса, жоғарыдағы сырғытпаны пайдалана аласыз.",
   "avatarScaling.off": "Аватар масштабтау өшірулі",
-
   "translator.title": "Аудармашы",
   "translator.provider": "Провайдер",
   "translator.endpoint": "Соңғы нүкте URL-і",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Мақсатты тіл",
   "translator.aiGrammarFix": "Алдымен грамматиканы AI көмегімен түзету (жоғарыдағы IntelliChat провайдерін пайдаланады)",
   "translator.note": "Тікелей теру чат-бокс аудармасы опциясында және қолданбаның «Жіберу алдында аудару» опциясы бар кез келген жерінде пайдаланылады.",
-
   "liveTyping.title": "Тікелей теру",
   "liveTyping.subtitle": "VRChat-тың өз чат-боксы сияқты, теру барысында жібереді",
   "liveTyping.placeholder": "Осы жерге теріңіз — бұл теру барысында бірнеше секунд сайын автоматты түрде чат-боксқа жіберіледі. 144 таңбадан асса да теруді жалғастырыңыз; VRChat «…» белгісін және хабарламаңыздың соңын көрсетеді.",
   "liveTyping.previewLabel": "Алдын ала қарау (VRChat не көрсетеді):",
   "liveTyping.translateLabel": "Жіберу алдында аудару (Аудармашы параметрлерін пайдаланады)",
-
   "languagePicker.title": "Тіліңізді таңдаңыз",
   "languagePicker.subtitle": "Бұны кейін Параметрлерде өзгертуге болады.",
   "languagePicker.continue": "Жалғастыру",
-
   "settingsLanguage.title": "Тіл",
   "settingsLanguage.label": "Қолданба тілі"
 }

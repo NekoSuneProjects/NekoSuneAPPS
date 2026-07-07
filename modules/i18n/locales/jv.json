@@ -23,6 +23,7 @@
   "nav.oscapps": "Aplikasi OSC",
   "nav.vrctools": "Piranti VRChat",
   "nav.live": "Live",
+  "nav.translation": "Terjemahan",
   "nav.oauth": "Akun OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Statistik",
@@ -33,7 +34,6 @@
   "nav.docs": "Dokumentasi / Setelan Wiwitan",
   "nav.about": "Babagan",
   "nav.log": "Log OSC",
-
   "common.save": "Simpen",
   "common.cancel": "Batal",
   "common.enable": "Uripake",
@@ -45,7 +45,6 @@
   "common.send": "Kirim",
   "common.clear": "Resiki",
   "common.record": "Rekam",
-
   "avatarScaling.title": "Skala Avatar",
   "avatarScaling.subtitle": "Skala dhuwur OSC asli VRChat — bisa digunakake ing avatar apa wae",
   "avatarScaling.enable": "Uripake skala avatar",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Rekam tombol ngurangi skala",
   "avatarScaling.hotkeyHint": "Hotkey bisa digunakake ing endi wae (senajan VRChat lagi dadi fokus). Yen tombol ora bisa direkam, kowe isih bisa nggunakake slider ing dhuwur.",
   "avatarScaling.off": "Skala avatar mati",
-
   "translator.title": "Juru Basa",
   "translator.provider": "Panyedhiya",
   "translator.endpoint": "URL Endpoint",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Basa tujuan",
   "translator.aiGrammarFix": "Benerake tata basa nganggo AI dhisik (nganggo panyedhiya IntelliChat ing dhuwur)",
   "translator.note": "Digunakake dening pilihan terjemahan chatbox Live Typing lan ing endi wae liyane ing aplikasi iki sing nawakake \"Terjemahake sadurunge dikirim.\"",
-
   "liveTyping.title": "Live Typing",
   "liveTyping.subtitle": "ngirim pas kowe ngetik, kaya chatbox VRChat dhewe",
   "liveTyping.placeholder": "Ngetik ing kene — iki bakal dikirim menyang chatbox kanthi otomatis saben sawetara detik pas kowe ngetik. Terus ngetik luwih saka 144 aksara; VRChat bakal nampilake '…' + pungkasan pesenmu.",
   "liveTyping.previewLabel": "Pratinjau (apa sing bakal ditampilake VRChat):",
   "liveTyping.translateLabel": "Terjemahake sadurunge dikirim (nganggo setelan Juru Basa)",
-
   "languagePicker.title": "Pilih basamu",
   "languagePicker.subtitle": "Kowe bisa ngganti iki mengko ing Setelan.",
   "languagePicker.continue": "Terusake",
-
   "settingsLanguage.title": "Basa",
   "settingsLanguage.label": "Basa aplikasi"
 }

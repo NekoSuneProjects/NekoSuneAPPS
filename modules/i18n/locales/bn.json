@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC অ্যাপস",
   "nav.vrctools": "VRChat টুলস",
   "nav.live": "লাইভ",
+  "nav.translation": "অনুবাদ",
   "nav.oauth": "OAuth অ্যাকাউন্ট",
   "nav.discord": "Discord",
   "nav.stats": "পরিসংখ্যান",
@@ -33,7 +34,6 @@
   "nav.docs": "ডকুমেন্টেশন / সেটআপ",
   "nav.about": "সম্পর্কে",
   "nav.log": "OSC লগ",
-
   "common.save": "সংরক্ষণ করুন",
   "common.cancel": "বাতিল করুন",
   "common.enable": "সক্রিয় করুন",
@@ -45,7 +45,6 @@
   "common.send": "পাঠান",
   "common.clear": "পরিষ্কার করুন",
   "common.record": "রেকর্ড করুন",
-
   "avatarScaling.title": "অবতার স্কেলিং",
   "avatarScaling.subtitle": "VRChat-এর নিজস্ব OSC উচ্চতা স্কেলিং — যেকোনো অবতারে কাজ করে",
   "avatarScaling.enable": "অবতার স্কেলিং সক্রিয় করুন",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "স্কেল-হ্রাস কী রেকর্ড করুন",
   "avatarScaling.hotkeyHint": "হটকি সর্বত্র কাজ করে (এমনকি VRChat ফোকাসে থাকলেও)। কোনো কী রেকর্ড না হলে, আপনি উপরের স্লাইডারটি ব্যবহার করতে পারেন।",
   "avatarScaling.off": "অবতার স্কেলিং বন্ধ আছে",
-
   "translator.title": "অনুবাদক",
   "translator.provider": "প্রদানকারী",
   "translator.endpoint": "এন্ডপয়েন্ট URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "লক্ষ্য ভাষা",
   "translator.aiGrammarFix": "প্রথমে AI দিয়ে ব্যাকরণ ঠিক করুন (উপরের IntelliChat প্রদানকারী ব্যবহার করে)",
   "translator.note": "লাইভ টাইপিং চ্যাটবক্স অনুবাদ অপশন এবং অ্যাপের অন্য যেকোনো জায়গায় যেখানে \"পাঠানোর আগে অনুবাদ করুন\" অপশন দেওয়া থাকে, সেখানে এটি ব্যবহৃত হয়।",
-
   "liveTyping.title": "লাইভ টাইপিং",
   "liveTyping.subtitle": "আপনি টাইপ করার সাথে সাথে পাঠায়, VRChat-এর নিজস্ব চ্যাটবক্সের মতোই",
   "liveTyping.placeholder": "এখানে টাইপ করুন — আপনি টাইপ করার সময় এটি প্রতি কয়েক সেকেন্ডে স্বয়ংক্রিয়ভাবে চ্যাটবক্সে পাঠানো হয়। ১৪৪ অক্ষরের বেশি টাইপ করতে থাকুন; VRChat '…' + আপনার বার্তার শেষ অংশ দেখাবে।",
   "liveTyping.previewLabel": "প্রিভিউ (VRChat যা দেখাবে):",
   "liveTyping.translateLabel": "পাঠানোর আগে অনুবাদ করুন (অনুবাদক সেটিংস ব্যবহার করে)",
-
   "languagePicker.title": "আপনার ভাষা নির্বাচন করুন",
   "languagePicker.subtitle": "আপনি পরে সেটিংসে গিয়ে এটি পরিবর্তন করতে পারবেন।",
   "languagePicker.continue": "চালিয়ে যান",
-
   "settingsLanguage.title": "ভাষা",
   "settingsLanguage.label": "অ্যাপের ভাষা"
 }

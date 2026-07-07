@@ -23,6 +23,7 @@
   "nav.oscapps": "Iiapp ze-OSC",
   "nav.vrctools": "Izixhobo ze-VRChat",
   "nav.live": "Bukhoma",
+  "nav.translation": "Uguqulelo",
   "nav.oauth": "Iiakhawunti ze-OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Iinkcukacha-manani",
@@ -33,7 +34,6 @@
   "nav.docs": "Amaxwebhu / Ukusetha",
   "nav.about": "Malunga",
   "nav.log": "Ilog ye-OSC",
-
   "common.save": "Gcina",
   "common.cancel": "Rhoxisa",
   "common.enable": "Vula",
@@ -45,7 +45,6 @@
   "common.send": "Thumela",
   "common.clear": "Sula",
   "common.record": "Rekhoda",
-
   "avatarScaling.title": "Ukulinganisa Ubungakanani be-Avatar",
   "avatarScaling.subtitle": "Isetho yemveli ye-VRChat yokulinganisa ubude nge-OSC — isebenza kuyi-avatar nayiphi na",
   "avatarScaling.enable": "Vula ukulinganisa ubungakanani be-avatar",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Rekhoda iqhosha lokunciphisa ubungakanani",
   "avatarScaling.hotkeyHint": "Izitshixo zesheshane zisebenza kwindawo yonke (nangona VRChat inokugxila). Ukuba itshixo alirekhodi, usenako ukusebenzisa isilayidi esingasentla.",
   "avatarScaling.off": "Ukulinganisa ubungakanani be-avatar kucimile",
-
   "translator.title": "Iguqulelo",
   "translator.provider": "Umboneleli",
   "translator.endpoint": "URL ye-Endpoint",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Ulwimi elijoliswayo",
   "translator.aiGrammarFix": "Lungisa igrama nge-AI kuqala (isebenzisa umboneleli we-IntelliChat ongasentla)",
   "translator.note": "Isetyenziswa yinketho yenguqulelo ebhokisini yencoko ye-Live Typing, nakuyiphi na indawo kule-app enika inketho ethi \"Guqulela ngaphambi kokuthumela.\"",
-
   "liveTyping.title": "Ukuchwetheza Bukhoma",
   "liveTyping.subtitle": "ithumela ngoxa uchwetheza, njengebhokisi yencoko ka-VRChat",
   "liveTyping.placeholder": "Chwetheza apha — oku kuthunyelwa kwibhokisi yencoko ngokuzenzekelayo nkqu nemizuzwana embalwa ngoxa uchwetheza. Qhubeka uchwetheza ngapha kwiimpawu ezi-144; i-VRChat izabonisa '…' + isiphelo somyalezo wakho.",
   "liveTyping.previewLabel": "Ukujonga kuqala (oko i-VRChat izakubonisa):",
   "liveTyping.translateLabel": "Guqulela ngaphambi kokuthumela (isebenzisa iisethingi ze-Iguqulelo)",
-
   "languagePicker.title": "Khetha ulwimi lwakho",
   "languagePicker.subtitle": "Ungatshintsha oku kamva ku-Useto.",
   "languagePicker.continue": "Qhubeka",
-
   "settingsLanguage.title": "Ulwimi",
   "settingsLanguage.label": "Ulwimi lwe-app"
 }

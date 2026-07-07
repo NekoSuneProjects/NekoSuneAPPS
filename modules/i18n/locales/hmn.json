@@ -23,6 +23,7 @@
   "nav.oscapps": "Cov App OSC",
   "nav.vrctools": "Cov Cuab Yeej VRChat",
   "nav.live": "Live",
+  "nav.translation": "Txhais Lus",
   "nav.oauth": "Cov Account OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Cov Tswb",
@@ -33,7 +34,6 @@
   "nav.docs": "Ntawv Qhia / Kev Teeb Tsa",
   "nav.about": "Txog Qhov No",
   "nav.log": "OSC Log",
-
   "common.save": "Txuag",
   "common.cancel": "Tshem Tawm",
   "common.enable": "Qhib",
@@ -45,7 +45,6 @@
   "common.send": "Xa",
   "common.clear": "Ntxuav",
   "common.record": "Kaw Suab",
-
   "avatarScaling.title": "Hloov Loj Me Avatar",
   "avatarScaling.subtitle": "VRChat qhov OSC hloov qib siab ntawm nws tus kheej — ua tau nrog txhua tus avatar",
   "avatarScaling.enable": "Qhib kev hloov loj me avatar",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Kaw yuam sij ua kom me",
   "avatarScaling.hotkeyHint": "Cov yuam sij ceev ua haujlwm txhua qhov (txawm tias VRChat tabtom siv nyob). Yog tias ib qho yuam sij kaw tsis tau, koj tseem siv tau lub slider saum toj no.",
   "avatarScaling.off": "Kev hloov loj me avatar tau kaw lawm",
-
   "translator.title": "Neeg Txhais Lus",
   "translator.provider": "Tus Muab Kev Pab",
   "translator.endpoint": "Endpoint URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Lus Xa Mus",
   "translator.aiGrammarFix": "Kho grammar nrog AI ua ntej (siv IntelliChat provider saum toj no)",
   "translator.note": "Siv los ntawm Live Typing lub thawv sib tham qhov kev txhais lus thiab txhua qhov hauv app uas muaj qhov kev xaiv \"Txhais ua ntej xa.\"",
-
   "liveTyping.title": "Ntaus Ntawv Live",
   "liveTyping.subtitle": "xa thaum koj tabtom ntaus ntawv, zoo li VRChat nws tus kheej lub thawv sib tham",
   "liveTyping.placeholder": "Ntaus ntawv ntawm no — qhov no xa mus rau lub thawv sib tham tsis siv neeg txhua ob peb second thaum koj tabtom ntaus ntawv. Ntxiv ntaus ntawv tawm ntawm 144 tus cim; VRChat yuav qhia '…' + qhov kawg ntawm koj cov lus.",
   "liveTyping.previewLabel": "Saib Ua Ntej (yuav qhia dab tsi rau VRChat):",
   "liveTyping.translateLabel": "Txhais ua ntej xa (siv Neeg Txhais Lus qhov kev teeb tsa)",
-
   "languagePicker.title": "Xaiv koj hom lus",
   "languagePicker.subtitle": "Koj hloov tau qhov no tom qab hauv Kev Teeb Tsa.",
   "languagePicker.continue": "Mus Ntxiv",
-
   "settingsLanguage.title": "Lus",
   "settingsLanguage.label": "App hom lus"
 }

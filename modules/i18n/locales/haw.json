@@ -23,6 +23,7 @@
   "nav.oscapps": "Papahana OSC",
   "nav.vrctools": "Mea Hana VRChat",
   "nav.live": "Ola Pono",
+  "nav.translation": "Unuhi",
   "nav.oauth": "Moʻokāki OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Helu Nui",
@@ -33,7 +34,6 @@
   "nav.docs": "Palapala / Hoʻonoho",
   "nav.about": "E Pili Ana",
   "nav.log": "Log OSC",
-
   "common.save": "Mālama",
   "common.cancel": "Hoʻopau",
   "common.enable": "Hoʻāla",
@@ -45,7 +45,6 @@
   "common.send": "Hoʻouna",
   "common.clear": "Hoʻomaʻemaʻe",
   "common.record": "Hoʻopaʻa",
-
   "avatarScaling.title": "Hoʻololi Nui o ka Avatar",
   "avatarScaling.subtitle": "Ka hoʻololi kiʻekiʻe OSC maoli o VRChat — hana pū me kēlā me kēia avatar",
   "avatarScaling.enable": "Hoʻāla i ka hoʻololi nui o ka avatar",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Hoʻopaʻa kī hoʻoʻemi",
   "avatarScaling.hotkeyHint": "Hana nā kī wikiwiki ma nā wahi āpau (ʻoiai e nānā ana ʻo VRChat). Inā ʻaʻole hiki ke hoʻopaʻa i kahi kī, hiki iā ʻoe ke hoʻohana i ka pahu paʻa ma luna.",
   "avatarScaling.off": "Ua pio ka hoʻololi nui o ka avatar",
-
   "translator.title": "Unuhi ʻŌlelo",
   "translator.provider": "Mea Hoʻolako",
   "translator.endpoint": "URL Hopena",
@@ -67,17 +65,14 @@
   "translator.targetLang": "ʻŌlelo Pahuhopu",
   "translator.aiGrammarFix": "Hoʻoponopono i ka grammar me ka AI ma mua (hoʻohana i ka mea hoʻolako IntelliChat ma luna)",
   "translator.note": "Hoʻohana ʻia e ke koho unuhi ʻōlelo o ka pahu kamaʻilio Live Typing a me nā wahi ʻē aʻe o ka papahana e hāʻawi ana i ke koho \"Unuhi ma mua o ka hoʻouna.\"",
-
   "liveTyping.title": "Kāki Ola",
   "liveTyping.subtitle": "hoʻouna ʻia i kāu wā e kāki ana, e like me ka pahu kamaʻilio ponoʻī o VRChat",
   "liveTyping.placeholder": "E kāki ma ʻaneʻi — hoʻouna ʻia kēia i ka pahu kamaʻilio ma ka hana ʻokoʻa i kēlā me kēia mau kekona i kāu wā e kāki ana. E hoʻomau i ke kāki ma hope o 144 huaʻōlelo; e hōʻike ana ʻo VRChat i ka '…' + ka hopena o kāu memo.",
   "liveTyping.previewLabel": "Nānā Mua (ka mea e hōʻike ai ʻo VRChat):",
   "liveTyping.translateLabel": "Unuhi ma mua o ka hoʻouna (hoʻohana i nā hoʻonohonoho Unuhi ʻŌlelo)",
-
   "languagePicker.title": "E koho i kāu ʻōlelo",
   "languagePicker.subtitle": "Hiki iā ʻoe ke hoʻololi i kēia i kahi manawa ma hope ma Hoʻonohonoho.",
   "languagePicker.continue": "Hoʻomau",
-
   "settingsLanguage.title": "ʻŌlelo",
   "settingsLanguage.label": "ʻŌlelo o ka Papahana"
 }

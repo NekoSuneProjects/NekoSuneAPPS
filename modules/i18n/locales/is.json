@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC forrit",
   "nav.vrctools": "VRChat verkfæri",
   "nav.live": "Í beinni",
+  "nav.translation": "Þýðing",
   "nav.oauth": "OAuth reikningar",
   "nav.discord": "Discord",
   "nav.stats": "Tölfræði",
@@ -33,7 +34,6 @@
   "nav.docs": "Handbók / Uppsetning",
   "nav.about": "Um",
   "nav.log": "OSC-atburðaskrá",
-
   "common.save": "Vista",
   "common.cancel": "Hætta við",
   "common.enable": "Virkja",
@@ -45,7 +45,6 @@
   "common.send": "Senda",
   "common.clear": "Hreinsa",
   "common.record": "Taka upp",
-
   "avatarScaling.title": "Skölun avatars",
   "avatarScaling.subtitle": "Innbyggð OSC hæðarskölun VRChat — virkar á öllum avatarum",
   "avatarScaling.enable": "Virkja skölun avatars",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Taka upp lykil fyrir minnkun",
   "avatarScaling.hotkeyHint": "Flýtilyklar virka á kerfisstigi (jafnvel þegar VRChat er í forgrunni). Ef lykill vill ekki taka upp geturðu alltaf notað sleðann hér fyrir ofan.",
   "avatarScaling.off": "Skölun avatars er óvirk",
-
   "translator.title": "Þýðandi",
   "translator.provider": "Veitandi",
   "translator.endpoint": "Vefslóð endapunkts",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Markmál",
   "translator.aiGrammarFix": "Laga málfræði með AI fyrst (notar IntelliChat-veituna hér fyrir ofan)",
   "translator.note": "Notað af þýðingarvalkosti Live Typing chatbox og alls staðar annars staðar í forritinu þar sem boðið er upp á „Þýða áður en sent er.“",
-
   "liveTyping.title": "Skrifun í beinni",
   "liveTyping.subtitle": "sendir texta eftir því sem þú skrifar, líkt og chatbox VRChat sjálft gerir",
   "liveTyping.placeholder": "Skrifaðu hér — þetta sendist sjálfkrafa í chatbox á nokkurra sekúndna fresti eftir því sem þú skrifar. Haltu áfram að skrifa yfir 144 stafi; VRChat mun sýna „…“ + endann á skilaboðunum þínum.",
   "liveTyping.previewLabel": "Forskoðun (það sem VRChat mun sýna):",
   "liveTyping.translateLabel": "Þýða áður en sent er (notar stillingar þýðanda)",
-
   "languagePicker.title": "Veldu tungumálið þitt",
   "languagePicker.subtitle": "Þú getur breytt þessu síðar í Stillingum.",
   "languagePicker.continue": "Áfram",
-
   "settingsLanguage.title": "Tungumál",
   "settingsLanguage.label": "Tungumál forrits"
 }

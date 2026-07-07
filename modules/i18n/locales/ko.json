@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC 앱",
   "nav.vrctools": "VRChat 도구",
   "nav.live": "라이브",
+  "nav.translation": "번역",
   "nav.oauth": "OAuth 계정",
   "nav.discord": "Discord",
   "nav.stats": "통계",
@@ -33,7 +34,6 @@
   "nav.docs": "문서 / 설정 가이드",
   "nav.about": "정보",
   "nav.log": "OSC 로그",
-
   "common.save": "저장",
   "common.cancel": "취소",
   "common.enable": "활성화",
@@ -45,7 +45,6 @@
   "common.send": "전송",
   "common.clear": "지우기",
   "common.record": "기록",
-
   "avatarScaling.title": "아바타 크기 조절",
   "avatarScaling.subtitle": "VRChat 자체 OSC 신장 조절 기능 — 모든 아바타에서 작동합니다",
   "avatarScaling.enable": "아바타 크기 조절 활성화",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "축소 키 기록",
   "avatarScaling.hotkeyHint": "핫키는 VRChat에 포커스가 있어도 전역적으로 작동합니다. 키가 기록되지 않으면 위의 슬라이더를 사용할 수 있습니다.",
   "avatarScaling.off": "아바타 크기 조절이 꺼져 있습니다",
-
   "translator.title": "번역기",
   "translator.provider": "제공자",
   "translator.endpoint": "엔드포인트 URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "대상 언어",
   "translator.aiGrammarFix": "AI로 먼저 문법 수정 (위의 IntelliChat 제공자를 사용합니다)",
   "translator.note": "라이브 타이핑 채팅박스 번역 옵션 및 앱 내에서 \"전송 전 번역\"을 제공하는 다른 모든 곳에서 사용됩니다.",
-
   "liveTyping.title": "라이브 타이핑",
   "liveTyping.subtitle": "VRChat 자체 채팅박스처럼 입력하는 대로 전송됩니다",
   "liveTyping.placeholder": "여기에 입력하세요 — 입력하는 동안 몇 초마다 자동으로 채팅박스로 전송됩니다. 144자를 넘어도 계속 입력하세요. VRChat에는 '…'와 메시지의 끝부분이 표시됩니다.",
   "liveTyping.previewLabel": "미리보기 (VRChat에 표시될 내용):",
   "liveTyping.translateLabel": "전송 전 번역 (번역기 설정을 사용합니다)",
-
   "languagePicker.title": "언어를 선택하세요",
   "languagePicker.subtitle": "나중에 설정에서 변경할 수 있습니다.",
   "languagePicker.continue": "계속",
-
   "settingsLanguage.title": "언어",
   "settingsLanguage.label": "앱 언어"
 }

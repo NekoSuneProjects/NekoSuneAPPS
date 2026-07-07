@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC-apps",
   "nav.vrctools": "VRChat-værktøjer",
   "nav.live": "Direkte",
+  "nav.translation": "Oversættelse",
   "nav.oauth": "OAuth-konti",
   "nav.discord": "Discord",
   "nav.stats": "Statistik",
@@ -33,7 +34,6 @@
   "nav.docs": "Dokumentation / Opsætning",
   "nav.about": "Om",
   "nav.log": "OSC-log",
-
   "common.save": "Gem",
   "common.cancel": "Annuller",
   "common.enable": "Aktivér",
@@ -45,7 +45,6 @@
   "common.send": "Send",
   "common.clear": "Ryd",
   "common.record": "Optag",
-
   "avatarScaling.title": "Avatarskalering",
   "avatarScaling.subtitle": "VRChats indbyggede OSC-højdeskalering — fungerer på enhver avatar",
   "avatarScaling.enable": "Aktivér avatarskalering",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Optag tast til at skalere ned",
   "avatarScaling.hotkeyHint": "Genveje fungerer globalt (også når VRChat har fokus). Hvis en tast ikke kan optages, kan du stadig bruge skyderen ovenfor.",
   "avatarScaling.off": "Avatarskalering er slået fra",
-
   "translator.title": "Oversætter",
   "translator.provider": "Udbyder",
   "translator.endpoint": "Endpoint-URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Målsprog",
   "translator.aiGrammarFix": "Ret grammatik med AI først (bruger IntelliChat-udbyderen ovenfor)",
   "translator.note": "Bruges af Live Typing-chatboksens oversættelsesindstilling og alle andre steder i appen, hvor \"Oversæt før afsendelse\" tilbydes.",
-
   "liveTyping.title": "Direkte skrivning",
   "liveTyping.subtitle": "sender mens du skriver, ligesom VRChats egen chatbox",
   "liveTyping.placeholder": "Skriv her — dette sendes automatisk til chatboxen hvert par sekunder, mens du skriver. Fortsæt endelig med at skrive forbi 144 tegn; VRChat viser '…' + slutningen af din besked.",
   "liveTyping.previewLabel": "Forhåndsvisning (hvad VRChat vil vise):",
   "liveTyping.translateLabel": "Oversæt før afsendelse (bruger Oversætter-indstillinger)",
-
   "languagePicker.title": "Vælg dit sprog",
   "languagePicker.subtitle": "Du kan ændre dette senere i Indstillinger.",
   "languagePicker.continue": "Fortsæt",
-
   "settingsLanguage.title": "Sprog",
   "settingsLanguage.label": "App-sprog"
 }

@@ -23,6 +23,7 @@
   "nav.oscapps": "Aplicaciones OSC",
   "nav.vrctools": "Herramientas de VRChat",
   "nav.live": "En directo",
+  "nav.translation": "Traducción",
   "nav.oauth": "Cuentas OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Estadísticas",
@@ -33,7 +34,6 @@
   "nav.docs": "Documentación / Configuración",
   "nav.about": "Acerca de",
   "nav.log": "Registro OSC",
-
   "common.save": "Guardar",
   "common.cancel": "Cancelar",
   "common.enable": "Activar",
@@ -45,7 +45,6 @@
   "common.send": "Enviar",
   "common.clear": "Limpiar",
   "common.record": "Grabar",
-
   "avatarScaling.title": "Escalado de avatar",
   "avatarScaling.subtitle": "Escalado de altura OSC nativo de VRChat — funciona con cualquier avatar",
   "avatarScaling.enable": "Activar escalado de avatar",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Grabar tecla de reducción",
   "avatarScaling.hotkeyHint": "Los atajos funcionan globalmente (incluso con VRChat en foco). Si una tecla no se puede grabar, puedes usar el control deslizante de arriba.",
   "avatarScaling.off": "El escalado de avatar está desactivado",
-
   "translator.title": "Traductor",
   "translator.provider": "Proveedor",
   "translator.endpoint": "URL del endpoint",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Idioma de destino",
   "translator.aiGrammarFix": "Corregir la gramática con IA primero (usa el proveedor de IntelliChat anterior)",
   "translator.note": "Se usa en la opción de traducción de Live Typing del chatbox y en cualquier otro lugar de la app que ofrezca «Traducir antes de enviar».",
-
   "liveTyping.title": "Escritura en vivo",
   "liveTyping.subtitle": "se envía mientras escribes, como el propio chatbox de VRChat",
   "liveTyping.placeholder": "Escribe aquí — esto se envía automáticamente al chatbox cada pocos segundos mientras escribes. Sigue escribiendo más allá de 144 caracteres; VRChat mostrará «…» + el final de tu mensaje.",
   "liveTyping.previewLabel": "Vista previa (lo que mostrará VRChat):",
   "liveTyping.translateLabel": "Traducir antes de enviar (usa la configuración del Traductor)",
-
   "languagePicker.title": "Elige tu idioma",
   "languagePicker.subtitle": "Puedes cambiarlo más tarde en Ajustes.",
   "languagePicker.continue": "Continuar",
-
   "settingsLanguage.title": "Idioma",
   "settingsLanguage.label": "Idioma de la app"
 }

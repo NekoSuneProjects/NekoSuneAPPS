@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC Apps",
   "nav.vrctools": "VRChat Llamk'anakuna",
   "nav.live": "Directo",
+  "nav.translation": "Tikray",
   "nav.oauth": "OAuth Cuentakuna",
   "nav.discord": "Discord",
   "nav.stats": "Yupaykuna",
@@ -33,7 +34,6 @@
   "nav.docs": "Qillqakuna / Churay",
   "nav.about": "Chaymanta",
   "nav.log": "OSC Qillqasqa",
-
   "common.save": "Waqaychay",
   "common.cancel": "Kanselay",
   "common.enable": "Kallpanchay",
@@ -45,7 +45,6 @@
   "common.send": "Kachay",
   "common.clear": "Pichay",
   "common.record": "Qillqay",
-
   "avatarScaling.title": "Avatar Tupuy",
   "avatarScaling.subtitle": "VRChatpa kikin OSC sayay tupuyninmi — tukuy avatarpi llamk'an",
   "avatarScaling.enable": "Avatar tupuyta kallpanchay",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Huch'uyachiy teklata qillqay",
   "avatarScaling.hotkeyHint": "Hotkeykuna maypipas llamk'anku (VRChat qhawasqa kachkaptinpas). Sichus huk tekla mana qillqakunchu chayqa, patapi kaq slider-ta llamk'achiyta atinki.",
   "avatarScaling.off": "Avatar tupuyqa wischusqa kachkan",
-
   "translator.title": "Tikraq",
   "translator.provider": "Proveedor",
   "translator.endpoint": "Endpoint URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Chayay rimay",
   "translator.aiGrammarFix": "Ñawpaqta AI-wan rimay allichay (patapi kaq IntelliChat proveedorta llamk'achin)",
   "translator.note": "Live Typing chatbox tikray akllanapi ima, appta hukkaq kaqninpipas \"Kachay ñawpaqta tikray\" nisqa akllana kaqtinpas llamk'achikun.",
-
   "liveTyping.title": "Kunan Qillqay",
   "liveTyping.subtitle": "qillqasqaykita kachan, VRChatpa kikin chatbox-nin hina",
   "liveTyping.placeholder": "Kaypi qillqay — kay qillqasqaykiqa sapa hukkaq segundokunapi kikillanmanta chatbox-man kachakun qillqashaqtiyki. 144 letrasta yallirqa qillqashallay; VRChatqa '…' + mensajeykipa tukuyninta rikuchinqa.",
   "liveTyping.previewLabel": "Ñawinchana (VRChat imata rikuchinqa):",
   "liveTyping.translateLabel": "Kachay ñawpaqta tikray (Tikraqpa allichasqankunata llamk'achin)",
-
   "languagePicker.title": "Rimayniykita akllay",
   "languagePicker.subtitle": "Qhipata kayta tikrayta atinki Allichaykunapi.",
   "languagePicker.continue": "Qatiy",
-
   "settingsLanguage.title": "Rimay",
   "settingsLanguage.label": "Apppa rimayin"
 }

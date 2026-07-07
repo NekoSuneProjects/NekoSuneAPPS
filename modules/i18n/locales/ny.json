@@ -23,6 +23,7 @@
   "nav.oscapps": "Mapulogalamu a OSC",
   "nav.vrctools": "Zida za VRChat",
   "nav.live": "Nthawi Yeniyeni",
+  "nav.translation": "Kumasulira",
   "nav.oauth": "Maakaunti a OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Ziwerengero",
@@ -33,7 +34,6 @@
   "nav.docs": "Zolemba / Kukhazikitsa",
   "nav.about": "Zokhudza",
   "nav.log": "Zolemba za OSC",
-
   "common.save": "Sungani",
   "common.cancel": "Lekani",
   "common.enable": "Yambitsani",
@@ -45,7 +45,6 @@
   "common.send": "Tumizani",
   "common.clear": "Chotsani",
   "common.record": "Jambulani",
-
   "avatarScaling.title": "Kukulitsa/Kuchepetsa Avatar",
   "avatarScaling.subtitle": "Njira yeniyeni ya VRChat yosinthira kutalika kudzera mu OSC — imagwira ntchito pa avatar iliyonse",
   "avatarScaling.enable": "Yambitsani kukula kwa avatar",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Jambulani kiyi yochepetsera",
   "avatarScaling.hotkeyHint": "Njira zofulumizitsa zimagwira ntchito ponseponse (ngakhale VRChat ili pa fokasi). Ngati kiyi sichitha kujambulidwa, mukhoza kugwiritsabe ntchito silaida pamwambapa.",
   "avatarScaling.off": "Kukulitsa/kuchepetsa avatar kwazimitsidwa",
-
   "translator.title": "Womasulira",
   "translator.provider": "Wopereka Utumiki",
   "translator.endpoint": "Adilesi ya Endpoint (URL)",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Chinenero Chomwe Mukufuna",
   "translator.aiGrammarFix": "Konzani grammar ndi AI choyamba (imagwiritsa ntchito wopereka utumiki wa IntelliChat pamwambapa)",
   "translator.note": "Imagwiritsidwa ntchito ndi njira yomasulira ya Live Typing chatbox ndiponso kulikonse mu app komwe kumapezeka njira yakuti \"Masulirani musanatumize.\"",
-
   "liveTyping.title": "Live Typing",
   "liveTyping.subtitle": "imatumiza pamene mukulemba, monga chatbox yeniyeni ya VRChat",
   "liveTyping.placeholder": "Lembani pano — izi zimatumizidwa kwa chatbox mwaokha pakangopita masekondi angapo pamene mukulemba. Pitirizani kulemba kupitirira zilembo 144; VRChat idzawonetsa '…' + mapeto a uthenga wanu.",
   "liveTyping.previewLabel": "Chitsanzo (chomwe VRChat idzawonetse):",
   "liveTyping.translateLabel": "Masulirani musanatumize (imagwiritsa ntchito zoikapo za Womasulira)",
-
   "languagePicker.title": "Sankhani chinenero chanu",
   "languagePicker.subtitle": "Mukhoza kusintha izi pambuyo pake mu Zoikapo.",
   "languagePicker.continue": "Pitirizani",
-
   "settingsLanguage.title": "Chinenero",
   "settingsLanguage.label": "Chinenero cha App"
 }

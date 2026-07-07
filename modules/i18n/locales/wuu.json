@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC 应用",
   "nav.vrctools": "VRChat 工具",
   "nav.live": "直播",
+  "nav.translation": "翻译",
   "nav.oauth": "OAuth 账户",
   "nav.discord": "Discord",
   "nav.stats": "统计",
@@ -33,7 +34,6 @@
   "nav.docs": "文档 / 设置指南",
   "nav.about": "关于",
   "nav.log": "OSC 日志",
-
   "common.save": "保存",
   "common.cancel": "取消",
   "common.enable": "启用",
@@ -45,7 +45,6 @@
   "common.send": "发送",
   "common.clear": "清除",
   "common.record": "录制",
-
   "avatarScaling.title": "模型缩放",
   "avatarScaling.subtitle": "VRChat 原生的 OSC 身高缩放功能 — 适用于任何模型",
   "avatarScaling.enable": "启用模型缩放",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "录制缩小快捷键",
   "avatarScaling.hotkeyHint": "快捷键为全局生效(即使 VRChat 处于焦点状态也可使用)。如果某个键无法录制,你仍可以使用上方的滑块。",
   "avatarScaling.off": "模型缩放功能已关闭",
-
   "translator.title": "翻译器",
   "translator.provider": "提供方",
   "translator.endpoint": "接口地址 (Endpoint URL)",
@@ -67,17 +65,14 @@
   "translator.targetLang": "目标语言",
   "translator.aiGrammarFix": "先用 AI 修正语法(使用上方的 IntelliChat 提供方)",
   "translator.note": "该设置会被 Live Typing 聊天框的翻译选项,以及应用中其他带有“发送前翻译”选项的功能所使用。",
-
   "liveTyping.title": "实时输入",
   "liveTyping.subtitle": "边输入边发送,就像 VRChat 自带的聊天框一样",
   "liveTyping.placeholder": "在此输入 — 系统会在你输入时每隔几秒自动发送到聊天框。即使超过 144 个字符也可以继续输入;VRChat 会显示“…”加上你消息的末尾部分。",
   "liveTyping.previewLabel": "预览(VRChat 将显示的内容):",
   "liveTyping.translateLabel": "发送前翻译(使用翻译器设置)",
-
   "languagePicker.title": "选择你的语言",
   "languagePicker.subtitle": "你可以稍后在设置中更改此项。",
   "languagePicker.continue": "继续",
-
   "settingsLanguage.title": "语言",
   "settingsLanguage.label": "应用语言"
 }

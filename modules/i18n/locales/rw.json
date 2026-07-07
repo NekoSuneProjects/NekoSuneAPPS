@@ -23,6 +23,7 @@
   "nav.oscapps": "Porogaramu za OSC",
   "nav.vrctools": "Ibikoresho bya VRChat",
   "nav.live": "Live",
+  "nav.translation": "Ubusemuzi",
   "nav.oauth": "Konti za OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Imibare",
@@ -33,7 +34,6 @@
   "nav.docs": "Inyandiko / Gutangira",
   "nav.about": "Ibyerekeye",
   "nav.log": "Raporo ya OSC",
-
   "common.save": "Bika",
   "common.cancel": "Kureka",
   "common.enable": "Fungura",
@@ -45,7 +45,6 @@
   "common.send": "Ohereza",
   "common.clear": "Siba",
   "common.record": "Fata",
-
   "avatarScaling.title": "Ingano ya Avatar",
   "avatarScaling.subtitle": "Guhindura uburebure bwa avatar bikoresheje OSC ya VRChat by'ubwacyo — bikora kuri avatar iyo ari yo yose",
   "avatarScaling.enable": "Fungura guhindura ingano ya avatar",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Fata buto yo kugabanya ingano",
   "avatarScaling.hotkeyHint": "Buto zihutirwa (hotkeys) zikora ahantu hose (n'igihe VRChat ariyo ifite focus). Niba buto idashobora gufatwa, ushobora gukomeza gukoresha slider iri hejuru.",
   "avatarScaling.off": "Guhindura ingano ya avatar birafunze",
-
   "translator.title": "Umusemuzi",
   "translator.provider": "Utanga Serivisi",
   "translator.endpoint": "URL ya Endpoint",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Ururimi Rugenewe",
   "translator.aiGrammarFix": "Banza ukosore imyandikire ukoresheje AI (bikoresha utanga serivisi wa IntelliChat uri hejuru)",
   "translator.note": "Bikoreshwa n'uburyo bwo guhindura ururimi bwa chatbox ya Kwandika mu Gihe Nyakuri, ndetse na ho hose muri iyi porogaramu hagaragara uburyo bwo \"Guhindura ururimi mbere yo kohereza.\"",
-
   "liveTyping.title": "Kwandika mu Gihe Nyakuri",
   "liveTyping.subtitle": "yohereza uko wandika, nk'uko chatbox ya VRChat ubwayo ikora",
   "liveTyping.placeholder": "Andika hano — ibi byohereza kuri chatbox mu buryo bwikora buri masegonda make uko wandika. Komeza kwandika nyuma y'inyuguti 144; VRChat izagaragaza '…' hamwe n'iherezo ry'ubutumwa bwawe.",
   "liveTyping.previewLabel": "Kureba Mbere (ibyo VRChat izagaragaza):",
   "liveTyping.translateLabel": "Hindura ururimi mbere yo kohereza (bikoresha igenamiterere ry'Umusemuzi)",
-
   "languagePicker.title": "Hitamo Ururimi Rwawe",
   "languagePicker.subtitle": "Ushobora guhindura ibi nyuma mu Igenamiterere.",
   "languagePicker.continue": "Komeza",
-
   "settingsLanguage.title": "Ururimi",
   "settingsLanguage.label": "Ururimi rwa Porogaramu"
 }

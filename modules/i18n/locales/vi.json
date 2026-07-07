@@ -23,6 +23,7 @@
   "nav.oscapps": "Ứng dụng OSC",
   "nav.vrctools": "Công cụ VRChat",
   "nav.live": "Trực tiếp",
+  "nav.translation": "Dịch",
   "nav.oauth": "Tài khoản OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Thống kê",
@@ -33,7 +34,6 @@
   "nav.docs": "Tài liệu / Thiết lập",
   "nav.about": "Giới thiệu",
   "nav.log": "Nhật ký OSC",
-
   "common.save": "Lưu",
   "common.cancel": "Hủy",
   "common.enable": "Bật",
@@ -45,7 +45,6 @@
   "common.send": "Gửi",
   "common.clear": "Xóa",
   "common.record": "Ghi",
-
   "avatarScaling.title": "Tỷ lệ Avatar",
   "avatarScaling.subtitle": "Tính năng thay đổi tỷ lệ chiều cao qua OSC gốc của VRChat — hoạt động trên mọi avatar",
   "avatarScaling.enable": "Bật tỷ lệ avatar",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Ghi phím giảm tỷ lệ",
   "avatarScaling.hotkeyHint": "Phím tắt hoạt động trên toàn hệ thống (ngay cả khi VRChat đang được focus). Nếu một phím không ghi được, bạn vẫn có thể dùng thanh trượt phía trên.",
   "avatarScaling.off": "Tỷ lệ avatar đang tắt",
-
   "translator.title": "Trình dịch",
   "translator.provider": "Nhà cung cấp",
   "translator.endpoint": "URL điểm cuối",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Ngôn ngữ đích",
   "translator.aiGrammarFix": "Sửa ngữ pháp bằng AI trước (dùng nhà cung cấp IntelliChat ở trên)",
   "translator.note": "Được dùng bởi tùy chọn dịch của hộp trò chuyện Live Typing và bất kỳ nơi nào khác trong ứng dụng có tùy chọn \"Dịch trước khi gửi.\"",
-
   "liveTyping.title": "Live Typing",
   "liveTyping.subtitle": "gửi ngay khi bạn gõ, giống như hộp trò chuyện của VRChat",
   "liveTyping.placeholder": "Gõ vào đây — nội dung này sẽ tự động được gửi đến hộp trò chuyện sau mỗi vài giây khi bạn gõ. Cứ tiếp tục gõ quá 144 ký tự; VRChat sẽ hiển thị '…' cùng với phần cuối của tin nhắn.",
   "liveTyping.previewLabel": "Xem trước (nội dung VRChat sẽ hiển thị):",
   "liveTyping.translateLabel": "Dịch trước khi gửi (dùng cài đặt Trình dịch)",
-
   "languagePicker.title": "Chọn ngôn ngữ của bạn",
   "languagePicker.subtitle": "Bạn có thể thay đổi điều này sau trong Cài đặt.",
   "languagePicker.continue": "Tiếp tục",
-
   "settingsLanguage.title": "Ngôn ngữ",
   "settingsLanguage.label": "Ngôn ngữ ứng dụng"
 }

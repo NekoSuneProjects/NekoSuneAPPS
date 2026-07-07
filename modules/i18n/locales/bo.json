@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC མཉེན་ཆས",
   "nav.vrctools": "VRChat ལག་ཆ",
   "nav.live": "འཕྲལ་བསྟར",
+  "nav.translation": "སྐད་སྒྱུར།",
   "nav.oauth": "OAuth རྩིས་ཁྲ",
   "nav.discord": "Discord",
   "nav.stats": "རྩིས་གྲངས",
@@ -33,7 +34,6 @@
   "nav.docs": "ཡིག་ཚགས / སྒྲིག་སྦྱོར",
   "nav.about": "ངོ་སྤྲོད",
   "nav.log": "OSC ཟིན་ཐོ",
-
   "common.save": "ཉར་ཚགས",
   "common.cancel": "ཕྱིར་འཐེན",
   "common.enable": "ལྕོགས་ཅན་བཟོ",
@@ -45,7 +45,6 @@
   "common.send": "གཏོང་བ",
   "common.clear": "བསུབ་པ",
   "common.record": "ཟིན་ཐོ་བཀོད",
-
   "avatarScaling.title": "Avatar ཆེ་ཆུང་སྒྱུར་བ",
   "avatarScaling.subtitle": "VRChat ནང་གི་རང་བཞིན་གྱི་ OSC མཐོ་ཚད་སྒྱུར་བ — Avatar གང་རུང་ལ་ལས་ཀ་བྱེད།",
   "avatarScaling.enable": "Avatar ཆེ་ཆུང་སྒྱུར་བ་ལྕོགས་ཅན་བཟོ",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "ཆུང་རུ་གཏོང་བའི་མཐེབ་ཟིན་ཐོ་བཀོད",
   "avatarScaling.hotkeyHint": "མགྱོགས་མཐེབ་ནི་ VRChat ལ་དམིགས་གཏད་ཡོད་དུས་ཀྱང་ཡོངས་ཁྱབ་ཏུ་ལས་ཀ་བྱེད། མཐེབ་ཞིག་ཟིན་ཐོ་མ་ཐུབ་ན་སྟེང་གི་སྤོར་ཆས་བེད་སྤྱོད་ཐུབ།",
   "avatarScaling.off": "Avatar ཆེ་ཆུང་སྒྱུར་བ་ཆག་ཡོད།",
-
   "translator.title": "སྐད་སྒྱུར་བྱེད་མཁན",
   "translator.provider": "འདེབས་མཁན",
   "translator.endpoint": "མཇུག་གནས་ URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "དམིགས་ཡུལ་སྐད་ཡིག",
   "translator.aiGrammarFix": "དང་པོར་ AI ཐོག་ནས་སྐད་སྤྱོད་སྒྲིག་ཆས་ལེགས་བཅོས་བྱེད (སྟེང་གི་ IntelliChat འདེབས་མཁན་བེད་སྤྱོད)",
   "translator.note": "Live Typing ཁ་བརྡའི་སྒམ་གྱི་སྐད་སྒྱུར་གདམ་ཁ་དང་མཉེན་ཆས་ནང་གི་ \"གཏོང་བའི་སྔོན་ལ་སྐད་སྒྱུར\" ཟེར་བའི་གདམ་ཁ་ཡོད་སའི་གནས་ཚང་མར་བེད་སྤྱོད་བྱེད།",
-
   "liveTyping.title": "འཕྲལ་གྱི་ཡིག་འཇུག",
   "liveTyping.subtitle": "VRChat རང་ཉིད་ཀྱི་ཁ་བརྡའི་སྒམ་བཞིན་དུ་ཡིག་འཇུག་བྱེད་བཞིན་གཏོང་བ",
   "liveTyping.placeholder": "འདིར་ཡིག་འཇུག་བྱོས — ཁྱོད་ཡིག་འཇུག་བྱེད་བཞིན་པའི་སྐབས་སྐར་ཆ་རེ་རེར་རང་འགུལ་གྱིས་ཁ་བརྡའི་སྒམ་ལ་གཏོང་གི་ཡོད། ཡིག་འབྲུ 144 ལས་བརྒལ་རུང་ཡིག་འཇུག་གཞི་བཞིན་མུ་མཐུད་བྱོས; VRChat ནང་ '…' དང་ཁྱོད་ཀྱི་འཕྲིན་གྱི་མཇུག་ཆ་མཚོན་གྱི་རེད།",
   "liveTyping.previewLabel": "སྔོན་ལྟ (VRChat ནང་མཚོན་རྒྱུ):",
   "liveTyping.translateLabel": "གཏོང་བའི་སྔོན་ལ་སྐད་སྒྱུར་བྱེད (སྐད་སྒྱུར་བྱེད་མཁན་གྱི་སྒྲིག་འགོད་བེད་སྤྱོད)",
-
   "languagePicker.title": "ཁྱོད་ཀྱི་སྐད་ཡིག་འདེམས་རོགས",
   "languagePicker.subtitle": "འདི་ཁྱོད་ཀྱིས་རྗེས་སུ་སྒྲིག་འགོད་ནང་བསྒྱུར་ཐུབ།",
   "languagePicker.continue": "མུ་མཐུད",
-
   "settingsLanguage.title": "སྐད་ཡིག",
   "settingsLanguage.label": "མཉེན་ཆས་སྐད་ཡིག"
 }

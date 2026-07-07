@@ -23,6 +23,7 @@
   "nav.oscapps": "Abburka OSC",
   "nav.vrctools": "Qalabka VRChat",
   "nav.live": "Toos ah",
+  "nav.translation": "Turjumaad",
   "nav.oauth": "Akoonnada OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Tirakoobka",
@@ -33,7 +34,6 @@
   "nav.docs": "Dukumeenti / Dejinta",
   "nav.about": "Ku Saabsan",
   "nav.log": "Diiwaanka OSC",
-
   "common.save": "Kaydi",
   "common.cancel": "Baabi'i",
   "common.enable": "Shid",
@@ -45,7 +45,6 @@
   "common.send": "Dir",
   "common.clear": "Tirtir",
   "common.record": "Duub",
-
   "avatarScaling.title": "Cabbirinta Avatar-ka",
   "avatarScaling.subtitle": "Cabbirinta dhererka OSC ee dhabta ah ee VRChat — waxay ka shaqaysaa avatar kasta",
   "avatarScaling.enable": "Shid cabbirinta avatar-ka",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Duub furaha yaraynta cabbirka",
   "avatarScaling.hotkeyHint": "Furaha degdegga ah wuxuu shaqeeyaa si guud (xitaa marka VRChat leeyahay feejignaanta). Haddii furuhu diidmo in la duubo, weli waxaad isticmaali kartaa jiirka kore.",
   "avatarScaling.off": "Cabbirinta avatar-ka way damiin tahay",
-
   "translator.title": "Turjumaha",
   "translator.provider": "Bixiyaha",
   "translator.endpoint": "URL-ka Endpoint-ka",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Luqadda bartilmaameedka",
   "translator.aiGrammarFix": "Marka hore hagaaji naxwaha AI (wuxuu isticmaalaa bixiyaha IntelliChat ee kore)",
   "translator.note": "Waxaa loo isticmaalaa ikhtiyaarka tarjumaadda sanduuqa wadahadalka ee Live Typing iyo meel kasta oo kale ee app-ka ku jirta oo bixisa \"Tarjun ka hor inta aan la dirin.\"",
-
   "liveTyping.title": "Qorista Toos ah",
   "liveTyping.subtitle": "wuxuu u diraa sida aad wax u qorayso, sida sanduuqa wadahadalka ee VRChat",
   "liveTyping.placeholder": "Halkan ku qor — tan si toos ah ayaa loogu diraa sanduuqa wadahadalka mar kasta oo dhowr ilbiriqsi ah inta aad wax qorayso. Sii wad qorista xitaa in ka badan 144 xaraf; VRChat wuxuu tusi doonaa '…' + dhammaadka fariintaada.",
   "liveTyping.previewLabel": "Horfiiris (waxa VRChat tusi doono):",
   "liveTyping.translateLabel": "Tarjun ka hor inta aan la dirin (wuxuu isticmaalaa dejinta Turjumaha)",
-
   "languagePicker.title": "Dooro luqaddaada",
   "languagePicker.subtitle": "Waxaad tan bedeli kartaa mar dambe ee Dejinta.",
   "languagePicker.continue": "Sii Wad",
-
   "settingsLanguage.title": "Luqadda",
   "settingsLanguage.label": "Luqadda app-ka"
 }

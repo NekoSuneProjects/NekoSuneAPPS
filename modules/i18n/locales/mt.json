@@ -23,6 +23,7 @@
   "nav.oscapps": "Apps OSC",
   "nav.vrctools": "Għodda VRChat",
   "nav.live": "Dirett",
+  "nav.translation": "Traduzzjoni",
   "nav.oauth": "Kontijiet OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Statistika",
@@ -33,7 +34,6 @@
   "nav.docs": "Dokumenti / Konfigurazzjoni",
   "nav.about": "Dwar",
   "nav.log": "Log OSC",
-
   "common.save": "Issejvja",
   "common.cancel": "Ikkanċella",
   "common.enable": "Attiva",
@@ -45,7 +45,6 @@
   "common.send": "Ibgħat",
   "common.clear": "Iċċara",
   "common.record": "Irrekordja",
-
   "avatarScaling.title": "Skalar tal-Avatar",
   "avatarScaling.subtitle": "L-iskalar tal-għoli OSC nattiv taʼ VRChat — jaħdem maʼ kwalunkwe avatar",
   "avatarScaling.enable": "Attiva l-iskalar tal-avatar",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Irrekordja ċ-ċavetta taʼ skala-'l isfel",
   "avatarScaling.hotkeyHint": "Il-hotkeys jaħdmu globalment (anke meta VRChat għandu l-fokus). Jekk ċavetta ma tirreġistrax, xorta tista' tuża l-slider ta' fuq.",
   "avatarScaling.off": "L-iskalar tal-avatar mitfi",
-
   "translator.title": "Traduttur",
   "translator.provider": "Fornitur",
   "translator.endpoint": "URL tal-Endpoint",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Lingwa fil-mira",
   "translator.aiGrammarFix": "Sewwi l-grammatika bl-AI l-ewwel (juża l-fornitur IntelliChat taʼ fuq)",
   "translator.note": "Użat mill-għażla tat-traduzzjoni tal-chatbox taʼ Live Typing u kullimkien ieħor fl-app li joffri \"Traduċi qabel tibgħat.\"",
-
   "liveTyping.title": "Ittajpjar Live",
   "liveTyping.subtitle": "jibgħat hekk kif tikteb, bħall-chatbox stess taʼ VRChat",
   "liveTyping.placeholder": "Ikteb hawn — dan jintbagħat lill-chatbox awtomatikament kull ftit sekondi hekk kif tikteb. Ibqa' tikteb wara l-144 karattru; VRChat se juri '…' + it-tmiem tal-messaġġ tiegħek.",
   "liveTyping.previewLabel": "Previżjoni (x'se juri VRChat):",
   "liveTyping.translateLabel": "Traduċi qabel tibgħat (juża s-settings tat-Traduttur)",
-
   "languagePicker.title": "Agħżel il-lingwa tiegħek",
   "languagePicker.subtitle": "Tista' tibdel dan aktar tard fis-Settings.",
   "languagePicker.continue": "Kompli",
-
   "settingsLanguage.title": "Lingwa",
   "settingsLanguage.label": "Lingwa tal-app"
 }

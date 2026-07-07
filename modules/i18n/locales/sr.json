@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC апликације",
   "nav.vrctools": "VRChat алатке",
   "nav.live": "Уживо",
+  "nav.translation": "Превод",
   "nav.oauth": "OAuth налози",
   "nav.discord": "Discord",
   "nav.stats": "Статистика",
@@ -33,7 +34,6 @@
   "nav.docs": "Документација / Подешавање",
   "nav.about": "О апликацији",
   "nav.log": "OSC дневник",
-
   "common.save": "Сачувај",
   "common.cancel": "Откажи",
   "common.enable": "Укључи",
@@ -45,7 +45,6 @@
   "common.send": "Пошаљи",
   "common.clear": "Обриши",
   "common.record": "Сними",
-
   "avatarScaling.title": "Скалирање аватара",
   "avatarScaling.subtitle": "VRChat-ово изворно OSC скалирање висине — ради на било ком аватару",
   "avatarScaling.enable": "Укључи скалирање аватара",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Сними тастер за умањење",
   "avatarScaling.hotkeyHint": "Пречице раде глобално (чак и када је VRChat у фокусу). Ако тастер не може да се сними, можеш и даље користити клизач изнад.",
   "avatarScaling.off": "Скалирање аватара је искључено",
-
   "translator.title": "Преводилац",
   "translator.provider": "Провајдер",
   "translator.endpoint": "URL крајње тачке",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Циљни језик",
   "translator.aiGrammarFix": "Прво исправи граматику помоћу AI-а (користи IntelliChat провајдер изнад)",
   "translator.note": "Користи се код опције превода у Live Typing ћаскању и свуда у апликацији где постоји опција „Преведи пре слања”.",
-
   "liveTyping.title": "Живо куцање",
   "liveTyping.subtitle": "шаље док куцаш, као сопствено ћаскање у VRChat-у",
   "liveTyping.placeholder": "Куцај овде — ово се аутоматски шаље у ћаскање сваких неколико секунди док куцаш. Настави да куцаш и после 144 знака; VRChat ће приказати „…” + крај твоје поруке.",
   "liveTyping.previewLabel": "Приказ (шта ће VRChat приказати):",
   "liveTyping.translateLabel": "Преведи пре слања (користи подешавања Преводиоца)",
-
   "languagePicker.title": "Изабери свој језик",
   "languagePicker.subtitle": "Ово можеш променити касније у Подешавањима.",
   "languagePicker.continue": "Настави",
-
   "settingsLanguage.title": "Језик",
   "settingsLanguage.label": "Језик апликације"
 }

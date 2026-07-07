@@ -23,6 +23,7 @@
   "nav.oscapps": "แอป OSC",
   "nav.vrctools": "เครื่องมือ VRChat",
   "nav.live": "ไลฟ์",
+  "nav.translation": "การแปล",
   "nav.oauth": "บัญชี OAuth",
   "nav.discord": "Discord",
   "nav.stats": "สถิติ",
@@ -33,7 +34,6 @@
   "nav.docs": "เอกสาร / การตั้งค่า",
   "nav.about": "เกี่ยวกับ",
   "nav.log": "บันทึก OSC",
-
   "common.save": "บันทึก",
   "common.cancel": "ยกเลิก",
   "common.enable": "เปิดใช้งาน",
@@ -45,7 +45,6 @@
   "common.send": "ส่ง",
   "common.clear": "ล้าง",
   "common.record": "อัดบันทึก",
-
   "avatarScaling.title": "การปรับขนาดอวตาร",
   "avatarScaling.subtitle": "ระบบปรับขนาดความสูงผ่าน OSC ในตัวของ VRChat — ใช้ได้กับอวตารทุกตัว",
   "avatarScaling.enable": "เปิดใช้งานการปรับขนาดอวตาร",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "บันทึกปุ่มลดขนาด",
   "avatarScaling.hotkeyHint": "ปุ่มลัดทำงานได้ทั่วระบบ (แม้ VRChat จะอยู่ในโฟกัส) หากปุ่มไม่สามารถบันทึกได้ คุณยังใช้แถบเลื่อนด้านบนได้",
   "avatarScaling.off": "การปรับขนาดอวตารปิดอยู่",
-
   "translator.title": "ตัวแปลภาษา",
   "translator.provider": "ผู้ให้บริการ",
   "translator.endpoint": "URL ปลายทาง",
@@ -67,17 +65,14 @@
   "translator.targetLang": "ภาษาปลายทาง",
   "translator.aiGrammarFix": "แก้ไขไวยากรณ์ด้วย AI ก่อน (ใช้ผู้ให้บริการ IntelliChat ด้านบน)",
   "translator.note": "ใช้โดยตัวเลือกแปลภาษาของกล่องแชท Live Typing และทุกที่ในแอปที่มีตัวเลือก \"แปลก่อนส่ง\"",
-
   "liveTyping.title": "การพิมพ์สด",
   "liveTyping.subtitle": "ส่งข้อความขณะพิมพ์ เหมือนกล่องแชทของ VRChat เอง",
   "liveTyping.placeholder": "พิมพ์ที่นี่ — ข้อความจะถูกส่งไปยังกล่องแชทโดยอัตโนมัติทุกๆ สองสามวินาทีขณะที่คุณพิมพ์ พิมพ์ต่อไปได้เกิน 144 ตัวอักษร VRChat จะแสดง '…' พร้อมส่วนท้ายของข้อความคุณ",
   "liveTyping.previewLabel": "ตัวอย่าง (สิ่งที่ VRChat จะแสดง):",
   "liveTyping.translateLabel": "แปลก่อนส่ง (ใช้การตั้งค่าตัวแปลภาษา)",
-
   "languagePicker.title": "เลือกภาษาของคุณ",
   "languagePicker.subtitle": "คุณสามารถเปลี่ยนได้ในภายหลังที่การตั้งค่า",
   "languagePicker.continue": "ดำเนินการต่อ",
-
   "settingsLanguage.title": "ภาษา",
   "settingsLanguage.label": "ภาษาแอป"
 }

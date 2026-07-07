@@ -23,6 +23,7 @@
   "nav.oscapps": "የOSC መተግበሪያዎች",
   "nav.vrctools": "የVRChat መሳሪያዎች",
   "nav.live": "ቀጥታ",
+  "nav.translation": "ትርጉም",
   "nav.oauth": "የOAuth መለያዎች",
   "nav.discord": "Discord",
   "nav.stats": "ስታትስቲክስ",
@@ -33,7 +34,6 @@
   "nav.docs": "ሰነዶች / ማዋቀር",
   "nav.about": "ስለ",
   "nav.log": "የOSC ምዝገባ",
-
   "common.save": "አስቀምጥ",
   "common.cancel": "ሰርዝ",
   "common.enable": "አንቃ",
@@ -45,7 +45,6 @@
   "common.send": "ላክ",
   "common.clear": "አጽዳ",
   "common.record": "ቅረጽ",
-
   "avatarScaling.title": "የአምሳያ መጠን ማስተካከያ",
   "avatarScaling.subtitle": "የVRChat የራሱ OSC የቁመት መጠን ማስተካከያ — በየትኛውም አምሳያ ላይ ይሰራል",
   "avatarScaling.enable": "የአምሳያ መጠን ማስተካከያን አንቃ",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "የመጠን-ቀነስ ቁልፍን ቅረጽ",
   "avatarScaling.hotkeyHint": "ሆት-ቁልፎች በአጠቃላይ ይሰራሉ (VRChat ትኩረት ላይ ቢሆንም እንኳ)። ቁልፍ መቅረጽ ካልቻለ፣ ከላይ ያለውን መንሸራተቻ አሁንም መጠቀም ይችላሉ።",
   "avatarScaling.off": "የአምሳያ መጠን ማስተካከያ ጠፍቷል",
-
   "translator.title": "ተርጓሚ",
   "translator.provider": "አቅራቢ",
   "translator.endpoint": "የመድረሻ URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "የመድረሻ ቋንቋ",
   "translator.aiGrammarFix": "መጀመሪያ ሰዋሰውን በAI አስተካክል (ከላይ ያለውን የIntelliChat አቅራቢ ይጠቀማል)",
   "translator.note": "በላይቭ ታይፒንግ የቻት ሳጥን ትርጉም አማራጭ እና \"ከመላክ በፊት ተርጉም\" በሚያቀርብ በመተግበሪያው ውስጥ በሌላ ቦታ ሁሉ ይጠቅማል።",
-
   "liveTyping.title": "ላይቭ ታይፒንግ",
   "liveTyping.subtitle": "እየፃፉ ሲሆኑ ይላካል፣ እንደ VRChat የራሱ ቻት ሳጥን",
   "liveTyping.placeholder": "እዚህ ይፃፉ — ይህ እየፃፉ በየተወሰኑ ሰከንዶች በራስ-ሰር ወደ ቻት ሳጥኑ ይላካል። ከ144 ፊደላት በላይ መፃፍ ይቀጥሉ፤ VRChat '…' + የመልእክትዎን መጨረሻ ያሳያል።",
   "liveTyping.previewLabel": "ቅድመ-እይታ (VRChat የሚያሳየው):",
   "liveTyping.translateLabel": "ከመላክ በፊት ተርጉም (የተርጓሚ ቅንብሮችን ይጠቀማል)",
-
   "languagePicker.title": "ቋንቋዎን ይምረጡ",
   "languagePicker.subtitle": "ይህንን በኋላ በቅንብሮች ውስጥ መቀየር ይችላሉ።",
   "languagePicker.continue": "ቀጥል",
-
   "settingsLanguage.title": "ቋንቋ",
   "settingsLanguage.label": "የመተግበሪያ ቋንቋ"
 }

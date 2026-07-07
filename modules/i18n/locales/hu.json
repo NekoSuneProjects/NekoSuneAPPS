@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC alkalmazások",
   "nav.vrctools": "VRChat eszközök",
   "nav.live": "Élő",
+  "nav.translation": "Fordítás",
   "nav.oauth": "OAuth fiókok",
   "nav.discord": "Discord",
   "nav.stats": "Statisztika",
@@ -33,7 +34,6 @@
   "nav.docs": "Dokumentáció / Beállítás",
   "nav.about": "Névjegy",
   "nav.log": "OSC napló",
-
   "common.save": "Mentés",
   "common.cancel": "Mégse",
   "common.enable": "Engedélyezés",
@@ -45,7 +45,6 @@
   "common.send": "Küldés",
   "common.clear": "Törlés",
   "common.record": "Rögzítés",
-
   "avatarScaling.title": "Avatar méretezés",
   "avatarScaling.subtitle": "A VRChat saját OSC magasság-méretezése — bármely avatarral működik",
   "avatarScaling.enable": "Avatar méretezés engedélyezése",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Kicsinyítés billentyű rögzítése",
   "avatarScaling.hotkeyHint": "A gyorsbillentyűk globálisan működnek (még akkor is, ha a VRChat van fókuszban). Ha egy billentyűt nem lehet rögzíteni, használhatod a fenti csúszkát is.",
   "avatarScaling.off": "Az avatar méretezés ki van kapcsolva",
-
   "translator.title": "Fordító",
   "translator.provider": "Szolgáltató",
   "translator.endpoint": "Végpont URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Célnyelv",
   "translator.aiGrammarFix": "Nyelvtan javítása AI-val előbb (a fent megadott IntelliChat szolgáltatót használja)",
   "translator.note": "Ezt használja a Live Typing csetdoboz fordítási beállítása, valamint bárhol az alkalmazásban, ahol a „Fordítás küldés előtt” opció elérhető.",
-
   "liveTyping.title": "Élő gépelés",
   "liveTyping.subtitle": "gépelés közben küldi el, mint a VRChat saját csetdoboza",
   "liveTyping.placeholder": "Gépelj ide — ez automatikusan elküldi a csetdoboznak néhány másodpercenként, gépelés közben. Gépelj tovább a 144 karakteren túl is; a VRChat egy „…”-t majd az üzeneted végét fogja megjeleníteni.",
   "liveTyping.previewLabel": "Előnézet (mit fog megjeleníteni a VRChat):",
   "liveTyping.translateLabel": "Fordítás küldés előtt (a Fordító beállításait használja)",
-
   "languagePicker.title": "Válaszd ki a nyelvedet",
   "languagePicker.subtitle": "Ezt később a Beállításokban is megváltoztathatod.",
   "languagePicker.continue": "Folytatás",
-
   "settingsLanguage.title": "Nyelv",
   "settingsLanguage.label": "Alkalmazás nyelve"
 }

@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC एपहरू",
   "nav.vrctools": "VRChat टूलहरू",
   "nav.live": "लाइव",
+  "nav.translation": "अनुवाद",
   "nav.oauth": "OAuth खाताहरू",
   "nav.discord": "Discord",
   "nav.stats": "तथ्याङ्क",
@@ -33,7 +34,6 @@
   "nav.docs": "कागजातहरू / सेटअप",
   "nav.about": "बारेमा",
   "nav.log": "OSC लग",
-
   "common.save": "सेभ गर्नुहोस्",
   "common.cancel": "रद्द गर्नुहोस्",
   "common.enable": "सक्षम पार्नुहोस्",
@@ -45,7 +45,6 @@
   "common.send": "पठाउनुहोस्",
   "common.clear": "खाली गर्नुहोस्",
   "common.record": "रेकर्ड गर्नुहोस्",
-
   "avatarScaling.title": "अवतार स्केलिङ",
   "avatarScaling.subtitle": "VRChat को आफ्नै OSC उचाई स्केलिङ — जुनसुकै अवतारमा काम गर्छ",
   "avatarScaling.enable": "अवतार स्केलिङ सक्षम पार्नुहोस्",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "स्केल-डाउन कुञ्जी रेकर्ड गर्नुहोस्",
   "avatarScaling.hotkeyHint": "हटकीहरू विश्वव्यापी रूपमा काम गर्छन् (VRChat मा फोकस हुँदा पनि)। यदि कुनै कुञ्जी रेकर्ड हुँदैन भने, तपाईं अझै पनि माथिको स्लाइडर प्रयोग गर्न सक्नुहुन्छ।",
   "avatarScaling.off": "अवतार स्केलिङ बन्द छ",
-
   "translator.title": "अनुवादक",
   "translator.provider": "प्रदायक",
   "translator.endpoint": "एन्डपोइन्ट URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "लक्षित भाषा",
   "translator.aiGrammarFix": "पहिले AI बाट व्याकरण सुधार गर्नुहोस् (माथिको IntelliChat प्रदायक प्रयोग गर्छ)",
   "translator.note": "Live Typing च्याटबक्स अनुवाद विकल्प र एपमा \"पठाउनुअघि अनुवाद गर्नुहोस्\" प्रस्ताव गर्ने अन्य जुनसुकै ठाउँमा प्रयोग हुन्छ।",
-
   "liveTyping.title": "लाइव टाइपिङ",
   "liveTyping.subtitle": "तपाईंले टाइप गर्दै गर्दा पठाउँछ, VRChat को आफ्नै च्याटबक्स जस्तै",
   "liveTyping.placeholder": "यहाँ टाइप गर्नुहोस् — तपाईंले टाइप गर्दै गर्दा यो हरेक केही सेकुन्डमा स्वचालित रूपमा च्याटबक्समा पठाइन्छ। 144 अक्षर भन्दा बढी टाइप गर्दै रहनुहोस्; VRChat ले '…' + तपाईंको सन्देशको अन्त्य देखाउनेछ।",
   "liveTyping.previewLabel": "पूर्वावलोकन (VRChat ले के देखाउनेछ):",
   "liveTyping.translateLabel": "पठाउनुअघि अनुवाद गर्नुहोस् (अनुवादक सेटिङहरू प्रयोग गर्छ)",
-
   "languagePicker.title": "तपाईंको भाषा चयन गर्नुहोस्",
   "languagePicker.subtitle": "तपाईं यसलाई पछि सेटिङहरूमा परिवर्तन गर्न सक्नुहुन्छ।",
   "languagePicker.continue": "जारी राख्नुहोस्",
-
   "settingsLanguage.title": "भाषा",
   "settingsLanguage.label": "एप भाषा"
 }

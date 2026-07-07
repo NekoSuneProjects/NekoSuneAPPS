@@ -23,6 +23,7 @@
   "nav.oscapps": "Aplikacione OSC",
   "nav.vrctools": "Veglat e VRChat",
   "nav.live": "Drejtpërdrejt",
+  "nav.translation": "Përkthimi",
   "nav.oauth": "Llogaritë OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Statistika",
@@ -33,7 +34,6 @@
   "nav.docs": "Dokumentacioni / Konfigurimi",
   "nav.about": "Rreth",
   "nav.log": "Regjistri OSC",
-
   "common.save": "Ruaj",
   "common.cancel": "Anulo",
   "common.enable": "Aktivizo",
@@ -45,7 +45,6 @@
   "common.send": "Dërgo",
   "common.clear": "Pastro",
   "common.record": "Regjistro",
-
   "avatarScaling.title": "Shkallëzimi i avatarit",
   "avatarScaling.subtitle": "Shkallëzimi vendas i lartësisë OSC i VRChat — funksionon me çdo avatar",
   "avatarScaling.enable": "Aktivizo shkallëzimin e avatarit",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Regjistro tastin e uljes së shkallës",
   "avatarScaling.hotkeyHint": "Tastet e shkurtoreve funksionojnë globalisht (edhe kur VRChat është në fokus). Nëse një tast nuk regjistrohet, mund të përdorësh gjithsesi rrëshqitësin sipër.",
   "avatarScaling.off": "Shkallëzimi i avatarit është i çaktivizuar",
-
   "translator.title": "Përkthyesi",
   "translator.provider": "Ofruesi",
   "translator.endpoint": "URL-ja e pikës fundore",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Gjuha e synuar",
   "translator.aiGrammarFix": "Korrigjo gramatikën me AI së pari (përdor ofruesin IntelliChat më sipër)",
   "translator.note": "Përdoret nga opsioni i përkthimit të kutisë së bisedës Live Typing dhe kudo tjetër në aplikacion ku ofrohet \"Përkthe para dërgimit.\"",
-
   "liveTyping.title": "Shkrimi Live",
   "liveTyping.subtitle": "dërgon ndërsa shkruan, ashtu si kutia e bisedës e vetë VRChat",
   "liveTyping.placeholder": "Shkruaj këtu — kjo dërgohet automatikisht në kutinë e bisedës çdo pak sekonda ndërsa shkruan. Vazhdo të shkruash edhe pas 144 karakteresh; VRChat do të shfaqë '…' + fundin e mesazhit tënd.",
   "liveTyping.previewLabel": "Parashikimi (çfarë do të shfaqë VRChat):",
   "liveTyping.translateLabel": "Përkthe para dërgimit (përdor cilësimet e Përkthyesit)",
-
   "languagePicker.title": "Zgjidh gjuhën tënde",
   "languagePicker.subtitle": "Mund ta ndryshosh këtë më vonë tek Cilësimet.",
   "languagePicker.continue": "Vazhdo",
-
   "settingsLanguage.title": "Gjuha",
   "settingsLanguage.label": "Gjuha e aplikacionit"
 }

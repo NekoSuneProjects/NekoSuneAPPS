@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC ਐਪਾਂ",
   "nav.vrctools": "VRChat ਟੂਲ",
   "nav.live": "ਲਾਈਵ",
+  "nav.translation": "ਅਨੁਵਾਦ",
   "nav.oauth": "OAuth ਖਾਤੇ",
   "nav.discord": "Discord",
   "nav.stats": "ਅੰਕੜੇ",
@@ -33,7 +34,6 @@
   "nav.docs": "ਦਸਤਾਵੇਜ਼ / ਸੈੱਟਅੱਪ",
   "nav.about": "ਬਾਰੇ",
   "nav.log": "OSC ਲੌਗ",
-
   "common.save": "ਸੰਭਾਲੋ",
   "common.cancel": "ਰੱਦ ਕਰੋ",
   "common.enable": "ਚਾਲੂ ਕਰੋ",
@@ -45,7 +45,6 @@
   "common.send": "ਭੇਜੋ",
   "common.clear": "ਸਾਫ਼ ਕਰੋ",
   "common.record": "ਰਿਕਾਰਡ ਕਰੋ",
-
   "avatarScaling.title": "ਅਵਤਾਰ ਸਕੇਲਿੰਗ",
   "avatarScaling.subtitle": "VRChat ਦੀ ਨੇਟਿਵ OSC ਉਚਾਈ ਸਕੇਲਿੰਗ — ਕਿਸੇ ਵੀ ਅਵਤਾਰ 'ਤੇ ਕੰਮ ਕਰਦੀ ਹੈ",
   "avatarScaling.enable": "ਅਵਤਾਰ ਸਕੇਲਿੰਗ ਚਾਲੂ ਕਰੋ",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "ਸਕੇਲ-ਡਾਊਨ ਕੀ ਰਿਕਾਰਡ ਕਰੋ",
   "avatarScaling.hotkeyHint": "ਹਾਟਕੀਜ਼ ਵਿਸ਼ਵ ਪੱਧਰ 'ਤੇ ਕੰਮ ਕਰਦੀਆਂ ਹਨ (ਭਾਵੇਂ VRChat ਫੋਕਸ ਵਿੱਚ ਹੋਵੇ)। ਜੇ ਕੋਈ ਕੀ ਰਿਕਾਰਡ ਨਹੀਂ ਹੁੰਦੀ, ਤਾਂ ਤੁਸੀਂ ਫਿਰ ਵੀ ਉੱਪਰ ਦਿੱਤੇ ਸਲਾਈਡਰ ਦੀ ਵਰਤੋਂ ਕਰ ਸਕਦੇ ਹੋ।",
   "avatarScaling.off": "ਅਵਤਾਰ ਸਕੇਲਿੰਗ ਬੰਦ ਹੈ",
-
   "translator.title": "ਅਨੁਵਾਦਕ",
   "translator.provider": "ਪ੍ਰਦਾਤਾ",
   "translator.endpoint": "ਐਂਡਪੌਇੰਟ URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "ਟਾਰਗੇਟ ਭਾਸ਼ਾ",
   "translator.aiGrammarFix": "ਪਹਿਲਾਂ AI ਨਾਲ ਗ੍ਰਾਮਰ ਠੀਕ ਕਰੋ (ਉੱਪਰ ਦਿੱਤੇ IntelliChat ਪ੍ਰਦਾਤਾ ਦੀ ਵਰਤੋਂ ਕਰਦਾ ਹੈ)",
   "translator.note": "ਇਹ Live Typing ਚੈਟਬਾਕਸ ਅਨੁਵਾਦ ਵਿਕਲਪ ਅਤੇ ਐਪ ਵਿੱਚ ਕਿਤੇ ਵੀ ਜਿੱਥੇ \"ਭੇਜਣ ਤੋਂ ਪਹਿਲਾਂ ਅਨੁਵਾਦ ਕਰੋ\" ਵਿਕਲਪ ਦਿੱਤਾ ਗਿਆ ਹੋਵੇ, ਵਰਤਿਆ ਜਾਂਦਾ ਹੈ।",
-
   "liveTyping.title": "ਲਾਈਵ ਟਾਈਪਿੰਗ",
   "liveTyping.subtitle": "ਤੁਹਾਡੇ ਟਾਈਪ ਕਰਦੇ ਹੀ ਭੇਜਦਾ ਹੈ, VRChat ਦੇ ਆਪਣੇ ਚੈਟਬਾਕਸ ਵਾਂਗ",
   "liveTyping.placeholder": "ਇੱਥੇ ਟਾਈਪ ਕਰੋ — ਇਹ ਤੁਹਾਡੇ ਟਾਈਪ ਕਰਦੇ ਸਮੇਂ ਹਰ ਕੁਝ ਸਕਿੰਟਾਂ ਵਿੱਚ ਆਪਣੇ-ਆਪ ਚੈਟਬਾਕਸ ਵਿੱਚ ਭੇਜਿਆ ਜਾਂਦਾ ਹੈ। 144 ਅੱਖਰਾਂ ਤੋਂ ਬਾਅਦ ਵੀ ਟਾਈਪ ਕਰਦੇ ਰਹੋ; VRChat '…' + ਤੁਹਾਡੇ ਸੁਨੇਹੇ ਦਾ ਅੰਤ ਦਿਖਾਏਗਾ।",
   "liveTyping.previewLabel": "ਪ੍ਰੀਵਿਊ (VRChat ਕੀ ਦਿਖਾਏਗਾ):",
   "liveTyping.translateLabel": "ਭੇਜਣ ਤੋਂ ਪਹਿਲਾਂ ਅਨੁਵਾਦ ਕਰੋ (ਅਨੁਵਾਦਕ ਸੈਟਿੰਗਾਂ ਦੀ ਵਰਤੋਂ ਕਰਦਾ ਹੈ)",
-
   "languagePicker.title": "ਆਪਣੀ ਭਾਸ਼ਾ ਚੁਣੋ",
   "languagePicker.subtitle": "ਤੁਸੀਂ ਇਸਨੂੰ ਬਾਅਦ ਵਿੱਚ ਸੈਟਿੰਗਾਂ ਵਿੱਚ ਬਦਲ ਸਕਦੇ ਹੋ।",
   "languagePicker.continue": "ਜਾਰੀ ਰੱਖੋ",
-
   "settingsLanguage.title": "ਭਾਸ਼ਾ",
   "settingsLanguage.label": "ਐਪ ਭਾਸ਼ਾ"
 }

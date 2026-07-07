@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC-toepassings",
   "nav.vrctools": "VRChat-gereedskap",
   "nav.live": "Regstreeks",
+  "nav.translation": "Vertaling",
   "nav.oauth": "OAuth-rekeninge",
   "nav.discord": "Discord",
   "nav.stats": "Statistieke",
@@ -33,7 +34,6 @@
   "nav.docs": "Dokumentasie / Opstelling",
   "nav.about": "Oor",
   "nav.log": "OSC-logboek",
-
   "common.save": "Stoor",
   "common.cancel": "Kanselleer",
   "common.enable": "Aktiveer",
@@ -45,7 +45,6 @@
   "common.send": "Stuur",
   "common.clear": "Maak skoon",
   "common.record": "Neem op",
-
   "avatarScaling.title": "Avatarskalering",
   "avatarScaling.subtitle": "VRChat se ingeboude OSC-hoogteskalering — werk op enige avatar",
   "avatarScaling.enable": "Aktiveer avatarskalering",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Neem skaal-af-sleutel op",
   "avatarScaling.hotkeyHint": "Kortsleutels werk globaal (selfs terwyl VRChat fokus het). As 'n sleutel nie opgeneem word nie, kan jy steeds die skuifbalk hierbo gebruik.",
   "avatarScaling.off": "Avatarskalering is af",
-
   "translator.title": "Vertaler",
   "translator.provider": "Verskaffer",
   "translator.endpoint": "Eindpunt-URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Doeltaal",
   "translator.aiGrammarFix": "Regstel grammatika eers met AI (gebruik die IntelliChat-verskaffer hierbo)",
   "translator.note": "Word gebruik deur die Live Typing-kletskassie-vertaalopsie en enige ander plek in die app waar \"Vertaal voor stuur\" aangebied word.",
-
   "liveTyping.title": "Live Tik",
   "liveTyping.subtitle": "stuur soos jy tik, net soos VRChat se eie kletskassie",
   "liveTyping.placeholder": "Tik hier — dit word outomaties elke paar sekondes na die kletskassie gestuur soos jy tik. Hou aan tik verby 144 karakters; VRChat sal '…' + die einde van jou boodskap wys.",
   "liveTyping.previewLabel": "Voorskou (wat VRChat sal wys):",
   "liveTyping.translateLabel": "Vertaal voor stuur (gebruik Vertaler-instellings)",
-
   "languagePicker.title": "Kies jou taal",
   "languagePicker.subtitle": "Jy kan dit later in Instellings verander.",
   "languagePicker.continue": "Gaan voort",
-
   "settingsLanguage.title": "Taal",
   "settingsLanguage.label": "App-taal"
 }

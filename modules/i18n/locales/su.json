@@ -23,6 +23,7 @@
   "nav.oscapps": "Aplikasi OSC",
   "nav.vrctools": "Alat VRChat",
   "nav.live": "Langsung",
+  "nav.translation": "Tarjamahan",
   "nav.oauth": "Akun OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Statistik",
@@ -33,7 +34,6 @@
   "nav.docs": "Dokumén / Nyetél",
   "nav.about": "Ngeunaan",
   "nav.log": "Log OSC",
-
   "common.save": "Simpen",
   "common.cancel": "Bolay",
   "common.enable": "Aktifkeun",
@@ -45,7 +45,6 @@
   "common.send": "Kirim",
   "common.clear": "Bersihkeun",
   "common.record": "Rékam",
-
   "avatarScaling.title": "Skala Avatar",
   "avatarScaling.subtitle": "Skala jangkung OSC asli VRChat — jalan dina avatar naon waé",
   "avatarScaling.enable": "Aktifkeun skala avatar",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Rékam tombol skala-handap",
   "avatarScaling.hotkeyHint": "Tombol pinter jalan sacara global (sanajan VRChat keur difokuskeun). Upami tombol teu bisa direkam, anjeun tiasa nganggo slider di luhur.",
   "avatarScaling.off": "Skala avatar keur pareum",
-
   "translator.title": "Panarjamah",
   "translator.provider": "Panyadia",
   "translator.endpoint": "URL Titik Ahir",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Basa tujuan",
   "translator.aiGrammarFix": "Bérésihkeun gramatika ku AI heula (nganggo panyadia IntelliChat di luhur)",
   "translator.note": "Dipaké ku pilihan tarjamah Live Typing dina kotak obrolan sareng dimana waé dina aplikasi anu nawiskeun \"Tarjamahkeun sateuacan dikirim.\"",
-
   "liveTyping.title": "Ngetik Langsung",
   "liveTyping.subtitle": "ngirim waktos anjeun ngetik, sapertos kotak obrolan VRChat sorangan",
   "liveTyping.placeholder": "Ketik di dieu — ieu bakal dikirim ka kotak obrolan sacara otomatis unggal sababaraha detik nalika anjeun ngetik. Teraskeun ngetik langkung ti 144 karakter; VRChat bakal nembongkeun '…' + tungtung pesen anjeun.",
   "liveTyping.previewLabel": "Pratinjau (nu bakal ditembongkeun ku VRChat):",
   "liveTyping.translateLabel": "Tarjamahkeun sateuacan dikirim (nganggo setelan Panarjamah)",
-
   "languagePicker.title": "Pilih basa anjeun",
   "languagePicker.subtitle": "Anjeun tiasa ngarobih ieu engké dina Setelan.",
   "languagePicker.continue": "Teraskeun",
-
   "settingsLanguage.title": "Basa",
   "settingsLanguage.label": "Basa aplikasi"
 }

@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC־אַפּליקאַציעס",
   "nav.vrctools": "VRChat־געצייג",
   "nav.live": "לעבעדיק",
+  "nav.translation": "איבערזעצונג",
   "nav.oauth": "OAuth־חשבונות",
   "nav.discord": "Discord",
   "nav.stats": "סטאטיסטיק",
@@ -33,7 +34,6 @@
   "nav.docs": "דאָקומענטאַציע / אײנריכטן",
   "nav.about": "וועגן",
   "nav.log": "OSC־רעגיסטער",
-
   "common.save": "אָפּהיטן",
   "common.cancel": "אָפּזאָגן",
   "common.enable": "אַקטיווירן",
@@ -45,7 +45,6 @@
   "common.send": "שיקן",
   "common.clear": "רייניקן",
   "common.record": "רעקאָרדירן",
-
   "avatarScaling.title": "אַװאַטאר־גרייס",
   "avatarScaling.subtitle": "VRChat'ס אייגענע OSC הייך־סקאַלירונג — פֿונקציאָנירט מיט יעדן אַװאַטאר",
   "avatarScaling.enable": "אַקטיווירן אַװאַטאר־גרייס",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "רעקאָרדירן טאַסט פֿאַר קלענער מאַכן",
   "avatarScaling.hotkeyHint": "הייס־טאַסטן פֿונקציאָנירן גלאבאַל (אפילו ווען VRChat איז אין פאָקוס). אויב א טאַסט ווערט נישט רעקאָרדירט, קענט איר נאָך אַלץ ניצן דעם שפּאַלט אויבן.",
   "avatarScaling.off": "אַװאַטאר־גרייס איז אויסגעשאַלטן",
-
   "translator.title": "איבערזעצער",
   "translator.provider": "פּראָוויידער",
   "translator.endpoint": "Endpoint URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "ציל־שפּראַך",
   "translator.aiGrammarFix": "פֿריִער פֿאַרריכטן גראַמאַטיק מיט AI (ניצט דעם IntelliChat־פּראָוויידער אויבן)",
   "translator.note": "ווערט גענוצט דורך דער Live Typing טשאַטבאַקס איבערזעצונג־אָפּציע און ערגעץ אַנדערש אין דער אַפּ וואָס ביט אָן \"איבערזעצן פֿאַר שיקן.\"",
-
   "liveTyping.title": "לעבעדיק שרייבן",
   "liveTyping.subtitle": "שיקט זיך בעת איר שרייבט, פּונקט ווי VRChat'ס אייגענער טשאַטבאַקס",
   "liveTyping.placeholder": "שרייבט דאָ — דאָס שיקט זיך אויטאָמאַטיש צום טשאַטבאַקס יעדע פּאָר סעקונדעס בעת איר שרייבט. שרייבט ווייטער אויב 144 אותיות; VRChat וועט ווייזן '…' + דעם סוף פֿון אייער מעלדונג.",
   "liveTyping.previewLabel": "פֿאָראויסקוק (וואָס VRChat וועט ווייזן):",
   "liveTyping.translateLabel": "איבערזעצן פֿאַר שיקן (ניצט די איבערזעצער־אײנשטעלונגען)",
-
   "languagePicker.title": "קלייבט אויס אייער שפּראַך",
   "languagePicker.subtitle": "איר קענט דאָס שפּעטער ענדערן אין אײנשטעלונגען.",
   "languagePicker.continue": "ווייטער",
-
   "settingsLanguage.title": "שפּראַך",
   "settingsLanguage.label": "אַפּ־שפּראַך"
 }

@@ -23,6 +23,7 @@
   "nav.oscapps": "Mga OSC App",
   "nav.vrctools": "Mga Tool ng VRChat",
   "nav.live": "Live",
+  "nav.translation": "Pagsasalin",
   "nav.oauth": "Mga OAuth Account",
   "nav.discord": "Discord",
   "nav.stats": "Estadistika",
@@ -33,7 +34,6 @@
   "nav.docs": "Dokumentasyon / Setup",
   "nav.about": "Tungkol",
   "nav.log": "OSC Log",
-
   "common.save": "I-save",
   "common.cancel": "Kanselahin",
   "common.enable": "I-enable",
@@ -45,7 +45,6 @@
   "common.send": "Ipadala",
   "common.clear": "I-clear",
   "common.record": "I-record",
-
   "avatarScaling.title": "Pagsukat ng Avatar",
   "avatarScaling.subtitle": "Ang katutubong OSC height scaling ng VRChat — gumagana sa kahit anong avatar",
   "avatarScaling.enable": "I-enable ang pagsukat ng avatar",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "I-record ang key para sa pagpapaliit",
   "avatarScaling.hotkeyHint": "Gumagana ang mga hotkey nang global (kahit may focus ang VRChat). Kung hindi marecord ang isang key, maaari mo pa ring gamitin ang slider sa itaas.",
   "avatarScaling.off": "Nakaoff ang pagsukat ng avatar",
-
   "translator.title": "Tagapagsalin",
   "translator.provider": "Provider",
   "translator.endpoint": "Endpoint URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Target na wika",
   "translator.aiGrammarFix": "Ayusin muna ang grammar gamit ang AI (gumagamit ng IntelliChat provider sa itaas)",
   "translator.note": "Ginagamit ng translation option ng Live Typing chatbox at kung saan pa man sa app na may opsyong \"Isalin bago ipadala.\"",
-
   "liveTyping.title": "Live Typing",
   "liveTyping.subtitle": "nagpapadala habang ika'y nagtatype, tulad ng sariling chatbox ng VRChat",
   "liveTyping.placeholder": "Mag-type dito — awtomatikong ipapadala ito sa chatbox bawat ilang segundo habang nagtatype ka. Ipagpatuloy ang pag-type lagpas sa 144 characters; ipapakita ng VRChat ang '…' + ang dulo ng iyong mensahe.",
   "liveTyping.previewLabel": "Preview (kung ano ang ipapakita ng VRChat):",
   "liveTyping.translateLabel": "Isalin bago ipadala (gumagamit ng mga setting ng Tagapagsalin)",
-
   "languagePicker.title": "Piliin ang iyong wika",
   "languagePicker.subtitle": "Maaari mo itong baguhin sa Mga Setting sa ibang pagkakataon.",
   "languagePicker.continue": "Magpatuloy",
-
   "settingsLanguage.title": "Wika",
   "settingsLanguage.label": "Wika ng app"
 }

@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC аппууд",
   "nav.vrctools": "VRChat хэрэгслүүд",
   "nav.live": "Лайв",
+  "nav.translation": "Орчуулга",
   "nav.oauth": "OAuth бүртгэлүүд",
   "nav.discord": "Discord",
   "nav.stats": "Статистик",
@@ -33,7 +34,6 @@
   "nav.docs": "Баримт бичиг / Заавар",
   "nav.about": "Тухай",
   "nav.log": "OSC лог",
-
   "common.save": "Хадгалах",
   "common.cancel": "Цуцлах",
   "common.enable": "Идэвхжүүлэх",
@@ -45,7 +45,6 @@
   "common.send": "Илгээх",
   "common.clear": "Цэвэрлэх",
   "common.record": "Бичих",
-
   "avatarScaling.title": "Аватарын хэмжээ тохируулга",
   "avatarScaling.subtitle": "VRChat-ын анхны OSC өндөр тохируулга — ямар ч аватар дээр ажилладаг",
   "avatarScaling.enable": "Аватарын хэмжээ тохируулгыг идэвхжүүлэх",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Хэмжээ багасгах товчлуурыг бичих",
   "avatarScaling.hotkeyHint": "Товчлол бүх нийтээр ажилладаг (VRChat анхаарал төвлөрсэн үед ч). Хэрэв товчлуур бичигдэхгүй бол дээрх слайдерыг ашиглаж болно.",
   "avatarScaling.off": "Аватарын хэмжээ тохируулга унтраалттай байна",
-
   "translator.title": "Орчуулагч",
   "translator.provider": "Үйлчилгээ үзүүлэгч",
   "translator.endpoint": "Endpoint URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Зорилтот хэл",
   "translator.aiGrammarFix": "Эхлээд AI-аар дүрмийг засах (дээрх IntelliChat үйлчилгээ үзүүлэгчийг ашиглана)",
   "translator.note": "Live Typing чат хайрцгийн орчуулгын сонголт болон \"Илгээхээсээ өмнө орчуулах\" гэсэн сонголт бүхий аппликейшн доторх бусад бүх газарт ашиглагдана.",
-
   "liveTyping.title": "Шууд бичих",
   "liveTyping.subtitle": "VRChat-ын өөрийн чат хайрцаг шиг бичих үед илгээдэг",
   "liveTyping.placeholder": "Энд бичнэ үү — таныг бичих явцад энэ мессеж хэдхэн секунд тутамд автоматаар чат хайрцаг руу илгээгддэг. 144 тэмдэгтээс хэтэрсэн ч бичсээр байгаарай; VRChat нь '…' + мессежийн сүүлийн хэсгийг харуулна.",
   "liveTyping.previewLabel": "Урьдчилан харах (VRChat юу харуулах вэ):",
   "liveTyping.translateLabel": "Илгээхээсээ өмнө орчуулах (Орчуулагчийн тохиргоог ашиглана)",
-
   "languagePicker.title": "Хэлээ сонгоно уу",
   "languagePicker.subtitle": "Та үүнийг дараа нь Тохиргоо-нд өөрчлөх боломжтой.",
   "languagePicker.continue": "Үргэлжлүүлэх",
-
   "settingsLanguage.title": "Хэл",
   "settingsLanguage.label": "Аппликейшны хэл"
 }

@@ -183,9 +183,18 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
   + renderer `t()`/`applyLanguage()` sweep (`[data-i18n]` text, `[data-i18n-ph]` placeholders,
   nav labels via `data-tab`). First-run language picker modal (shown once, if `uiLanguage`
   setting is unset) + a Settings → Language card for changing it later; switches instantly, no
-  restart. Seeded with **en, ja, es, ru, pl, nl, de** (`modules/i18n/locales/*.json`, flat
-  key→string maps, every non-English locale merges over `en.json` so a missing key always
-  falls back to English instead of breaking).
+  restart. Seeded with **102 languages** (`modules/i18n/locales/*.json`, flat key→string maps,
+  every non-English locale merges over `en.json` so a missing key always falls back to English
+  instead of breaking) — the initial 7 (en, ja, es, ru, pl, nl, de) plus every language
+  requested afterward: ko, zh, fr, ms, no, pt, ar, bn, hi, id, or, qu, sw, ta, ur, vi, wuu, xh,
+  yo, zu, af, sq, am, hy, az, eu, be, bs, bg, my, ca, ceb, ny, co, hr, cs, da, eo, et, fi, fy,
+  ka, el, ha, haw, he, hmn, hu, is, it, jv, kn, kk, km, rw, rn, ky, lo, lv, lt, lb, mk, mg, ml,
+  mt, mi, mr, mn, ne, ps, fa, pa, ro, sr, si, sk, sl, so, su, sv, tl, tg, tt, te, th, bo, ti, to,
+  tr, tk, ug, uk, uz, cy, yi. All 102 files validated for JSON correctness and exact key parity
+  against `en.json` (76 keys each). Several lower-resource languages (Quechua, Oriya, Chichewa,
+  Kirundi, Wu Chinese, Xhosa, Yoruba, Zulu, Hawaiian, Hmong, and a few others) were flagged by
+  the translating passes as worth a native-speaker review — functionally complete but some
+  technical-UI terms are best-effort borrowings rather than fixed conventional terminology.
 - [ ] **Coverage is partial by design** — this pass only tags the sidebar nav, common
   buttons, and the newly-added Avatar Scaling / Translator / Live Typing / language-picker UI.
   The rest of the app (300–500+ static strings in `index.html`, 400+ dynamic
@@ -194,26 +203,75 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
   add more locales here too as requested (a handful more beyond the initial 7 were flagged as
   wanted).
 
-## 🗣️ Speech / OCR / TTS translation (deferred phase 2)
-Decisions already made (so a future session doesn't re-litigate them) — not started yet:
-- [ ] **Desktop-audio speech-to-text** (translate what you hear, e.g. Russian → English) —
-  **both** local Whisper (offline/free, needs a bundled model) **and** cloud (OpenAI/Groq,
-  reusing the existing IntelliChat provider pattern in `modules/ai/intelliChat.js`), user-
-  selectable. Desktop/loopback audio capture already exists and is reusable as-is:
-  `main.js`'s `setDisplayMediaRequestHandler` + `modules/integrations/osc/recognition/shazamOscModule.js`'s
-  `ensureAudio()`/`captureClip()`.
-- [ ] **Bidirectional**: translate the user's own typed/spoken text back to another language,
-  output via chatbox and/or TTS.
-- [ ] **OCR screen-translate** (read VRChat's on-screen text, auto-translate) — Tesseract.js
-  (bundled/offline), reusing the `getDisplayMedia` → canvas → `getImageData` pixel pipeline
-  already built for QR scanning in `modules/integrations/osc/qr/oscQrModule.js` (swap `jsQR(...)`
-  for a Tesseract call).
-- [ ] **TTS output**, multiple selectable engines with API-key entry for the cloud ones:
-  Windows built-in (SAPI via PowerShell `System.Speech.Synthesis` — same shell-out pattern as
-  `modules/vrchat/osc/mediaKeys.js` and the new `keyHookPs.js`), TikTok TTS (already exists,
-  `modules/live/tiktokTts.js`), cloud TTS (ElevenLabs/Azure/Google/etc.), and self-hosted
-  engines (Piper, XTTS) via a user-supplied endpoint URL — same shape as the Translator's
-  LibreTranslate endpoint field.
+## 🗣️ Speech / OCR / TTS translation (phase 2 — built this session)
+- [x] **Desktop-audio speech-to-text** — `modules/integrations/osc/stt/desktopSttModule.js`
+  (renderer, reuses the `getDisplayMedia({audio:true})` capture technique from
+  `shazamOscModule.js`) + `modules/ai/speechToText.js` (main). **Both** engines, user-selectable
+  in the Translation tab: cloud (OpenAI/Groq Whisper-compatible `/audio/transcriptions`, sends
+  the raw webm clip directly — no decode needed) and local (`@huggingface/transformers` running
+  a small Whisper model fully offline in WASM, no native binary; renderer decodes the clip to
+  16kHz mono PCM via `OfflineAudioContext` first, since that's the input shape the local model
+  needs). Verified: both npm packages install and load cleanly, tesseract.js's worker + language
+  download works in this environment. **Not verified end-to-end**: the full
+  getDisplayMedia→MediaRecorder→transcribe round-trip needs a real desktop session with actual
+  audio and a live API key — recommend a manual smoke test in the built app.
+- [x] **Bidirectional**: transcribed text runs through the existing Translator
+  (`translateWithSettings`) before being sent to chatbox and/or spoken aloud — same translate
+  step Live Typing uses.
+- [x] **OCR screen-translate** — `modules/integrations/osc/ocr/ocrTranslateModule.js`, same
+  `getDisplayMedia` → canvas capture scaffolding as `oscQrModule.js` with `jsQR` swapped for
+  Tesseract.js `recognize()`. 15 common OCR languages in the picker (English, Japanese, Spanish,
+  Russian, German, French, Chinese, Korean, Arabic, Portuguese, Italian, Dutch, Polish,
+  Ukrainian, Vietnamese) — Tesseract's language codes don't map 1:1 to the app's i18n codes, so
+  this is a separate, smaller list.
+- [x] **TTS output**, `modules/ai/ttsProviders.js`, all 4 engines selectable in the Translation
+  tab: Windows built-in (SAPI via PowerShell `System.Speech.Synthesis`, text piped over stdin —
+  not interpolated into the command — so spoken text can't break out of the PowerShell command;
+  **verified working**, detected real installed voices and played audio in this environment),
+  TikTok TTS (reuses the existing `modules/live/tiktokTts.js`), ElevenLabs (cloud, verified
+  request shape against a mocked endpoint), and self-hosted Piper/XTTS/other via a user-supplied
+  endpoint URL (same "POST text, get audio bytes back" contract as the Translator's
+  LibreTranslate endpoint, verified request shape).
+- [x] **TTS output-device picker** — routes `<audio>`-based engines (TikTok/ElevenLabs/
+  self-hosted) to any enumerated output device via `setSinkId`. Doesn't apply to SAPI (plays
+  through the OS default device, no per-call routing without deeper audio-session work).
+- [ ] **Routing TTS into VRChat's mic input** — not solvable in pure software. Windows has no
+  way to expose one app's audio *output* as another app's *microphone input* without some kind
+  of virtual audio device (VB-Cable, Voicemeeter, etc.), which requires installing a driver —
+  there's no way around that one step. If the user installs one themselves, the output-device
+  picker above will route TTS into it, which VRChat can then pick up as a mic.
+
+## 🤖 Voice assistant (built this session)
+- [x] **Wake-word assistant** — `modules/vrchat/assistant/jarvisAssistant.js` (renderer),
+  `modules/ai/assistantBrain.js` (main, LLM-based command interpreter). Continuously captures
+  short desktop-audio clips (reusing the Desktop STT engine/settings), checks each transcript
+  for the configured wake word (default `nova`, user-customizable — deliberately not a common
+  assistant name), and only acts on speech addressed to it.
+- [x] **Commands**: "is `<friend>` online / which world" (reuses the friends list's existing
+  `location`/`worldId`/`instanceType` fields, same ones the Friends panel already renders),
+  "who's online", "what's my status", "change my status to `<text>`" (sets `statusDescription`
+  **only** — the assistant can never touch the bio field, enforced both in the LLM system prompt
+  and in the code path itself, verified by a unit test), and free-form conversational replies
+  for anything else. Responses are sent to chatbox and spoken aloud via the TTS engine above.
+- [x] **SOS — manual trigger only.** Either an explicit spoken "sos" command or the button in
+  the UI; **never** auto-triggered. On trigger: invites everyone in a configured trusted-friends
+  list (by display name, matched against your live friends list) to your current instance, and
+  uploads a rolling instant-replay clip (last 1/5/10 min of shared desktop video+audio,
+  configurable) to a configured Discord webhook so those friends can see what happened before
+  they arrive.
+- [x] **Soft emotional check-in — separate from SOS, and never triggers it.** Every transcribed
+  clip (whether or not it's addressed to the assistant) is checked against a small lexical
+  cue-list (`modules/vrchat/assistant/emotionCues.js`) for distress or tiredness language. This
+  is honest keyword/phrase pattern-matching on the transcribed *text* — not real voice-tone or
+  prosody analysis (pitch, pace, pauses), which would need raw-audio feature extraction, a much
+  bigger undertaking. If a cue matches, the assistant just asks a caring check-in question
+  ("are you doing okay? want me to notify someone?") — the user decides whether to actually
+  trigger SOS. Never escalates on its own.
+- [ ] **Not verified end-to-end** — same caveat as the Desktop STT feature above: the full
+  continuous-listening loop, the friend-status/status-query/status-set VRChat API calls, and the
+  instant-replay buffer's long-running recording behavior all need a real account + a live
+  desktop session to smoke-test; only the pure dispatch/command logic was unit-tested here
+  (mocked callbacks, no live VRChat/audio).
 
 ---
 

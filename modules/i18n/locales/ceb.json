@@ -23,6 +23,7 @@
   "nav.oscapps": "Mga OSC App",
   "nav.vrctools": "Mga Himan sa VRChat",
   "nav.live": "Live",
+  "nav.translation": "Paghubad",
   "nav.oauth": "Mga Account sa OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Estadistika",
@@ -33,7 +34,6 @@
   "nav.docs": "Dokumentasyon / Pagset-up",
   "nav.about": "Mahitungod",
   "nav.log": "OSC Log",
-
   "common.save": "Tipigan",
   "common.cancel": "Kanselahon",
   "common.enable": "I-enable",
@@ -45,7 +45,6 @@
   "common.send": "Ipadala",
   "common.clear": "Limpyohan",
   "common.record": "Rekord",
-
   "avatarScaling.title": "Pag-scale sa Avatar",
   "avatarScaling.subtitle": "native nga OSC height scaling sa VRChat — molihok sa bisan unsang avatar",
   "avatarScaling.enable": "I-enable ang pag-scale sa avatar",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "I-record ang key sa paggamay",
   "avatarScaling.hotkeyHint": "Ang mga hotkey molihok globally (bisan kung ang VRChat naa sa focus). Kung dili ma-record ang usa ka key, mahimo gihapon nimong gamiton ang slider sa taas.",
   "avatarScaling.off": "Ang pag-scale sa avatar patay",
-
   "translator.title": "Translator",
   "translator.provider": "Provider",
   "translator.endpoint": "Endpoint URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Target nga pinulongan",
   "translator.aiGrammarFix": "Ayoha una ang grammar gamit ang AI (mogamit sa IntelliChat provider sa taas)",
   "translator.note": "Gigamit sa opsyon sa paghubad sa Live Typing chatbox ug bisan asa pa sa app nga naghatag ug \"Hubaron una sa pagpadala.\"",
-
   "liveTyping.title": "Live Typing",
   "liveTyping.subtitle": "magpadala samtang nagtype ka, sama sa kaugalingong chatbox sa VRChat",
   "liveTyping.placeholder": "Pag-type dinhi — kini automatiko nga ipadala sa chatbox kada pipila ka segundos samtang nagtype ka. Padayon sa pagtype lapas sa 144 ka karakter; ipakita sa VRChat ang '…' + ang katapusang bahin sa imong mensahe.",
   "liveTyping.previewLabel": "Preview (ang ipakita sa VRChat):",
   "liveTyping.translateLabel": "Hubaron una sa pagpadala (mogamit sa setting sa Translator)",
-
   "languagePicker.title": "Pilia ang imong pinulongan",
   "languagePicker.subtitle": "Mahimo nimo kining usbon sa ulahi diha sa Settings.",
   "languagePicker.continue": "Padayon",
-
   "settingsLanguage.title": "Pinulongan",
   "settingsLanguage.label": "Pinulongan sa app"
 }

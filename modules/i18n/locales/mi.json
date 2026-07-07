@@ -23,6 +23,7 @@
   "nav.oscapps": "Taupānga OSC",
   "nav.vrctools": "Taputapu VRChat",
   "nav.live": "Ora",
+  "nav.translation": "Whakamāoritanga",
   "nav.oauth": "Pūkete OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Tatauranga",
@@ -33,7 +34,6 @@
   "nav.docs": "Tuhinga / Whakaritenga",
   "nav.about": "Mō",
   "nav.log": "Rārangi OSC",
-
   "common.save": "Tiaki",
   "common.cancel": "Whakakore",
   "common.enable": "Whakahohe",
@@ -45,7 +45,6 @@
   "common.send": "Tuku",
   "common.clear": "Muku",
   "common.record": "Hopu",
-
   "avatarScaling.title": "Whakarahinga Avatar",
   "avatarScaling.subtitle": "Te whakarahinga teitei OSC ā-VRChat ake — ka mahi ki tētahi atu avatar",
   "avatarScaling.enable": "Whakahohea te whakarahinga avatar",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Hopukina te kī whakaiti",
   "avatarScaling.hotkeyHint": "Ka mahi ngā hotkey puta noa (ahakoa kei a VRChat te aro). Ki te kore e taea te hopu i tētahi kī, ka taea tonu e koe te whakamahi i te pahu retireti i runga ake nei.",
   "avatarScaling.off": "Kua weto te whakarahinga avatar",
-
   "translator.title": "Kaiwhakamāori",
   "translator.provider": "Kaiwhakarato",
   "translator.endpoint": "URL Endpoint",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Reo Whāinga",
   "translator.aiGrammarFix": "Whakatikahia te wetereo mā te AI i mua (ka whakamahi i te kaiwhakarato IntelliChat kei runga ake)",
   "translator.note": "Ka whakamahia e te kōwhiringa whakamāori pouaka kōrero Live Typing me ngā wāhi katoa o te taupānga e tuku ana i te \"Whakamāoritia i mua i te tuku.\"",
-
   "liveTyping.title": "Patopato Ora",
   "liveTyping.subtitle": "ka tukuna i a koe e patopato ana, ānō nei ko te pouaka kōrero ake a VRChat",
   "liveTyping.placeholder": "Patopatohia ki konei — ka tukuna aunoa tēnei ki te pouaka kōrero i ia hēkona iti i a koe e patopato ana. Kia mau ki te patopato i tua atu i te 144 pūāhua; ka whakaatu a VRChat i te '…' + te mutunga o tō karere.",
   "liveTyping.previewLabel": "Arokite (ka whakaatuhia e VRChat):",
   "liveTyping.translateLabel": "Whakamāoritia i mua i te tuku (ka whakamahi i ngā tautuhinga Kaiwhakamāori)",
-
   "languagePicker.title": "Kōwhiria tō reo",
   "languagePicker.subtitle": "Ka taea e koe te huri i tēnei ā muri ake i roto i ngā Tautuhinga.",
   "languagePicker.continue": "Haere Tonu",
-
   "settingsLanguage.title": "Reo",
   "settingsLanguage.label": "Reo Taupānga"
 }

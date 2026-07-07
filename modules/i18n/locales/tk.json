@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC programmalary",
   "nav.vrctools": "VRChat gurallary",
   "nav.live": "Janly",
+  "nav.translation": "Terjime",
   "nav.oauth": "OAuth hasaplary",
   "nav.discord": "Discord",
   "nav.stats": "Statistika",
@@ -33,7 +34,6 @@
   "nav.docs": "Resminamalar / Gurnama",
   "nav.about": "Barada",
   "nav.log": "OSC ýazgysy",
-
   "common.save": "Ýatda sakla",
   "common.cancel": "Ýatyr",
   "common.enable": "Işjeňleştir",
@@ -45,7 +45,6 @@
   "common.send": "Iber",
   "common.clear": "Arassala",
   "common.record": "Ýazga al",
-
   "avatarScaling.title": "Awatar ölçegini üýtgetmek",
   "avatarScaling.subtitle": "VRChat-yň öz OSC boý ölçeg ulgamy — islendik awatarda işleýär",
   "avatarScaling.enable": "Awatar ölçegini üýtgetmegi işjeňleştir",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Kiçeltmek düwmesini ýazga al",
   "avatarScaling.hotkeyHint": "Çalt düwmeler hemme ýerde işleýär (VRChat fokusda bolsa-da). Eger düwme ýazga alynmasa, ýokardaky süýşürgiçi ulanyp bilersiňiz.",
   "avatarScaling.off": "Awatar ölçegini üýtgetmek öçürilen",
-
   "translator.title": "Terjimeçi",
   "translator.provider": "Üpjün ediji",
   "translator.endpoint": "Endpoint URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Maksat dili",
   "translator.aiGrammarFix": "Ilki AI bilen grammatikany düzet (ýokardaky IntelliChat üpjün edijisini ulanýar)",
   "translator.note": "Live Typing söhbet penjiresiniň terjime opsiýasy we programmada \"Ibermezden ozal terjime et\" opsiýasy hödürlenýän ähli ýerlerde ulanylýar.",
-
   "liveTyping.title": "Janly ýazuw",
   "liveTyping.subtitle": "VRChat-yň öz söhbet penjiresi ýaly, ýazan mahalyňyz iberilýär",
   "liveTyping.placeholder": "Şu ýere ýazyň — bu, ýazýan wagtyňyz her birnäçe sekuntda awtomatiki usulda söhbet penjiresine iberilýär. 144 harpdan geçseňizem ýazmagy dowam etdiriň; VRChat '…' we habaryňyzyň soňuny görkezer.",
   "liveTyping.previewLabel": "Öňünden görmek (VRChat-yň görkezjek zady):",
   "liveTyping.translateLabel": "Ibermezden ozal terjime et (Terjimeçi sazlamalaryny ulanýar)",
-
   "languagePicker.title": "Diliňizi saýlaň",
   "languagePicker.subtitle": "Bunu soňra Sazlamalarda üýtgedip bilersiňiz.",
   "languagePicker.continue": "Dowam et",
-
   "settingsLanguage.title": "Dil",
   "settingsLanguage.label": "Programma dili"
 }

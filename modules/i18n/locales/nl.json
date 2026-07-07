@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC-apps",
   "nav.vrctools": "VRChat-tools",
   "nav.live": "Live",
+  "nav.translation": "Vertaling",
   "nav.oauth": "OAuth-accounts",
   "nav.discord": "Discord",
   "nav.stats": "Statistieken",
@@ -33,7 +34,6 @@
   "nav.docs": "Documentatie / Setup",
   "nav.about": "Over",
   "nav.log": "OSC-log",
-
   "common.save": "Opslaan",
   "common.cancel": "Annuleren",
   "common.enable": "Inschakelen",
@@ -45,7 +45,6 @@
   "common.send": "Verzenden",
   "common.clear": "Wissen",
   "common.record": "Opnemen",
-
   "avatarScaling.title": "Avatarschaling",
   "avatarScaling.subtitle": "VRChats eigen OSC-lengteschaling — werkt met elke avatar",
   "avatarScaling.enable": "Avatarschaling inschakelen",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Toets voor afschalen opnemen",
   "avatarScaling.hotkeyHint": "Hotkeys werken globaal (ook als VRChat de focus heeft). Als een toets niet wordt opgenomen, kun je de schuifregelaar hierboven gebruiken.",
   "avatarScaling.off": "Avatarschaling is uitgeschakeld",
-
   "translator.title": "Vertaler",
   "translator.provider": "Provider",
   "translator.endpoint": "Endpoint-URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Doeltaal",
   "translator.aiGrammarFix": "Grammatica eerst met AI corrigeren (gebruikt de IntelliChat-provider hierboven)",
   "translator.note": "Wordt gebruikt door de vertaaloptie van Live Typing in de chatbox en overal elders in de app waar \"Vertalen vóór verzenden\" wordt aangeboden.",
-
   "liveTyping.title": "Live typen",
   "liveTyping.subtitle": "verzendt terwijl je typt, net als VRChat's eigen chatbox",
   "liveTyping.placeholder": "Typ hier — dit wordt elke paar seconden automatisch naar de chatbox verzonden terwijl je typt. Blijf gerust doortypen na 144 tekens; VRChat toont \"…\" + het einde van je bericht.",
   "liveTyping.previewLabel": "Voorbeeld (wat VRChat zal laten zien):",
   "liveTyping.translateLabel": "Vertalen vóór verzenden (gebruikt Vertaler-instellingen)",
-
   "languagePicker.title": "Kies je taal",
   "languagePicker.subtitle": "Je kunt dit later wijzigen in Instellingen.",
   "languagePicker.continue": "Doorgaan",
-
   "settingsLanguage.title": "Taal",
   "settingsLanguage.label": "App-taal"
 }

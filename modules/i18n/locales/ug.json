@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC ئەپلىرى",
   "nav.vrctools": "VRChat قوراللىرى",
   "nav.live": "جانلىق",
+  "nav.translation": "تەرجىمە",
   "nav.oauth": "OAuth ھېساباتلىرى",
   "nav.discord": "Discord",
   "nav.stats": "ستاتىستىكا",
@@ -33,7 +34,6 @@
   "nav.docs": "قوللانما / ئورنىتىش",
   "nav.about": "توغرىسىدا",
   "nav.log": "OSC خاتىرىسى",
-
   "common.save": "ساقلاش",
   "common.cancel": "بىكار قىلىش",
   "common.enable": "قوزغاتىش",
@@ -45,7 +45,6 @@
   "common.send": "ئەۋەتىش",
   "common.clear": "تازىلاش",
   "common.record": "خاتىرىلەش",
-
   "avatarScaling.title": "ئاۋاتار چوڭلۇقىنى تەڭشەش",
   "avatarScaling.subtitle": "VRChat نىڭ ئۆز ئىچىدىكى OSC بوي چوڭلۇق تەڭشىشى — خالىغان ئاۋاتاردا ئىشلەيدۇ",
   "avatarScaling.enable": "ئاۋاتار چوڭلۇقىنى تەڭشەشنى قوزغاتىش",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "كىچىكلىتىش كۇنۇپكىسىنى خاتىرىلەش",
   "avatarScaling.hotkeyHint": "تېز كۇنۇپكىلار ھەمىشە ئىشلەيدۇ (VRChat فوكۇستا بولغاندىمۇ). ئەگەر كۇنۇپكا خاتىرىلىنمىسە، يۇقىرىدىكى سۈرگۇچنى ئىشلىتىڭ.",
   "avatarScaling.off": "ئاۋاتار چوڭلۇقىنى تەڭشەش ئۆچۈرۈلگەن",
-
   "translator.title": "تەرجىمان",
   "translator.provider": "تەمىنلىگۈچى",
   "translator.endpoint": "ئاخىرقى نۇقتا URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "نىشان تىل",
   "translator.aiGrammarFix": "ئالدى بىلەن AI بىلەن گرامماتىكىنى تۈزىتىش (يۇقىرىدىكى IntelliChat تەمىنلىگۈچىسىنى ئىشلىتىدۇ)",
   "translator.note": "بۇ Live Typing پاراڭ رامكىسى تەرجىمە تاللانمىسى ۋە پروگراممىدىكى \"ئەۋەتىشتىن بۇرۇن تەرجىمە قىلىش\" تاللانمىسى بار باشقا جايلاردا ئىشلىتىلىدۇ.",
-
   "liveTyping.title": "جانلىق يازىش",
   "liveTyping.subtitle": "سىز يازغان چاغدا ئەۋەتىلىدۇ، خۇددى VRChat نىڭ ئۆز پاراڭ رامكىسىغا ئوخشاش",
   "liveTyping.placeholder": "بۇ يەرگە يازىڭ — بۇ سىز يازغان چاغدا ھەر بىر نەچچە سېكونتتا ئاپتوماتىك ھالدا پاراڭ رامكىسىغا ئەۋەتىلىدۇ. 144 ھەرپتىن ئۆتسىڭىزمۇ يازىۋېرىڭ؛ VRChat «…» ۋە خېتىڭىزنىڭ ئاخىرىنى كۆرسىتىدۇ.",
   "liveTyping.previewLabel": "ئالدىن كۆرۈش (VRChat نېمە كۆرسىتىدۇ):",
   "liveTyping.translateLabel": "ئەۋەتىشتىن بۇرۇن تەرجىمە قىلىش (تەرجىمان تەڭشەكلىرىنى ئىشلىتىدۇ)",
-
   "languagePicker.title": "تىلىڭىزنى تاللاڭ",
   "languagePicker.subtitle": "بۇنى كېيىن تەڭشەكلەردە ئۆزگەرتەلەيسىز.",
   "languagePicker.continue": "داۋاملاشتۇرۇش",
-
   "settingsLanguage.title": "تىل",
   "settingsLanguage.label": "پروگرامما تىلى"
 }

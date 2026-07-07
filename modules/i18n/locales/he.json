@@ -23,6 +23,7 @@
   "nav.oscapps": "אפליקציות OSC",
   "nav.vrctools": "כלי VRChat",
   "nav.live": "שידור חי",
+  "nav.translation": "תרגום",
   "nav.oauth": "חשבונות OAuth",
   "nav.discord": "Discord",
   "nav.stats": "סטטיסטיקות",
@@ -33,7 +34,6 @@
   "nav.docs": "תיעוד / הגדרה",
   "nav.about": "אודות",
   "nav.log": "יומן OSC",
-
   "common.save": "שמירה",
   "common.cancel": "ביטול",
   "common.enable": "הפעלה",
@@ -45,7 +45,6 @@
   "common.send": "שליחה",
   "common.clear": "ניקוי",
   "common.record": "הקלטה",
-
   "avatarScaling.title": "שינוי גודל אווטאר",
   "avatarScaling.subtitle": "שינוי גובה OSC המובנה של VRChat — עובד עם כל אווטאר",
   "avatarScaling.enable": "הפעלת שינוי גודל אווטאר",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "הקלטת מקש הקטנה",
   "avatarScaling.hotkeyHint": "מקשי קיצור פועלים בכל מקום (גם כאשר המיקוד נמצא על VRChat). אם מקש מסוים לא מוקלט, ניתן להשתמש בסליידר שמעל.",
   "avatarScaling.off": "שינוי גודל האווטאר כבוי",
-
   "translator.title": "מתרגם",
   "translator.provider": "ספק",
   "translator.endpoint": "כתובת URL של נקודת קצה",
@@ -67,17 +65,14 @@
   "translator.targetLang": "שפת יעד",
   "translator.aiGrammarFix": "תיקון דקדוק באמצעות AI לפני כן (משתמש בספק IntelliChat שמעל)",
   "translator.note": "נמצא בשימוש באפשרות תרגום תיבת הצ'אט של הקלדה חיה ובכל מקום אחר באפליקציה שמציע \"תרגום לפני שליחה\".",
-
   "liveTyping.title": "הקלדה חיה",
   "liveTyping.subtitle": "נשלח בזמן ההקלדה, בדיוק כמו תיבת הצ'אט המובנית של VRChat",
   "liveTyping.placeholder": "הקלידו כאן — הטקסט נשלח אוטומטית לתיבת הצ'אט מדי כמה שניות בזמן ההקלדה. המשיכו להקליד גם מעבר ל-144 תווים; VRChat יציג \"…\" ואת סוף ההודעה שלכם.",
   "liveTyping.previewLabel": "תצוגה מקדימה (מה ש-VRChat יציג):",
   "liveTyping.translateLabel": "תרגום לפני שליחה (משתמש בהגדרות המתרגם)",
-
   "languagePicker.title": "בחרו את השפה שלכם",
   "languagePicker.subtitle": "תוכלו לשנות זאת בהמשך בהגדרות.",
   "languagePicker.continue": "המשך",
-
   "settingsLanguage.title": "שפה",
   "settingsLanguage.label": "שפת האפליקציה"
 }

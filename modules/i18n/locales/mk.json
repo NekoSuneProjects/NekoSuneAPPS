@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC апликации",
   "nav.vrctools": "VRChat алатки",
   "nav.live": "На живо",
+  "nav.translation": "Превод",
   "nav.oauth": "OAuth сметки",
   "nav.discord": "Discord",
   "nav.stats": "Статистика",
@@ -33,7 +34,6 @@
   "nav.docs": "Документација / Поставување",
   "nav.about": "За апликацијата",
   "nav.log": "OSC дневник",
-
   "common.save": "Зачувај",
   "common.cancel": "Откажи",
   "common.enable": "Овозможи",
@@ -45,7 +45,6 @@
   "common.send": "Испрати",
   "common.clear": "Исчисти",
   "common.record": "Сними",
-
   "avatarScaling.title": "Скалирање на аватар",
   "avatarScaling.subtitle": "Изворното OSC скалирање на висина на VRChat — работи со секој аватар",
   "avatarScaling.enable": "Овозможи скалирање на аватар",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Сними копче за намалување",
   "avatarScaling.hotkeyHint": "Кратенките работат глобално (дури и кога VRChat е во фокус). Ако копчето не се снима, сепак можете да го користите лизгачот погоре.",
   "avatarScaling.off": "Скалирањето на аватар е исклучено",
-
   "translator.title": "Преведувач",
   "translator.provider": "Провајдер",
   "translator.endpoint": "URL на крајна точка",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Целен јазик",
   "translator.aiGrammarFix": "Прво поправи граматиката со AI (го користи IntelliChat провајдерот погоре)",
   "translator.note": "Се користи од опцијата за превод на Live Typing чет-кутијата и секаде каде во апликацијата се нуди \"Преведи пред испраќање.\"",
-
   "liveTyping.title": "Пишување во живо",
   "liveTyping.subtitle": "испраќа додека пишувате, како сопствената чет-кутија на VRChat",
   "liveTyping.placeholder": "Пишувајте тука — ова автоматски се испраќа до чет-кутијата на секои неколку секунди додека пишувате. Продолжете да пишувате над 144 знаци; VRChat ќе прикаже '…' + крајот на вашата порака.",
   "liveTyping.previewLabel": "Преглед (што ќе прикаже VRChat):",
   "liveTyping.translateLabel": "Преведи пред испраќање (ги користи поставките на Преведувачот)",
-
   "languagePicker.title": "Изберете го вашиот јазик",
   "languagePicker.subtitle": "Ова можете да го промените подоцна во Поставки.",
   "languagePicker.continue": "Продолжи",
-
   "settingsLanguage.title": "Јазик",
   "settingsLanguage.label": "Јазик на апликацијата"
 }

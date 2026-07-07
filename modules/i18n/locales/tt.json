@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC кушымталары",
   "nav.vrctools": "VRChat корալары",
   "nav.live": "Турыдан-туры",
+  "nav.translation": "Тәрҗемә",
   "nav.oauth": "OAuth хисаплары",
   "nav.discord": "Discord",
   "nav.stats": "Статистика",
@@ -33,7 +34,6 @@
   "nav.docs": "Документация / Көйләү",
   "nav.about": "Программа турында",
   "nav.log": "OSC журналы",
-
   "common.save": "Саклау",
   "common.cancel": "Баш тарту",
   "common.enable": "Кабызу",
@@ -45,7 +45,6 @@
   "common.send": "Җибәрү",
   "common.clear": "Чистарту",
   "common.record": "Язу",
-
   "avatarScaling.title": "Аватар масштабы",
   "avatarScaling.subtitle": "VRChatның үзенчәлекле OSC биеклек масштабы — теләсә кайсы аватарда эшли",
   "avatarScaling.enable": "Аватар масштабын кабызу",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Кечерәйтү төймәсен язу",
   "avatarScaling.hotkeyHint": "Тиз төймәләр глобаль рәвештә эшли (VRChat игьтибар үзәгендә булганда да). Әгәр төймә язылмаса, өстәге шкаланы кулланырга мөмкин.",
   "avatarScaling.off": "Аватар масштабы сүнгән",
-
   "translator.title": "Тәрҗемәче",
   "translator.provider": "Провайдер",
   "translator.endpoint": "Соңгы нокта URL адресы",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Максат тел",
   "translator.aiGrammarFix": "Алдан грамматиканы AI белән төзәтү (өстәге IntelliChat провайдерын куллана)",
   "translator.note": "Live Typing чат-бокс тәрҗемә опциясендә һәм кушымтада \"Җибәрер алдыннан тәрҗемә итү\" тәкъдим ителгән башка бар урында кулланыла.",
-
   "liveTyping.title": "Турыдан-туры язу",
   "liveTyping.subtitle": "язганда җибәрә, VRChatның үз чат-боксы кебек",
   "liveTyping.placeholder": "Монда языгыз — бу язганда һәр берничә секундта автоматик рәвештә чат-боксына җибәрелә. 144 символдан артык язуны дәвам итегез; VRChat '…' + хәбәрегезнең ахырын күрсәтәчәк.",
   "liveTyping.previewLabel": "Алдан күрү (VRChat нәрсә күрсәтәчәк):",
   "liveTyping.translateLabel": "Җибәрер алдыннан тәрҗемә итү (Тәрҗемәче көйләүләрен куллана)",
-
   "languagePicker.title": "Телегезне сайлагыз",
   "languagePicker.subtitle": "Моны соңрак Көйләүләрдә үзгәртә аласыз.",
   "languagePicker.continue": "Дәвам итү",
-
   "settingsLanguage.title": "Тел",
   "settingsLanguage.label": "Кушымта теле"
 }

@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC-додатки",
   "nav.vrctools": "Інструменти VRChat",
   "nav.live": "Прямий ефір",
+  "nav.translation": "Переклад",
   "nav.oauth": "Облікові записи OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Статистика",
@@ -33,7 +34,6 @@
   "nav.docs": "Документація / Налаштування",
   "nav.about": "Про програму",
   "nav.log": "Журнал OSC",
-
   "common.save": "Зберегти",
   "common.cancel": "Скасувати",
   "common.enable": "Увімкнути",
@@ -45,7 +45,6 @@
   "common.send": "Надіслати",
   "common.clear": "Очистити",
   "common.record": "Записати",
-
   "avatarScaling.title": "Масштабування аватара",
   "avatarScaling.subtitle": "Рідне OSC-масштабування зросту VRChat — працює з будь-яким аватаром",
   "avatarScaling.enable": "Увімкнути масштабування аватара",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Записати клавішу зменшення",
   "avatarScaling.hotkeyHint": "Гарячі клавіші працюють глобально (навіть коли VRChat у фокусі). Якщо клавішу не вдається записати, скористайтеся повзунком вище.",
   "avatarScaling.off": "Масштабування аватара вимкнено",
-
   "translator.title": "Перекладач",
   "translator.provider": "Постачальник",
   "translator.endpoint": "URL кінцевої точки",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Мова перекладу",
   "translator.aiGrammarFix": "Спочатку виправити граматику за допомогою AI (використовує провайдера IntelliChat вище)",
   "translator.note": "Використовується опцією перекладу чат-боксу Live Typing і будь-де в застосунку, де є опція «Перекладати перед надсиланням».",
-
   "liveTyping.title": "Живий ввід",
   "liveTyping.subtitle": "надсилається під час набору тексту, як і власний чат-бокс VRChat",
   "liveTyping.placeholder": "Друкуйте тут — це автоматично надсилається до чат-боксу кожні кілька секунд під час набору тексту. Продовжуйте друкувати після 144 символів; VRChat покаже «…» і кінець вашого повідомлення.",
   "liveTyping.previewLabel": "Попередній перегляд (що покаже VRChat):",
   "liveTyping.translateLabel": "Перекладати перед надсиланням (використовує налаштування Перекладача)",
-
   "languagePicker.title": "Виберіть свою мову",
   "languagePicker.subtitle": "Ви можете змінити це пізніше в Налаштуваннях.",
   "languagePicker.continue": "Продовжити",
-
   "settingsLanguage.title": "Мова",
   "settingsLanguage.label": "Мова застосунку"
 }

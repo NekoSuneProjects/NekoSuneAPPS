@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC ଆପ୍ସ",
   "nav.vrctools": "VRChat ଟୁଲ୍ସ",
   "nav.live": "ଲାଇଭ୍",
+  "nav.translation": "ଅନୁବାଦ",
   "nav.oauth": "OAuth ଖାତା",
   "nav.discord": "Discord",
   "nav.stats": "ପରିସଂଖ୍ୟାନ",
@@ -33,7 +34,6 @@
   "nav.docs": "ଡକ୍ସ / ସେଟଅପ୍",
   "nav.about": "ଆମ ବିଷୟରେ",
   "nav.log": "OSC ଲଗ୍",
-
   "common.save": "ସେଭ୍ କରନ୍ତୁ",
   "common.cancel": "ବାତିଲ୍ କରନ୍ତୁ",
   "common.enable": "ସକ୍ଷମ କରନ୍ତୁ",
@@ -45,7 +45,6 @@
   "common.send": "ପଠାନ୍ତୁ",
   "common.clear": "ସଫା କରନ୍ତୁ",
   "common.record": "ରେକର୍ଡ କରନ୍ତୁ",
-
   "avatarScaling.title": "ଅବତାର ସ୍କେଲିଂ",
   "avatarScaling.subtitle": "VRChat ର ମୂଳ OSC ଉଚ୍ଚତା ସ୍କେଲିଂ — କୌଣସି ମଧ୍ୟ ଅବତାରରେ କାର୍ଯ୍ୟ କରେ",
   "avatarScaling.enable": "ଅବତାର ସ୍କେଲିଂ ସକ୍ଷମ କରନ୍ତୁ",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "ସ୍କେଲ-ଡାଉନ୍ କି ରେକର୍ଡ କରନ୍ତୁ",
   "avatarScaling.hotkeyHint": "ହଟକି ଗ୍ଲୋବାଲ୍ ଭାବରେ କାର୍ଯ୍ୟ କରେ (VRChat ଫୋକସରେ ଥିଲେ ମଧ୍ୟ)। ଯଦି କୌଣସି କି ରେକର୍ଡ ହୁଏ ନାହିଁ, ତେବେ ଆପଣ ଉପରେ ଥିବା ସ୍ଲାଇଡର୍ ବ୍ୟବହାର କରିପାରିବେ।",
   "avatarScaling.off": "ଅବତାର ସ୍କେଲିଂ ବନ୍ଦ ଅଛି",
-
   "translator.title": "ଅନୁବାଦକ",
   "translator.provider": "ପ୍ରଦାତା",
   "translator.endpoint": "ଏଣ୍ଡପଏଣ୍ଟ URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "ଲକ୍ଷ୍ୟ ଭାଷା",
   "translator.aiGrammarFix": "ପ୍ରଥମେ AI ସାହାଯ୍ୟରେ ବ୍ୟାକରଣ ଠିକ୍ କରନ୍ତୁ (ଉପରେ ଥିବା IntelliChat ପ୍ରଦାତା ବ୍ୟବହାର କରେ)",
   "translator.note": "ଏହା Live Typing ଚାଟବକ୍ସ ଅନୁବାଦ ବିକଳ୍ପ ଏବଂ ଆପ୍‌ର ଅନ୍ୟ ସ୍ଥାନରେ ମଧ୍ୟ ବ୍ୟବହୃତ ହୁଏ ଯେଉଁଠାରେ \"ପଠାଇବା ପୂର୍ବରୁ ଅନୁବାଦ କରନ୍ତୁ\" ବିକଳ୍ପ ଉପଲବ୍ଧ ଅଛି।",
-
   "liveTyping.title": "ଲାଇଭ୍ ଟାଇପିଂ",
   "liveTyping.subtitle": "ଆପଣ ଟାଇପ୍ କରିବା ସମୟରେ ପଠାଏ, VRChat ର ନିଜ ଚାଟବକ୍ସ ପରି",
   "liveTyping.placeholder": "ଏଠାରେ ଟାଇପ୍ କରନ୍ତୁ — ଆପଣ ଟାଇପ୍ କରୁଥିବା ସମୟରେ ଏହା ସ୍ୱୟଂଚାଳିତ ଭାବରେ କିଛି ସେକେଣ୍ଡ ଅନ୍ତରରେ ଚାଟବକ୍ସକୁ ପଠାଯାଏ। 144 ଅକ୍ଷରରୁ ଅଧିକ ଟାଇପ୍ କରି ଚାଲନ୍ତୁ; VRChat '…' + ଆପଣଙ୍କ ମେସେଜର ଅନ୍ତିମ ଭାଗ ଦେଖାଇବ।",
   "liveTyping.previewLabel": "ପ୍ରିଭ୍ୟୁ (VRChat କଣ ଦେଖାଇବ):",
   "liveTyping.translateLabel": "ପଠାଇବା ପୂର୍ବରୁ ଅନୁବାଦ କରନ୍ତୁ (ଅନୁବାଦକ ସେଟିଂସ୍ ବ୍ୟବହାର କରେ)",
-
   "languagePicker.title": "ଆପଣଙ୍କ ଭାଷା ବାଛନ୍ତୁ",
   "languagePicker.subtitle": "ଆପଣ ଏହାକୁ ପରେ ସେଟିଂସ୍‌ରେ ବଦଳାଇ ପାରିବେ।",
   "languagePicker.continue": "ଆଗକୁ ବଢ଼ନ୍ତୁ",
-
   "settingsLanguage.title": "ଭାଷା",
   "settingsLanguage.label": "ଆପ୍ ଭାଷା"
 }

@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC-sovellukset",
   "nav.vrctools": "VRChat-työkalut",
   "nav.live": "Suora",
+  "nav.translation": "Kääntäminen",
   "nav.oauth": "OAuth-tilit",
   "nav.discord": "Discord",
   "nav.stats": "Tilastot",
@@ -33,7 +34,6 @@
   "nav.docs": "Ohjeet / Käyttöönotto",
   "nav.about": "Tietoja",
   "nav.log": "OSC-loki",
-
   "common.save": "Tallenna",
   "common.cancel": "Peruuta",
   "common.enable": "Ota käyttöön",
@@ -45,7 +45,6 @@
   "common.send": "Lähetä",
   "common.clear": "Tyhjennä",
   "common.record": "Nauhoita",
-
   "avatarScaling.title": "Avatarin skaalaus",
   "avatarScaling.subtitle": "VRChatin sisäänrakennettu OSC-korkeuden skaalaus — toimii millä tahansa avatarilla",
   "avatarScaling.enable": "Ota avatarin skaalaus käyttöön",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Nauhoita pienennysnäppäin",
   "avatarScaling.hotkeyHint": "Pikanäppäimet toimivat globaalisti (myös kun VRChat on aktiivisena). Jos näppäintä ei saada nauhoitettua, voit yhä käyttää yllä olevaa liukusäädintä.",
   "avatarScaling.off": "Avatarin skaalaus on pois päältä",
-
   "translator.title": "Kääntäjä",
   "translator.provider": "Palveluntarjoaja",
   "translator.endpoint": "Päätepisteen URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Kohdekieli",
   "translator.aiGrammarFix": "Korjaa kielioppi ensin AI:lla (käyttää yllä olevaa IntelliChat-palveluntarjoajaa)",
   "translator.note": "Käytössä Live Typing -chatboxin käännösvalinnassa ja kaikkialla muualla sovelluksessa, jossa tarjotaan \"Käännä ennen lähetystä.\"",
-
   "liveTyping.title": "Suorakirjoitus",
   "liveTyping.subtitle": "lähettää kirjoittaessa, kuten VRChatin omassa chatboxissa",
   "liveTyping.placeholder": "Kirjoita tähän — tämä lähetetään chatboxiin automaattisesti muutaman sekunnin välein kirjoittaessasi. Jatka kirjoittamista rohkeasti yli 144 merkin; VRChat näyttää '…' + viestisi lopun.",
   "liveTyping.previewLabel": "Esikatselu (mitä VRChat näyttää):",
   "liveTyping.translateLabel": "Käännä ennen lähetystä (käyttää Kääntäjän asetuksia)",
-
   "languagePicker.title": "Valitse kielesi",
   "languagePicker.subtitle": "Voit vaihtaa tätä myöhemmin Asetuksissa.",
   "languagePicker.continue": "Jatka",
-
   "settingsLanguage.title": "Kieli",
   "settingsLanguage.label": "Sovelluksen kieli"
 }

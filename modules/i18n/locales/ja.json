@@ -23,6 +23,7 @@
   "nav.oscapps": "OSCアプリ",
   "nav.vrctools": "VRChatツール",
   "nav.live": "ライブ",
+  "nav.translation": "翻訳",
   "nav.oauth": "OAuthアカウント",
   "nav.discord": "Discord",
   "nav.stats": "統計",
@@ -33,7 +34,6 @@
   "nav.docs": "ドキュメント / セットアップ",
   "nav.about": "このアプリについて",
   "nav.log": "OSCログ",
-
   "common.save": "保存",
   "common.cancel": "キャンセル",
   "common.enable": "有効にする",
@@ -45,7 +45,6 @@
   "common.send": "送信",
   "common.clear": "クリア",
   "common.record": "記録",
-
   "avatarScaling.title": "アバタースケーリング",
   "avatarScaling.subtitle": "VRChat標準のOSC身長スケーリング機能 — どのアバターでも使用可能",
   "avatarScaling.enable": "アバタースケーリングを有効にする",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "縮小キーを記録",
   "avatarScaling.hotkeyHint": "ホットキーはVRChatにフォーカスがあってもグローバルに動作します。キーが記録できない場合は、上のスライダーを使用してください。",
   "avatarScaling.off": "アバタースケーリングはオフです",
-
   "translator.title": "翻訳ツール",
   "translator.provider": "プロバイダー",
   "translator.endpoint": "エンドポイントURL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "翻訳先の言語",
   "translator.aiGrammarFix": "最初にAIで文法を修正する(上のIntelliChatプロバイダーを使用)",
   "translator.note": "ライブタイピングのチャットボックス翻訳オプションや、「送信前に翻訳」を提供するアプリ内の他の機能で使用されます。",
-
   "liveTyping.title": "ライブタイピング",
   "liveTyping.subtitle": "入力するとすぐに送信されます(VRChat自身のチャットボックスと同様)",
   "liveTyping.placeholder": "ここに入力してください — 数秒ごとに自動的にチャットボックスに送信されます。144文字を超えても入力を続けられます。VRChatには「…」とメッセージの末尾が表示されます。",
   "liveTyping.previewLabel": "プレビュー (VRChatに表示される内容):",
   "liveTyping.translateLabel": "送信前に翻訳する(翻訳ツールの設定を使用)",
-
   "languagePicker.title": "言語を選択してください",
   "languagePicker.subtitle": "後で設定から変更できます。",
   "languagePicker.continue": "続ける",
-
   "settingsLanguage.title": "言語",
   "settingsLanguage.label": "アプリの言語"
 }

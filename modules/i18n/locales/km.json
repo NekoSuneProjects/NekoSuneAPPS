@@ -23,6 +23,7 @@
   "nav.oscapps": "កម្មវិធី OSC",
   "nav.vrctools": "ឧបករណ៍ VRChat",
   "nav.live": "បន្តផ្ទាល់",
+  "nav.translation": "ការបកប្រែ",
   "nav.oauth": "គណនី OAuth",
   "nav.discord": "Discord",
   "nav.stats": "ស្ថិតិ",
@@ -33,7 +34,6 @@
   "nav.docs": "ឯកសារ / ការដំឡើង",
   "nav.about": "អំពី",
   "nav.log": "កំណត់ហេតុ OSC",
-
   "common.save": "រក្សាទុក",
   "common.cancel": "បោះបង់",
   "common.enable": "បើក",
@@ -45,7 +45,6 @@
   "common.send": "ផ្ញើ",
   "common.clear": "សម្អាត",
   "common.record": "ថតទុក",
-
   "avatarScaling.title": "ការធ្វើមាត្រដ្ឋានអាវតារ",
   "avatarScaling.subtitle": "ការធ្វើមាត្រដ្ឋានកម្ពស់ OSC ដើមរបស់ VRChat — ដំណើរការជាមួយអាវតារគ្រប់ប្រភេទ",
   "avatarScaling.enable": "បើកការធ្វើមាត្រដ្ឋានអាវតារ",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "ថតគ្រាប់ចុចបន្ថយមាត្រដ្ឋាន",
   "avatarScaling.hotkeyHint": "គ្រាប់ចុចផ្លូវកាត់ដំណើរការគ្រប់ទីកន្លែង (ទោះបីជា VRChat កំពុងផ្តោតក៏ដោយ)។ ប្រសិនបើគ្រាប់ចុចណាមួយមិនអាចថតបាន អ្នកនៅតែអាចប្រើគ្រាប់រំកិលខាងលើបានដែរ។",
   "avatarScaling.off": "ការធ្វើមាត្រដ្ឋានអាវតារត្រូវបានបិទ",
-
   "translator.title": "កម្មវិធីបកប្រែ",
   "translator.provider": "អ្នកផ្តល់សេវា",
   "translator.endpoint": "Endpoint URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "ភាសាគោលដៅ",
   "translator.aiGrammarFix": "កែវេយ្យាករណ៍ជាមុនដោយ AI (ប្រើអ្នកផ្តល់សេវា IntelliChat ខាងលើ)",
   "translator.note": "ប្រើដោយជម្រើសបកប្រែប្រអប់ជជែកនៃ Live Typing និងគ្រប់ទីកន្លែងផ្សេងទៀតក្នុងកម្មវិធីដែលមានជម្រើស \"បកប្រែមុនពេលផ្ញើ\"។",
-
   "liveTyping.title": "ការវាយអក្សរផ្ទាល់",
   "liveTyping.subtitle": "ផ្ញើនៅពេលអ្នកវាយ ដូចប្រអប់ជជែករបស់ VRChat ខ្លួនឯង",
   "liveTyping.placeholder": "វាយបញ្ចូលនៅទីនេះ — សារនេះនឹងផ្ញើទៅប្រអប់ជជែកដោយស្វ័យប្រវត្តិរៀងរាល់ពីរបីវិនាទីនៅពេលអ្នកវាយ។ សូមបន្តវាយបន្ថែមលើសពី 144 តួអក្សរ; VRChat នឹងបង្ហាញ '…' + ចុងបញ្ចប់នៃសាររបស់អ្នក។",
   "liveTyping.previewLabel": "មើលជាមុន (អ្វីដែល VRChat នឹងបង្ហាញ):",
   "liveTyping.translateLabel": "បកប្រែមុនពេលផ្ញើ (ប្រើការកំណត់កម្មវិធីបកប្រែ)",
-
   "languagePicker.title": "ជ្រើសរើសភាសារបស់អ្នក",
   "languagePicker.subtitle": "អ្នកអាចផ្លាស់ប្តូរវានៅពេលក្រោយក្នុងផ្នែកការកំណត់។",
   "languagePicker.continue": "បន្ត",
-
   "settingsLanguage.title": "ភាសា",
   "settingsLanguage.label": "ភាសាកម្មវិធី"
 }

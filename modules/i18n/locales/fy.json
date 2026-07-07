@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC-apps",
   "nav.vrctools": "VRChat-ark",
   "nav.live": "Live",
+  "nav.translation": "Oersetting",
   "nav.oauth": "OAuth-akkounts",
   "nav.discord": "Discord",
   "nav.stats": "Statistiken",
@@ -33,7 +34,6 @@
   "nav.docs": "Dokumintaasje / Opset",
   "nav.about": "Oer",
   "nav.log": "OSC-log",
-
   "common.save": "Bewarje",
   "common.cancel": "Ôfbrekke",
   "common.enable": "Ynskeakelje",
@@ -45,7 +45,6 @@
   "common.send": "Ferstjoere",
   "common.clear": "Wiskje",
   "common.record": "Opnimme",
-
   "avatarScaling.title": "Avatarskalearring",
   "avatarScaling.subtitle": "VRChat syn eigen OSC-hichteskalearring — wurket mei elke avatar",
   "avatarScaling.enable": "Avatarskalearring ynskeakelje",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Toets foar delskaal opnimme",
   "avatarScaling.hotkeyHint": "Fluchtoetsen wurkje globaal (ek as VRChat de fokus hat). As in toets net opnommen wurde kin, kinsto noch altyd de skowbalke hjirboppe brûke.",
   "avatarScaling.off": "Avatarskalearring stiet út",
-
   "translator.title": "Oersetter",
   "translator.provider": "Oanbieder",
   "translator.endpoint": "Einpunt-URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Doeltaal",
   "translator.aiGrammarFix": "Earst grammatika ferbetterje mei AI (brûkt de IntelliChat-oanbieder hjirboppe)",
   "translator.note": "Wurdt brûkt troch de oersetopsje fan de Live Typing-chatbox en oeral oars yn de app dêr't \"Oersette foar it ferstjoeren\" oanbean wurdt.",
-
   "liveTyping.title": "Live Typen",
   "liveTyping.subtitle": "ferstjoert wylst do typest, krekt as VRChat syn eigen chatbox",
   "liveTyping.placeholder": "Typ hjir — dit wurdt automatysk elke pear sekonden nei de chatbox ferstjoerd wylst do typest. Gean gewoan troch mei typen foarby 144 tekens; VRChat lit '…' + it ein fan dyn berjocht sjen.",
   "liveTyping.previewLabel": "Foarbyld (wat VRChat sjen litte sil):",
   "liveTyping.translateLabel": "Oersette foar it ferstjoeren (brûkt Oersetter-ynstellingen)",
-
   "languagePicker.title": "Kies dyn taal",
   "languagePicker.subtitle": "Do kinst dit letter feroarje yn Ynstellingen.",
   "languagePicker.continue": "Trochgean",
-
   "settingsLanguage.title": "Taal",
   "settingsLanguage.label": "App-taal"
 }

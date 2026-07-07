@@ -23,6 +23,7 @@
   "nav.oscapps": "Aplicacions OSC",
   "nav.vrctools": "Eines de VRChat",
   "nav.live": "En directe",
+  "nav.translation": "Traducció",
   "nav.oauth": "Comptes OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Estadístiques",
@@ -33,7 +34,6 @@
   "nav.docs": "Documentació / Configuració inicial",
   "nav.about": "Quant a",
   "nav.log": "Registre OSC",
-
   "common.save": "Desa",
   "common.cancel": "Cancel·la",
   "common.enable": "Activa",
@@ -45,7 +45,6 @@
   "common.send": "Envia",
   "common.clear": "Neteja",
   "common.record": "Enregistra",
-
   "avatarScaling.title": "Escalat d'avatar",
   "avatarScaling.subtitle": "Escalat d'alçada OSC natiu de VRChat — funciona amb qualsevol avatar",
   "avatarScaling.enable": "Activa l'escalat d'avatar",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Enregistra la tecla de reducció",
   "avatarScaling.hotkeyHint": "Les dreceres funcionen globalment (fins i tot quan VRChat té el focus). Si una tecla no s'enregistra, encara pots utilitzar el control lliscant de dalt.",
   "avatarScaling.off": "L'escalat d'avatar està desactivat",
-
   "translator.title": "Traductor",
   "translator.provider": "Proveïdor",
   "translator.endpoint": "URL del punt final",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Idioma de destinació",
   "translator.aiGrammarFix": "Corregeix la gramàtica amb IA primer (utilitza el proveïdor d'IntelliChat de dalt)",
   "translator.note": "S'utilitza a l'opció de traducció del chatbox de Live Typing i a qualsevol altre lloc de l'aplicació que ofereixi «Traduir abans d'enviar».",
-
   "liveTyping.title": "Escriptura en directe",
   "liveTyping.subtitle": "s'envia mentre escrius, com el propi chatbox de VRChat",
   "liveTyping.placeholder": "Escriu aquí — això s'envia automàticament al chatbox cada pocs segons mentre escrius. Continua escrivint més enllà de 144 caràcters; VRChat mostrarà «…» + el final del teu missatge.",
   "liveTyping.previewLabel": "Vista prèvia (el que mostrarà VRChat):",
   "liveTyping.translateLabel": "Tradueix abans d'enviar (utilitza la configuració del Traductor)",
-
   "languagePicker.title": "Tria el teu idioma",
   "languagePicker.subtitle": "Pots canviar-ho més tard a Configuració.",
   "languagePicker.continue": "Continua",
-
   "settingsLanguage.title": "Idioma",
   "settingsLanguage.label": "Idioma de l'aplicació"
 }

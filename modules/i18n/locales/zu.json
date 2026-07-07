@@ -23,6 +23,7 @@
   "nav.oscapps": "Ama-App e-OSC",
   "nav.vrctools": "Amathuluzi e-VRChat",
   "nav.live": "Bukhoma",
+  "nav.translation": "Ukuhumusha",
   "nav.oauth": "Ama-Akhawunti e-OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Izibalo",
@@ -33,7 +34,6 @@
   "nav.docs": "Amaphepha / Ukusetha",
   "nav.about": "Mayelana",
   "nav.log": "Irekhodi le-OSC",
-
   "common.save": "Londoloza",
   "common.cancel": "Khansela",
   "common.enable": "Vula",
@@ -45,7 +45,6 @@
   "common.send": "Thumela",
   "common.clear": "Sula",
   "common.record": "Qopha",
-
   "avatarScaling.title": "Ukulinganisa Usayizi we-Avatar",
   "avatarScaling.subtitle": "Isakhiwo semvelo se-VRChat sokulinganisa ubude nge-OSC — isebenza kuyi-avatar noma iyiphi",
   "avatarScaling.enable": "Vumela ukulinganisa usayizi we-avatar",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Qopha inkinombho yokuncishisa usayizi",
   "avatarScaling.hotkeyHint": "Amankinombho ashesha asebenza indawo yonke (ngisho noVRChat unokugxila). Uma inkinombho ingaqophi, usengakwazi ukusebenzisa isilayidi esingenhla.",
   "avatarScaling.off": "Ukulinganisa usayizi we-avatar kucishiwe",
-
   "translator.title": "Isihumushi",
   "translator.provider": "Umhlinzeki",
   "translator.endpoint": "I-URL Ye-Endpoint",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Ulimi Ohlosiwe",
   "translator.aiGrammarFix": "Lungisa uhlelo lolimi nge-AI kuqala (isebenzisa umhlinzeki we-IntelliChat ongenhla)",
   "translator.note": "Isetshenziswa yinketho yokuhumusha yebhokisi yengxoxo ye-Live Typing, nakuyiphi indawo enye ku-app enikeza inketho ethi \"Humusha ngaphambi kokuthumela.\"",
-
   "liveTyping.title": "Ukubhala Bukhoma",
   "liveTyping.subtitle": "kuthumela ngoba nje uthayipha, njengebhokisi yengxoxo ka-VRChat uqobo",
   "liveTyping.placeholder": "Thayipha lapha — lokhu kuthunyelwa ebhokisini lengxoxo ngokuzenzakalelayo emizuzwaneni embalwa njengoba uthayipha. Qhubeka uthayipha ngale kwezinhlamvu ezingu-144; i-VRChat izobonisa '…' kanye nesiqephu sokugcina somlayezo wakho.",
   "liveTyping.previewLabel": "Ukubuka Kuqala (okuzobonisa i-VRChat):",
   "liveTyping.translateLabel": "Humusha ngaphambi kokuthumela (isebenzisa izilungiselelo zeSihumushi)",
-
   "languagePicker.title": "Khetha ulimi lwakho",
   "languagePicker.subtitle": "Ungakushintsha lokhu kamuva kuzilungiselelo.",
   "languagePicker.continue": "Qhubeka",
-
   "settingsLanguage.title": "Ulimi",
   "settingsLanguage.label": "Ulimi Lwe-app"
 }

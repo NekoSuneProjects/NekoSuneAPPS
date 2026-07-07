@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC-Aplikoj",
   "nav.vrctools": "VRChat-Iloj",
   "nav.live": "Rekte",
+  "nav.translation": "Traduko",
   "nav.oauth": "OAuth-Kontoj",
   "nav.discord": "Discord",
   "nav.stats": "Statistikoj",
@@ -33,7 +34,6 @@
   "nav.docs": "Dokumentado / Agordado",
   "nav.about": "Pri",
   "nav.log": "OSC-Protokolo",
-
   "common.save": "Konservi",
   "common.cancel": "Nuligi",
   "common.enable": "Aktivigi",
@@ -45,7 +45,6 @@
   "common.send": "Sendi",
   "common.clear": "Forviŝi",
   "common.record": "Registri",
-
   "avatarScaling.title": "Avatara Skalado",
   "avatarScaling.subtitle": "La denaska OSC-alteca skalado de VRChat — funkcias kun ajna avataro",
   "avatarScaling.enable": "Aktivigi avataran skaladon",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Registri klavon por malgrandigi",
   "avatarScaling.hotkeyHint": "Fulmoklavoj funkcias tutmonde (eĉ kiam VRChat havas la fokuson). Se klavo ne registriĝas, vi ankoraŭ povas uzi la ŝovilon supre.",
   "avatarScaling.off": "Avatara skalado estas malŝaltita",
-
   "translator.title": "Tradukilo",
   "translator.provider": "Provizanto",
   "translator.endpoint": "URL de finpunkto",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Cellingvo",
   "translator.aiGrammarFix": "Unue korekti gramatikon per AI (uzas la supran IntelliChat-provizanton)",
   "translator.note": "Uzata de la traduka opcio de la Live Typing-chatbox kaj ĉie ajn alie en la programo, kie estas proponata \"Traduki antaŭ sendo.\"",
-
   "liveTyping.title": "Rekta Tajpado",
   "liveTyping.subtitle": "sendas dum vi tajpas, same kiel la propra chatbox de VRChat",
   "liveTyping.placeholder": "Tajpu ĉi tie — tio sendiĝas al la chatbox aŭtomate ĉiun kelkan sekundon dum vi tajpas. Daŭrigu tajpi post 144 signoj; VRChat montros '…' + la finon de via mesaĝo.",
   "liveTyping.previewLabel": "Antaŭrigardo (kion VRChat montros):",
   "liveTyping.translateLabel": "Traduki antaŭ sendo (uzas agordojn de Tradukilo)",
-
   "languagePicker.title": "Elektu vian lingvon",
   "languagePicker.subtitle": "Vi povas ŝanĝi tion pli poste en Agordoj.",
   "languagePicker.continue": "Daŭrigi",
-
   "settingsLanguage.title": "Lingvo",
   "settingsLanguage.label": "Programa lingvo"
 }

@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC lietotnes",
   "nav.vrctools": "VRChat rīki",
   "nav.live": "Tiešraide",
+  "nav.translation": "Tulkojums",
   "nav.oauth": "OAuth konti",
   "nav.discord": "Discord",
   "nav.stats": "Statistika",
@@ -33,7 +34,6 @@
   "nav.docs": "Dokumentācija / Uzstādīšana",
   "nav.about": "Par programmu",
   "nav.log": "OSC žurnāls",
-
   "common.save": "Saglabāt",
   "common.cancel": "Atcelt",
   "common.enable": "Ieslēgt",
@@ -45,7 +45,6 @@
   "common.send": "Sūtīt",
   "common.clear": "Notīrīt",
   "common.record": "Ierakstīt",
-
   "avatarScaling.title": "Avatāra mērogošana",
   "avatarScaling.subtitle": "VRChat iebūvētā OSC augstuma mērogošana — darbojas ar jebkuru avatāru",
   "avatarScaling.enable": "Ieslēgt avatāra mērogošanu",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Ierakstīt samazināšanas taustiņu",
   "avatarScaling.hotkeyHint": "Karstie taustiņi darbojas globāli (arī tad, kad fokuss ir uz VRChat). Ja taustiņu nevar ierakstīt, vari izmantot slīdni augstāk.",
   "avatarScaling.off": "Avatāra mērogošana ir izslēgta",
-
   "translator.title": "Tulkotājs",
   "translator.provider": "Pakalpojuma sniedzējs",
   "translator.endpoint": "Galapunkta URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Mērķa valoda",
   "translator.aiGrammarFix": "Vispirms izlabot gramatiku ar AI (izmanto augstāk norādīto IntelliChat pakalpojumu)",
   "translator.note": "To izmanto Live Typing tērzētavas tulkošanas opcija, kā arī jebkur citur programmā, kur ir pieejama iespēja \"Tulkot pirms sūtīšanas.\"",
-
   "liveTyping.title": "Tiešraides rakstīšana",
   "liveTyping.subtitle": "sūta tekstu rakstīšanas laikā, tāpat kā VRChat pašas tērzētavas",
   "liveTyping.placeholder": "Rakstiet šeit — šis teksts automātiski tiek sūtīts uz tērzētavu ik pēc pāris sekundēm, kamēr rakstāt. Turpini rakstīt pāri 144 rakstzīmēm; VRChat parādīs '…' + tavas ziņas beigas.",
   "liveTyping.previewLabel": "Priekšskatījums (ko rādīs VRChat):",
   "liveTyping.translateLabel": "Tulkot pirms sūtīšanas (izmanto Tulkotāja iestatījumus)",
-
   "languagePicker.title": "Izvēlies savu valodu",
   "languagePicker.subtitle": "Vēlāk to var nomainīt Iestatījumos.",
   "languagePicker.continue": "Turpināt",
-
   "settingsLanguage.title": "Valoda",
   "settingsLanguage.label": "Programmas valoda"
 }

@@ -23,6 +23,7 @@
   "nav.oscapps": "تطبيقات OSC",
   "nav.vrctools": "أدوات VRChat",
   "nav.live": "مباشر",
+  "nav.translation": "الترجمة",
   "nav.oauth": "حسابات OAuth",
   "nav.discord": "Discord",
   "nav.stats": "الإحصائيات",
@@ -33,7 +34,6 @@
   "nav.docs": "الوثائق / الإعداد",
   "nav.about": "حول",
   "nav.log": "سجل OSC",
-
   "common.save": "حفظ",
   "common.cancel": "إلغاء",
   "common.enable": "تفعيل",
@@ -45,7 +45,6 @@
   "common.send": "إرسال",
   "common.clear": "مسح",
   "common.record": "تسجيل",
-
   "avatarScaling.title": "تحجيم الصورة الرمزية",
   "avatarScaling.subtitle": "تحجيم الطول الأصلي عبر OSC في VRChat — يعمل مع أي صورة رمزية",
   "avatarScaling.enable": "تفعيل تحجيم الصورة الرمزية",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "تسجيل مفتاح التصغير",
   "avatarScaling.hotkeyHint": "تعمل مفاتيح الاختصار بشكل عام (حتى عندما يكون التركيز على VRChat). إذا تعذّر تسجيل مفتاح ما، يمكنك دائمًا استخدام شريط التمرير أعلاه.",
   "avatarScaling.off": "تحجيم الصورة الرمزية متوقف",
-
   "translator.title": "المترجم",
   "translator.provider": "المزوّد",
   "translator.endpoint": "عنوان URL لنقطة النهاية",
@@ -67,17 +65,14 @@
   "translator.targetLang": "اللغة الهدف",
   "translator.aiGrammarFix": "تصحيح القواعد بالذكاء الاصطناعي أولاً (يستخدم مزوّد IntelliChat أعلاه)",
   "translator.note": "يُستخدم من قِبل خيار ترجمة صندوق المحادثة في الكتابة المباشرة، وفي أي مكان آخر بالتطبيق يوفّر خيار «الترجمة قبل الإرسال».",
-
   "liveTyping.title": "الكتابة المباشرة",
   "liveTyping.subtitle": "يُرسل أثناء الكتابة، تمامًا مثل صندوق محادثة VRChat نفسه",
   "liveTyping.placeholder": "اكتب هنا — يُرسل هذا تلقائيًا إلى صندوق المحادثة كل بضع ثوانٍ أثناء الكتابة. استمر في الكتابة حتى بعد 144 حرفًا؛ سيعرض VRChat «…» مع نهاية رسالتك.",
   "liveTyping.previewLabel": "معاينة (ما سيعرضه VRChat):",
   "liveTyping.translateLabel": "الترجمة قبل الإرسال (يستخدم إعدادات المترجم)",
-
   "languagePicker.title": "اختر لغتك",
   "languagePicker.subtitle": "يمكنك تغيير هذا لاحقًا في الإعدادات.",
   "languagePicker.continue": "استمرار",
-
   "settingsLanguage.title": "اللغة",
   "settingsLanguage.label": "لغة التطبيق"
 }

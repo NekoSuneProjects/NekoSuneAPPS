@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC-приложения",
   "nav.vrctools": "Инструменты VRChat",
   "nav.live": "Прямой эфир",
+  "nav.translation": "Перевод",
   "nav.oauth": "Учётные записи OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Статистика",
@@ -33,7 +34,6 @@
   "nav.docs": "Документация / Настройка",
   "nav.about": "О программе",
   "nav.log": "Журнал OSC",
-
   "common.save": "Сохранить",
   "common.cancel": "Отмена",
   "common.enable": "Включить",
@@ -45,7 +45,6 @@
   "common.send": "Отправить",
   "common.clear": "Очистить",
   "common.record": "Записать",
-
   "avatarScaling.title": "Масштабирование аватара",
   "avatarScaling.subtitle": "Встроенное OSC-масштабирование роста VRChat — работает с любым аватаром",
   "avatarScaling.enable": "Включить масштабирование аватара",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Записать клавишу уменьшения",
   "avatarScaling.hotkeyHint": "Горячие клавиши работают глобально (даже когда активен VRChat). Если клавишу не удаётся записать, используйте ползунок выше.",
   "avatarScaling.off": "Масштабирование аватара отключено",
-
   "translator.title": "Переводчик",
   "translator.provider": "Провайдер",
   "translator.endpoint": "URL конечной точки",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Язык перевода",
   "translator.aiGrammarFix": "Сначала исправить грамматику с помощью ИИ (использует провайдер IntelliChat выше)",
   "translator.note": "Используется в функции перевода Live Typing чат-бокса и везде в приложении, где есть опция «Переводить перед отправкой».",
-
   "liveTyping.title": "Живой ввод",
   "liveTyping.subtitle": "отправляется по мере набора текста, как встроенный чат-бокс VRChat",
   "liveTyping.placeholder": "Печатайте здесь — текст автоматически отправляется в чат-бокс каждые несколько секунд по мере набора. Можно печатать более 144 символов; VRChat покажет «…» и конец сообщения.",
   "liveTyping.previewLabel": "Предпросмотр (что увидит VRChat):",
   "liveTyping.translateLabel": "Переводить перед отправкой (использует настройки Переводчика)",
-
   "languagePicker.title": "Выберите язык",
   "languagePicker.subtitle": "Вы можете изменить это позже в настройках.",
   "languagePicker.continue": "Продолжить",
-
   "settingsLanguage.title": "Язык",
   "settingsLanguage.label": "Язык приложения"
 }

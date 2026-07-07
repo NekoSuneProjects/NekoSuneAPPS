@@ -150,6 +150,20 @@ window.electronAPI = {
   i18nLanguages: () => ipcRenderer.invoke('i18n:languages'),
   i18nStrings: lang => ipcRenderer.invoke('i18n:strings', lang),
 
+  // text-to-speech
+  ttsSpeak: opts => ipcRenderer.invoke('tts:speak', opts),
+  ttsProviders: () => ipcRenderer.invoke('tts:providers'),
+  ttsSapiVoices: () => ipcRenderer.invoke('tts:sapiVoices'),
+
+  // speech-to-text
+  sttTranscribeCloud: opts => ipcRenderer.invoke('stt:transcribeCloud', opts),
+  sttTranscribeLocal: opts => ipcRenderer.invoke('stt:transcribeLocal', opts),
+  sttCloudProviders: () => ipcRenderer.invoke('stt:cloudProviders'),
+  sttLocalModels: () => ipcRenderer.invoke('stt:localModels'),
+
+  // voice assistant
+  assistantInterpret: opts => ipcRenderer.invoke('assistant:interpret', opts),
+
   // discord
   discordStart: cfg => ipcRenderer.invoke('discord:start', cfg),
   discordStop: () => ipcRenderer.invoke('discord:stop'),

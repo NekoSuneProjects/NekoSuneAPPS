@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC tətbiqləri",
   "nav.vrctools": "VRChat alətləri",
   "nav.live": "Canlı",
+  "nav.translation": "Tərcümə",
   "nav.oauth": "OAuth hesabları",
   "nav.discord": "Discord",
   "nav.stats": "Statistika",
@@ -33,7 +34,6 @@
   "nav.docs": "Sənədlər / Quraşdırma",
   "nav.about": "Haqqında",
   "nav.log": "OSC qeydiyyatı",
-
   "common.save": "Yadda saxla",
   "common.cancel": "Ləğv et",
   "common.enable": "Aktiv et",
@@ -45,7 +45,6 @@
   "common.send": "Göndər",
   "common.clear": "Təmizlə",
   "common.record": "Qeyd et",
-
   "avatarScaling.title": "Avatar miqyaslanması",
   "avatarScaling.subtitle": "VRChat-ın öz OSC hündürlük miqyaslaması — istənilən avatarda işləyir",
   "avatarScaling.enable": "Avatar miqyaslanmasını aktiv et",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Kiçiltmə düyməsini qeyd et",
   "avatarScaling.hotkeyHint": "Qısayollar qlobal işləyir (VRChat fokusda olsa belə). Əgər düymə qeyd olunmursa, yenə də yuxarıdakı sürgücü istifadə edə bilərsiniz.",
   "avatarScaling.off": "Avatar miqyaslanması deaktivdir",
-
   "translator.title": "Tərcüməçi",
   "translator.provider": "Provayder",
   "translator.endpoint": "Son nöqtə URL-i",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Hədəf dil",
   "translator.aiGrammarFix": "Əvvəlcə qrammatikanı AI ilə düzəlt (yuxarıdakı IntelliChat provayderindən istifadə edir)",
   "translator.note": "Live Typing söhbət qutusunun tərcümə seçimi tərəfindən və tətbiqdə \"Göndərmədən əvvəl tərcümə et\" təklif olunan istənilən başqa yerdə istifadə olunur.",
-
   "liveTyping.title": "Canlı Yazı",
   "liveTyping.subtitle": "yazdığınız kimi göndərir, VRChat-ın öz söhbət qutusu kimi",
   "liveTyping.placeholder": "Buraya yazın — bu, yazdığınız zaman hər bir neçə saniyədən bir avtomatik olaraq söhbət qutusuna göndərilir. 144 simvoldan sonra yazmağa davam edin; VRChat '…' + mesajınızın sonunu göstərəcək.",
   "liveTyping.previewLabel": "Önizləmə (VRChat-ın göstərəcəyi):",
   "liveTyping.translateLabel": "Göndərmədən əvvəl tərcümə et (Tərcüməçi parametrlərindən istifadə edir)",
-
   "languagePicker.title": "Dilinizi seçin",
   "languagePicker.subtitle": "Bunu sonra Parametrlərdə dəyişə bilərsiniz.",
   "languagePicker.continue": "Davam et",
-
   "settingsLanguage.title": "Dil",
   "settingsLanguage.label": "Tətbiq dili"
 }

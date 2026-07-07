@@ -23,6 +23,7 @@
   "nav.oscapps": "برنامه‌های OSC",
   "nav.vrctools": "ابزارهای VRChat",
   "nav.live": "زنده",
+  "nav.translation": "ترجمه",
   "nav.oauth": "حساب‌های OAuth",
   "nav.discord": "Discord",
   "nav.stats": "آمار",
@@ -33,7 +34,6 @@
   "nav.docs": "مستندات / راه‌اندازی",
   "nav.about": "درباره",
   "nav.log": "گزارش OSC",
-
   "common.save": "ذخیره",
   "common.cancel": "لغو",
   "common.enable": "فعال‌سازی",
@@ -45,7 +45,6 @@
   "common.send": "ارسال",
   "common.clear": "پاک کردن",
   "common.record": "ضبط",
-
   "avatarScaling.title": "مقیاس‌بندی آواتار",
   "avatarScaling.subtitle": "مقیاس‌بندی ارتفاع بومی OSC در VRChat — روی هر آواتاری کار می‌کند",
   "avatarScaling.enable": "فعال‌سازی مقیاس‌بندی آواتار",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "ضبط کلید کوچک‌نمایی",
   "avatarScaling.hotkeyHint": "کلیدهای میانبر به‌صورت سراسری کار می‌کنند (حتی زمانی که VRChat در کانون توجه است). اگر کلیدی ضبط نشد، همچنان می‌توانید از لغزنده بالا استفاده کنید.",
   "avatarScaling.off": "مقیاس‌بندی آواتار غیرفعال است",
-
   "translator.title": "مترجم",
   "translator.provider": "ارائه‌دهنده",
   "translator.endpoint": "نشانی URL نقطه پایانی",
@@ -67,17 +65,14 @@
   "translator.targetLang": "زبان مقصد",
   "translator.aiGrammarFix": "ابتدا گرامر را با هوش مصنوعی اصلاح کن (از ارائه‌دهنده IntelliChat در بالا استفاده می‌کند)",
   "translator.note": "توسط گزینه ترجمه چت‌باکس Live Typing و هر جای دیگری در برنامه که گزینه «ترجمه پیش از ارسال» را ارائه می‌دهد، استفاده می‌شود.",
-
   "liveTyping.title": "تایپ زنده",
   "liveTyping.subtitle": "همان‌طور که تایپ می‌کنید ارسال می‌شود، مانند چت‌باکس خود VRChat",
   "liveTyping.placeholder": "اینجا تایپ کنید — این متن به‌طور خودکار هر چند ثانیه یک‌بار، همان‌طور که تایپ می‌کنید، به چت‌باکس ارسال می‌شود. حتی پس از ۱۴۴ نویسه هم تایپ را ادامه دهید؛ VRChat علامت «…» به همراه پایان پیام شما را نشان خواهد داد.",
   "liveTyping.previewLabel": "پیش‌نمایش (چیزی که VRChat نشان خواهد داد):",
   "liveTyping.translateLabel": "ترجمه پیش از ارسال (از تنظیمات مترجم استفاده می‌کند)",
-
   "languagePicker.title": "زبان خود را انتخاب کنید",
   "languagePicker.subtitle": "می‌توانید بعداً آن را در تنظیمات تغییر دهید.",
   "languagePicker.continue": "ادامه",
-
   "settingsLanguage.title": "زبان",
   "settingsLanguage.label": "زبان برنامه"
 }

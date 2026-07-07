@@ -23,6 +23,7 @@
   "nav.oscapps": "Aplicații OSC",
   "nav.vrctools": "Instrumente VRChat",
   "nav.live": "Live",
+  "nav.translation": "Traducere",
   "nav.oauth": "Conturi OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Statistici",
@@ -33,7 +34,6 @@
   "nav.docs": "Documentație / Configurare",
   "nav.about": "Despre",
   "nav.log": "Jurnal OSC",
-
   "common.save": "Salvează",
   "common.cancel": "Anulează",
   "common.enable": "Activează",
@@ -45,7 +45,6 @@
   "common.send": "Trimite",
   "common.clear": "Șterge",
   "common.record": "Înregistrează",
-
   "avatarScaling.title": "Scalarea avatarului",
   "avatarScaling.subtitle": "Scalarea nativă a înălțimii prin OSC din VRChat — funcționează pe orice avatar",
   "avatarScaling.enable": "Activează scalarea avatarului",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Înregistrează tasta pentru micșorare",
   "avatarScaling.hotkeyHint": "Tastele rapide funcționează global (chiar și când VRChat este în focus). Dacă o tastă nu se poate înregistra, poți folosi în continuare cursorul de mai sus.",
   "avatarScaling.off": "Scalarea avatarului este dezactivată",
-
   "translator.title": "Traducător",
   "translator.provider": "Furnizor",
   "translator.endpoint": "URL punct final",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Limba țintă",
   "translator.aiGrammarFix": "Corectează gramatica cu AI mai întâi (folosește furnizorul IntelliChat de mai sus)",
   "translator.note": "Folosit de opțiunea de traducere din chatul Live Typing și oriunde altundeva în aplicație unde este disponibilă opțiunea „Tradu înainte de trimitere”.",
-
   "liveTyping.title": "Scriere live",
   "liveTyping.subtitle": "trimite pe măsură ce scrii, ca chatul propriu al VRChat",
   "liveTyping.placeholder": "Scrie aici — acest text este trimis automat în chat la câteva secunde, pe măsură ce scrii. Continuă să scrii peste 144 de caractere; VRChat va afișa „…” + finalul mesajului tău.",
   "liveTyping.previewLabel": "Previzualizare (ce va afișa VRChat):",
   "liveTyping.translateLabel": "Tradu înainte de trimitere (folosește setările Traducătorului)",
-
   "languagePicker.title": "Alege-ți limba",
   "languagePicker.subtitle": "Poți schimba asta mai târziu din Setări.",
   "languagePicker.continue": "Continuă",
-
   "settingsLanguage.title": "Limbă",
   "settingsLanguage.label": "Limba aplicației"
 }

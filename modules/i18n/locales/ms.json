@@ -23,6 +23,7 @@
   "nav.oscapps": "Aplikasi OSC",
   "nav.vrctools": "Alat VRChat",
   "nav.live": "Siaran Langsung",
+  "nav.translation": "Terjemahan",
   "nav.oauth": "Akaun OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Statistik",
@@ -33,7 +34,6 @@
   "nav.docs": "Dokumen / Persediaan",
   "nav.about": "Perihal",
   "nav.log": "Log OSC",
-
   "common.save": "Simpan",
   "common.cancel": "Batal",
   "common.enable": "Dayakan",
@@ -45,7 +45,6 @@
   "common.send": "Hantar",
   "common.clear": "Kosongkan",
   "common.record": "Rakam",
-
   "avatarScaling.title": "Penskalaan Avatar",
   "avatarScaling.subtitle": "Penskalaan tinggi OSC asli VRChat — berfungsi pada mana-mana avatar",
   "avatarScaling.enable": "Dayakan penskalaan avatar",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Rakam kekunci kecilkan skala",
   "avatarScaling.hotkeyHint": "Kekunci pintasan berfungsi secara global (walaupun VRChat sedang fokus). Jika sesuatu kekunci tidak dapat dirakam, anda masih boleh menggunakan gelangsar di atas.",
   "avatarScaling.off": "Penskalaan avatar dimatikan",
-
   "translator.title": "Penterjemah",
   "translator.provider": "Pembekal",
   "translator.endpoint": "URL Titik Akhir",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Bahasa sasaran",
   "translator.aiGrammarFix": "Betulkan tatabahasa dengan AI dahulu (menggunakan pembekal IntelliChat di atas)",
   "translator.note": "Digunakan oleh pilihan terjemahan chatbox Live Typing dan di mana-mana lagi dalam aplikasi yang menawarkan \"Terjemah sebelum menghantar.\"",
-
   "liveTyping.title": "Menaip Langsung",
   "liveTyping.subtitle": "menghantar semasa anda menaip, seperti chatbox VRChat sendiri",
   "liveTyping.placeholder": "Taip di sini — ini akan dihantar ke chatbox secara automatik setiap beberapa saat semasa anda menaip. Teruskan menaip melebihi 144 aksara; VRChat akan memaparkan '…' + bahagian akhir mesej anda.",
   "liveTyping.previewLabel": "Pratonton (apa yang akan dipaparkan oleh VRChat):",
   "liveTyping.translateLabel": "Terjemah sebelum menghantar (menggunakan tetapan Penterjemah)",
-
   "languagePicker.title": "Pilih bahasa anda",
   "languagePicker.subtitle": "Anda boleh menukar ini kemudian dalam Tetapan.",
   "languagePicker.continue": "Teruskan",
-
   "settingsLanguage.title": "Bahasa",
   "settingsLanguage.label": "Bahasa aplikasi"
 }

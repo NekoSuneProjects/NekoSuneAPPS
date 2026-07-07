@@ -23,6 +23,7 @@
   "nav.oscapps": "Εφαρμογές OSC",
   "nav.vrctools": "Εργαλεία VRChat",
   "nav.live": "Ζωντανά",
+  "nav.translation": "Μετάφραση",
   "nav.oauth": "Λογαριασμοί OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Στατιστικά",
@@ -33,7 +34,6 @@
   "nav.docs": "Τεκμηρίωση / Εγκατάσταση",
   "nav.about": "Σχετικά",
   "nav.log": "Αρχείο καταγραφής OSC",
-
   "common.save": "Αποθήκευση",
   "common.cancel": "Ακύρωση",
   "common.enable": "Ενεργοποίηση",
@@ -45,7 +45,6 @@
   "common.send": "Αποστολή",
   "common.clear": "Εκκαθάριση",
   "common.record": "Καταγραφή",
-
   "avatarScaling.title": "Κλιμάκωση άβαταρ",
   "avatarScaling.subtitle": "Η ενσωματωμένη κλιμάκωση ύψους OSC του VRChat — λειτουργεί σε οποιοδήποτε άβαταρ",
   "avatarScaling.enable": "Ενεργοποίηση κλιμάκωσης άβαταρ",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Καταγραφή πλήκτρου σμίκρυνσης",
   "avatarScaling.hotkeyHint": "Οι συντομεύσεις πληκτρολογίου λειτουργούν καθολικά (ακόμη και όταν το VRChat έχει την εστίαση). Αν ένα πλήκτρο δεν καταγράφεται, μπορείτε να χρησιμοποιήσετε τον ρυθμιστή παραπάνω.",
   "avatarScaling.off": "Η κλιμάκωση άβαταρ είναι απενεργοποιημένη",
-
   "translator.title": "Μεταφραστής",
   "translator.provider": "Πάροχος",
   "translator.endpoint": "URL τελικού σημείου",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Γλώσσα προορισμού",
   "translator.aiGrammarFix": "Διόρθωση γραμματικής με AI πρώτα (χρησιμοποιεί τον πάροχο IntelliChat παραπάνω)",
   "translator.note": "Χρησιμοποιείται από την επιλογή μετάφρασης του πλαισίου συνομιλίας στη Ζωντανή Πληκτρολόγηση και οπουδήποτε αλλού στην εφαρμογή προσφέρεται η επιλογή «Μετάφραση πριν την αποστολή».",
-
   "liveTyping.title": "Ζωντανή πληκτρολόγηση",
   "liveTyping.subtitle": "στέλνεται καθώς πληκτρολογείτε, όπως το ενσωματωμένο πλαίσιο συνομιλίας του VRChat",
   "liveTyping.placeholder": "Πληκτρολογήστε εδώ — αυτό αποστέλλεται αυτόματα στο πλαίσιο συνομιλίας κάθε λίγα δευτερόλεπτα καθώς πληκτρολογείτε. Συνεχίστε να πληκτρολογείτε πέρα από τους 144 χαρακτήρες· το VRChat θα εμφανίσει «…» + το τέλος του μηνύματός σας.",
   "liveTyping.previewLabel": "Προεπισκόπηση (τι θα εμφανίσει το VRChat):",
   "liveTyping.translateLabel": "Μετάφραση πριν την αποστολή (χρησιμοποιεί τις ρυθμίσεις Μεταφραστή)",
-
   "languagePicker.title": "Επιλέξτε τη γλώσσα σας",
   "languagePicker.subtitle": "Μπορείτε να το αλλάξετε αργότερα στις Ρυθμίσεις.",
   "languagePicker.continue": "Συνέχεια",
-
   "settingsLanguage.title": "Γλώσσα",
   "settingsLanguage.label": "Γλώσσα εφαρμογής"
 }

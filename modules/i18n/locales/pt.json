@@ -23,6 +23,7 @@
   "nav.oscapps": "Apps OSC",
   "nav.vrctools": "Ferramentas VRChat",
   "nav.live": "Ao Vivo",
+  "nav.translation": "Tradução",
   "nav.oauth": "Contas OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Estatísticas",
@@ -33,7 +34,6 @@
   "nav.docs": "Documentação / Configuração",
   "nav.about": "Sobre",
   "nav.log": "Registro OSC",
-
   "common.save": "Salvar",
   "common.cancel": "Cancelar",
   "common.enable": "Ativar",
@@ -45,7 +45,6 @@
   "common.send": "Enviar",
   "common.clear": "Limpar",
   "common.record": "Gravar",
-
   "avatarScaling.title": "Escala de Avatar",
   "avatarScaling.subtitle": "Escala de altura OSC nativa do VRChat — funciona em qualquer avatar",
   "avatarScaling.enable": "Ativar escala de avatar",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Gravar tecla de diminuir escala",
   "avatarScaling.hotkeyHint": "As teclas de atalho funcionam globalmente (mesmo com o VRChat em foco). Se uma tecla não for gravada, você ainda pode usar o controle deslizante acima.",
   "avatarScaling.off": "A escala de avatar está desativada",
-
   "translator.title": "Tradutor",
   "translator.provider": "Provedor",
   "translator.endpoint": "URL do endpoint",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Idioma de destino",
   "translator.aiGrammarFix": "Corrigir a gramática com IA primeiro (usa o provedor IntelliChat acima)",
   "translator.note": "Usado pela opção de tradução da chatbox do Live Typing e em qualquer outro lugar do aplicativo que ofereça \"Traduzir antes de enviar.\"",
-
   "liveTyping.title": "Digitação em Tempo Real",
   "liveTyping.subtitle": "envia enquanto você digita, como a própria chatbox do VRChat",
   "liveTyping.placeholder": "Digite aqui — isso é enviado à chatbox automaticamente a cada poucos segundos enquanto você digita. Continue digitando além de 144 caracteres; o VRChat mostrará \"…\" + o final da sua mensagem.",
   "liveTyping.previewLabel": "Pré-visualização (o que o VRChat vai mostrar):",
   "liveTyping.translateLabel": "Traduzir antes de enviar (usa as configurações do Tradutor)",
-
   "languagePicker.title": "Escolha seu idioma",
   "languagePicker.subtitle": "Você pode alterar isso mais tarde em Configurações.",
   "languagePicker.continue": "Continuar",
-
   "settingsLanguage.title": "Idioma",
   "settingsLanguage.label": "Idioma do aplicativo"
 }

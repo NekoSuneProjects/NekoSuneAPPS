@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC aplikacije",
   "nav.vrctools": "Orodja za VRChat",
   "nav.live": "V živo",
+  "nav.translation": "Prevod",
   "nav.oauth": "Računi OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Statistika",
@@ -33,7 +34,6 @@
   "nav.docs": "Dokumentacija / Namestitev",
   "nav.about": "O programu",
   "nav.log": "Dnevnik OSC",
-
   "common.save": "Shrani",
   "common.cancel": "Prekliči",
   "common.enable": "Omogoči",
@@ -45,7 +45,6 @@
   "common.send": "Pošlji",
   "common.clear": "Počisti",
   "common.record": "Snemaj",
-
   "avatarScaling.title": "Spreminjanje velikosti avatarja",
   "avatarScaling.subtitle": "VRChatovo lastno OSC spreminjanje višine — deluje na kateremkoli avatarju",
   "avatarScaling.enable": "Omogoči spreminjanje velikosti avatarja",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Posnemi tipko za zmanjšanje",
   "avatarScaling.hotkeyHint": "Bližnjice delujejo globalno (tudi ko je v ospredju VRChat). Če se tipka ne posname, lahko še vedno uporabiš drsnik zgoraj.",
   "avatarScaling.off": "Spreminjanje velikosti avatarja je izklopljeno",
-
   "translator.title": "Prevajalnik",
   "translator.provider": "Ponudnik",
   "translator.endpoint": "URL končne točke",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Ciljni jezik",
   "translator.aiGrammarFix": "Najprej popravi slovnico z AI (uporablja zgornjega ponudnika IntelliChat)",
   "translator.note": "Uporablja se pri možnosti prevajanja klepetalnice Live Typing in kjerkoli drugje v aplikaciji, kjer je na voljo možnost \"Prevedi pred pošiljanjem.\"",
-
   "liveTyping.title": "Sprotno tipkanje",
   "liveTyping.subtitle": "pošilja med tipkanjem, tako kot VRChatova lastna klepetalnica",
   "liveTyping.placeholder": "Tipkaj tukaj — to se med tipkanjem samodejno pošilja v klepetalnico vsakih nekaj sekund. Tipkaj naprej tudi čez 144 znakov; VRChat bo prikazal '…' + konec tvojega sporočila.",
   "liveTyping.previewLabel": "Predogled (kar bo prikazal VRChat):",
   "liveTyping.translateLabel": "Prevedi pred pošiljanjem (uporablja nastavitve Prevajalnika)",
-
   "languagePicker.title": "Izberi svoj jezik",
   "languagePicker.subtitle": "To lahko pozneje spremeniš v Nastavitvah.",
   "languagePicker.continue": "Nadaljuj",
-
   "settingsLanguage.title": "Jezik",
   "settingsLanguage.label": "Jezik aplikacije"
 }

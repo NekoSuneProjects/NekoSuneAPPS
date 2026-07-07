@@ -23,6 +23,7 @@
   "nav.oscapps": "App OSC",
   "nav.vrctools": "Strumenti VRChat",
   "nav.live": "Live",
+  "nav.translation": "Traduzione",
   "nav.oauth": "Account OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Statistiche",
@@ -33,7 +34,6 @@
   "nav.docs": "Documentazione / Configurazione",
   "nav.about": "Informazioni",
   "nav.log": "Registro OSC",
-
   "common.save": "Salva",
   "common.cancel": "Annulla",
   "common.enable": "Attiva",
@@ -45,7 +45,6 @@
   "common.send": "Invia",
   "common.clear": "Cancella",
   "common.record": "Registra",
-
   "avatarScaling.title": "Scalatura avatar",
   "avatarScaling.subtitle": "La scalatura d'altezza OSC nativa di VRChat — funziona con qualsiasi avatar",
   "avatarScaling.enable": "Abilita la scalatura dell'avatar",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Registra il tasto per diminuire la scala",
   "avatarScaling.hotkeyHint": "Le scorciatoie funzionano a livello globale (anche quando VRChat è in primo piano). Se un tasto non viene registrato, puoi comunque usare il cursore sopra.",
   "avatarScaling.off": "La scalatura dell'avatar è disattivata",
-
   "translator.title": "Traduttore",
   "translator.provider": "Fornitore",
   "translator.endpoint": "URL dell'endpoint",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Lingua di destinazione",
   "translator.aiGrammarFix": "Correggi prima la grammatica con l'AI (utilizza il provider IntelliChat indicato sopra)",
   "translator.note": "Utilizzato dall'opzione di traduzione della chatbox in Live Typing e in qualsiasi altro punto dell'app in cui viene offerta l'opzione «Traduci prima di inviare».",
-
   "liveTyping.title": "Scrittura in tempo reale",
   "liveTyping.subtitle": "invia il testo mentre scrivi, come la chatbox nativa di VRChat",
   "liveTyping.placeholder": "Scrivi qui — il testo viene inviato automaticamente alla chatbox ogni pochi secondi mentre scrivi. Continua a scrivere oltre i 144 caratteri; VRChat mostrerà «…» + la parte finale del tuo messaggio.",
   "liveTyping.previewLabel": "Anteprima (cosa mostrerà VRChat):",
   "liveTyping.translateLabel": "Traduci prima di inviare (utilizza le impostazioni del Traduttore)",
-
   "languagePicker.title": "Scegli la tua lingua",
   "languagePicker.subtitle": "Puoi modificarlo in seguito nelle Impostazioni.",
   "languagePicker.continue": "Continua",
-
   "settingsLanguage.title": "Lingua",
   "settingsLanguage.label": "Lingua dell'app"
 }

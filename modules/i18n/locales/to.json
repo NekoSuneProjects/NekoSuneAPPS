@@ -23,6 +23,7 @@
   "nav.oscapps": "Ngaahi Polokalama OSC",
   "nav.vrctools": "Ngaahi Me'angaue VRChat",
   "nav.live": "Livi",
+  "nav.translation": "Liliu",
   "nav.oauth": "Ngaahi Ekaute OAuth",
   "nav.discord": "Discord",
   "nav.stats": "Sitatisitika",
@@ -33,7 +34,6 @@
   "nav.docs": "Ngaahi Pepa / Fokotu'utu'u",
   "nav.about": "Fekau'aki",
   "nav.log": "Lokí OSC",
-
   "common.save": "Tauhi",
   "common.cancel": "Tamate'i",
   "common.enable": "Fakaava",
@@ -45,7 +45,6 @@
   "common.send": "'Ave",
   "common.clear": "Fakama'a",
   "common.record": "Lekooti",
-
   "avatarScaling.title": "Fakafuofua Avata",
   "avatarScaling.subtitle": "Founga OSC tu'uma'u 'a VRChat ki hono fakafuofua'i 'o e ma'olunga — ngaue'aki 'i ha Avata pe",
   "avatarScaling.enable": "Fakaava 'a e fakafuofua Avata",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Lekooti 'a e kī fakasi'isi'i",
   "avatarScaling.hotkeyHint": "'Oku ngaue 'a e ngaahi kī vave 'i he feitu'u kotoa pe (neongo 'oku 'i ai 'a e tokanga 'a VRChat). Kapau 'oku 'ikai lava ke lekooti ha kī, 'oku lava pe ke ke ngaue'aki 'a e sitepu 'i 'olunga.",
   "avatarScaling.off": "Kuo ta'ofi 'a e fakafuofua Avata",
-
   "translator.title": "Liliu Lea",
   "translator.provider": "Tokotaha Tokoni",
   "translator.endpoint": "URL Ngata'anga",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Lea Taumu'a",
   "translator.aiGrammarFix": "Fakatonuhia 'uluaki 'a e kalama 'aki 'a e AI ('oku ngaue'aki 'a e tokotaha tokoni IntelliChat 'i 'olunga)",
   "translator.note": "'Oku ngaue'aki 'e he founga liliu lea 'a e puha fetalanoa 'i he Live Typing pea mo ha feitu'u kehe 'i he 'aupeleki 'oku 'omai ai 'a e fili \"Liliu lea ki mu'a ke 'ave.\"",
-
   "liveTyping.title": "Tohi Mo'oni Taimi",
   "liveTyping.subtitle": "'oku 'ave 'i ho'o tohi, hange ko e puha fetalanoa 'a VRChat tonu",
   "liveTyping.placeholder": "Tohi 'i heni — 'oku 'ave fakalele eni ki he puha fetalanoa 'i he ngaahi sekoni si'i 'i he taimi 'oku ke tohi ai. Hokohoko atu 'a e tohi 'o laka hifo 'i he 144 mata'itohi; 'e fakahaa'i 'e VRChat 'a e '…' fakataha mo e ngata'anga 'o e pōpoaki.",
   "liveTyping.previewLabel": "Sio Muomu'a (ko e me'a 'e fakahaa'i 'e VRChat):",
   "liveTyping.translateLabel": "Liliu lea ki mu'a ke 'ave ('oku ngaue'aki 'a e ngaahi fokotu'utu'u 'o e Liliu Lea)",
-
   "languagePicker.title": "Fili ho'o lea",
   "languagePicker.subtitle": "'E lava pe ke ke liliu 'eni 'amui 'i he Fokotu'utu'u.",
   "languagePicker.continue": "Hokohoko atu",
-
   "settingsLanguage.title": "Lea",
   "settingsLanguage.label": "Lea 'o e 'Aupeleki"
 }

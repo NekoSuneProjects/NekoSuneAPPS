@@ -15,6 +15,9 @@ const { RealisticOscLeashController } = require('./modules/integrations/osc/leas
 const { OscDigitalClock } = require('./modules/integrations/osc/clock/oscDigitalClock')
 const { OscQrController } = require('./modules/integrations/osc/qr/oscQrModule')
 const { ShazamOscController } = require('./modules/integrations/osc/recognition/shazamOscModule')
+const { DesktopSttController } = require('./modules/integrations/osc/stt/desktopSttModule')
+const { OcrTranslateController } = require('./modules/integrations/osc/ocr/ocrTranslateModule')
+const { JarvisAssistant } = require('./modules/vrchat/assistant/jarvisAssistant')
 const {
   getBleHeartRatePlatform,
   getBleHeartRatePlatforms,
@@ -4933,4 +4936,266 @@ async function translateWithSettings (text) {
   }
 }
 
+/* ---------------- text-to-speech ---------------- */
+const TTS_ROWS = {
+  sapi: ['ttsSapiRow'],
+  elevenlabs: ['ttsElevenRow'],
+  selfhosted: ['ttsSelfHostedRow']
+}
+function updateTtsRows () {
+  const engine = $('ttsEngine').value
+  const visible = new Set(TTS_ROWS[engine] || [])
+  ;['ttsSapiRow', 'ttsElevenRow', 'ttsSelfHostedRow'].forEach(id => { $(id).style.display = visible.has(id) ? '' : 'none' })
+}
+async function setupTts () {
+  const saved = await api.getSetting('tts', {
+    engine: 'sapi', sapiVoice: '', sapiRate: 0, elevenKey: '', elevenVoiceId: '', selfHostedEndpoint: '', outputDeviceId: ''
+  })
+  $('ttsEngine').value = saved.engine || 'sapi'
+  $('ttsSapiRate').value = saved.sapiRate || 0
+  $('ttsElevenKey').value = saved.elevenKey || ''
+  $('ttsElevenVoiceId').value = saved.elevenVoiceId || ''
+  $('ttsSelfHostedEndpoint').value = saved.selfHostedEndpoint || ''
+  updateTtsRows()
+
+  try {
+    const voices = await api.ttsSapiVoices()
+    $('ttsSapiVoice').innerHTML = ''
+    voices.forEach(v => $('ttsSapiVoice').appendChild(new Option(v, v)))
+    if (saved.sapiVoice) $('ttsSapiVoice').value = saved.sapiVoice
+  } catch (_) {}
+
+  await refreshTtsOutputDevices()
+  if (saved.outputDeviceId) $('ttsOutputDevice').value = saved.outputDeviceId
+
+  $('ttsEngine').addEventListener('change', async () => { updateTtsRows(); await saveTts() })
+  ;['ttsSapiVoice', 'ttsSapiRate', 'ttsElevenKey', 'ttsElevenVoiceId', 'ttsSelfHostedEndpoint', 'ttsOutputDevice']
+    .forEach(id => $(id).addEventListener('change', saveTts))
+}
+async function refreshTtsOutputDevices () {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices()
+    const sel = $('ttsOutputDevice')
+    const current = sel.value
+    sel.innerHTML = '<option value="">System default</option>'
+    devices.filter(d => d.kind === 'audiooutput').forEach(d => sel.appendChild(new Option(d.label || d.deviceId, d.deviceId)))
+    if ([...sel.options].some(o => o.value === current)) sel.value = current
+  } catch (_) {}
+}
+async function saveTts () {
+  await api.saveSetting('tts', {
+    engine: $('ttsEngine').value,
+    sapiVoice: $('ttsSapiVoice').value,
+    sapiRate: parseInt($('ttsSapiRate').value, 10) || 0,
+    elevenKey: $('ttsElevenKey').value,
+    elevenVoiceId: $('ttsElevenVoiceId').value,
+    selfHostedEndpoint: $('ttsSelfHostedEndpoint').value,
+    outputDeviceId: $('ttsOutputDevice').value
+  })
+}
+// Speak text using the saved TTS settings. Returns quietly on failure (the
+// callers - Live Typing, the assistant, etc. - shouldn't crash if TTS isn't
+// configured or a request fails).
+async function speakWithSettings (text) {
+  const t = await api.getSetting('tts', null)
+  if (!t || !t.engine) return
+  try {
+    const result = await api.ttsSpeak({
+      engine: t.engine, text,
+      voice: t.sapiVoice, rate: t.sapiRate,
+      apiKey: t.elevenKey, voiceId: t.elevenVoiceId,
+      endpoint: t.selfHostedEndpoint
+    })
+    if (result?.playedLocally) return // SAPI already played through the OS directly
+    if (!result?.audio) return
+    const audioEl = $('ttsEngineAudio')
+    if (t.outputDeviceId && typeof audioEl.setSinkId === 'function') {
+      try { await audioEl.setSinkId(t.outputDeviceId) } catch (_) {}
+    }
+    audioEl.src = `data:${result.mime || 'audio/mpeg'};base64,${result.audio}`
+    await audioEl.play().catch(() => {})
+  } catch (_) {}
+}
+$('ttsEngineTestSpeak').addEventListener('click', async () => {
+  const text = $('ttsEngineTestText').value.trim()
+  if (!text) return
+  setText('ttsEngineStatus', 'Speaking…')
+  await speakWithSettings(text)
+  setText('ttsEngineStatus', 'Done')
+})
+
+/* ---------------- desktop speech-to-text ---------------- */
+let desktopStt = null
+const STT_ROWS = { cloud: ['sttCloudRow'], local: ['sttLocalRow'] }
+function updateSttRows () {
+  const engine = $('sttEngine').value
+  const visible = new Set(STT_ROWS[engine] || [])
+  ;['sttCloudRow', 'sttLocalRow'].forEach(id => { $(id).style.display = visible.has(id) ? '' : 'none' })
+}
+function ensureDesktopStt () {
+  if (desktopStt) return desktopStt
+  desktopStt = new DesktopSttController({
+    transcribeCloud: opts => api.sttTranscribeCloud(opts),
+    transcribeLocal: opts => api.sttTranscribeLocal(opts),
+    translate: translateWithSettings,
+    sendChatboxMessage,
+    speakText: speakWithSettings,
+    onUpdate: renderSttState
+  })
+  return desktopStt
+}
+function renderSttState (s) {
+  setText('sttStatus', s.status + (s.error ? ` — ${s.error}` : ''))
+  setText('sttLastText', s.lastText ? `Heard: "${s.lastText}"${s.lastTranslated ? ` → "${s.lastTranslated}"` : ''}` : '')
+  $('sttToggle').textContent = s.live ? 'Stop listening' : 'Start listening'
+}
+async function saveSttConfig () {
+  const cloudProviders = await api.sttCloudProviders()
+  const provider = cloudProviders[$('sttCloudProvider').value] || cloudProviders.openai
+  const cfg = {
+    engine: $('sttEngine').value,
+    cloudProvider: $('sttCloudProvider').value,
+    cloudBaseUrl: provider.baseUrl,
+    cloudModel: provider.model,
+    cloudApiKey: $('sttCloudKey').value,
+    localModel: $('sttLocalModel').value,
+    sourceLang: $('sttSourceLang').value,
+    clipSeconds: parseInt($('sttClipSeconds').value, 10) || 6,
+    toChatbox: $('sttToChatbox').checked,
+    speakTranslation: $('sttSpeakTranslation').checked
+  }
+  await api.saveSetting('desktopStt', cfg)
+  ensureDesktopStt().configure({ ...cfg, cloudApiKey: cfg.cloudApiKey })
+  return cfg
+}
+async function setupDesktopStt () {
+  const saved = await api.getSetting('desktopStt', {
+    engine: 'cloud', cloudProvider: 'openai', cloudApiKey: '', localModel: 'tiny',
+    sourceLang: 'auto', clipSeconds: 6, toChatbox: false, speakTranslation: false
+  })
+  $('sttEngine').value = saved.engine || 'cloud'
+  $('sttCloudProvider').value = saved.cloudProvider || 'openai'
+  $('sttCloudKey').value = saved.cloudApiKey || ''
+  $('sttLocalModel').value = saved.localModel || 'tiny'
+  $('sttClipSeconds').value = saved.clipSeconds || 6
+  $('sttToChatbox').checked = !!saved.toChatbox
+  $('sttSpeakTranslation').checked = !!saved.speakTranslation
+  LANGUAGES.forEach(({ code, name }) => $('sttSourceLang').appendChild(new Option(name, code)))
+  $('sttSourceLang').value = saved.sourceLang || 'auto'
+  updateSttRows()
+  await saveSttConfig()
+
+  $('sttEngine').addEventListener('change', async () => { updateSttRows(); await saveSttConfig() })
+  ;['sttCloudProvider', 'sttCloudKey', 'sttLocalModel', 'sttSourceLang', 'sttClipSeconds', 'sttToChatbox', 'sttSpeakTranslation']
+    .forEach(id => $(id).addEventListener('change', saveSttConfig))
+}
+$('sttToggle').addEventListener('click', async () => {
+  const c = ensureDesktopStt()
+  await c.setLive(!c.live)
+})
+
+/* ---------------- OCR screen translate ---------------- */
+let ocrTranslate = null
+function ensureOcrTranslate () {
+  if (ocrTranslate) return ocrTranslate
+  ocrTranslate = new OcrTranslateController({
+    translate: translateWithSettings,
+    sendChatboxMessage,
+    onUpdate: renderOcrState
+  })
+  return ocrTranslate
+}
+function renderOcrState (s) {
+  setText('ocrStatus', s.status + (s.error ? ` — ${s.error}` : ''))
+  setText('ocrLastText', s.lastText ? `Read: "${s.lastText}"${s.lastTranslated ? ` → "${s.lastTranslated}"` : ''}` : '')
+  $('ocrToggle').textContent = s.enabled ? 'Stop reading' : 'Start reading'
+}
+async function saveOcrConfig () {
+  const cfg = { tesseractLang: $('ocrLang').value, intervalMs: parseInt($('ocrInterval').value, 10) || 3000, toChatbox: $('ocrToChatbox').checked }
+  await api.saveSetting('ocrTranslate', cfg)
+  if (ocrTranslate) ocrTranslate.configure(cfg)
+  return cfg
+}
+async function setupOcrTranslate () {
+  const saved = await api.getSetting('ocrTranslate', { tesseractLang: 'eng', intervalMs: 3000, toChatbox: false })
+  $('ocrLang').value = saved.tesseractLang || 'eng'
+  $('ocrInterval').value = saved.intervalMs || 3000
+  $('ocrToChatbox').checked = !!saved.toChatbox
+  ;['ocrLang', 'ocrInterval', 'ocrToChatbox'].forEach(id => $(id).addEventListener('change', saveOcrConfig))
+}
+$('ocrToggle').addEventListener('click', async () => {
+  const c = ensureOcrTranslate()
+  if (c.enabled) c.stop(); else { await c.configure(await saveOcrConfig()); await c.start() }
+})
+
+/* ---------------- voice assistant ---------------- */
+let jarvisAssistant = null
+function ensureJarvisAssistant () {
+  if (jarvisAssistant) return jarvisAssistant
+  jarvisAssistant = new JarvisAssistant({
+    transcribeCloud: opts => api.sttTranscribeCloud(opts),
+    transcribeLocal: opts => api.sttTranscribeLocal(opts),
+    interpretCommand: opts => api.assistantInterpret(opts),
+    sendChatboxMessage,
+    speakText: speakWithSettings,
+    getFriends: async () => { const r = await api.vrchatFriends(); return Array.isArray(r) ? r : (r?.friends || []) },
+    getMyLocation: () => api.vrcGet(),
+    resolveWorldName: async id => { const r = await api.vrchatWorldName(id); return typeof r === 'string' ? r : (r?.name || r?.worldName || '') },
+    getStatus: () => api.vrchatStatus(),
+    updateStatus: fields => api.vrchatUpdateProfile(fields),
+    invite: (id, instanceId) => api.vrchatInvite(id, instanceId),
+    onUpdate: renderAssistantState
+  })
+  return jarvisAssistant
+}
+function renderAssistantState (s) {
+  setText('assistantStatus', s.status + (s.error ? ` — ${s.error}` : ''))
+  setText('assistantHeard', s.lastHeard ? `Heard: "${s.lastHeard}"${s.lastReply ? ` → "${s.lastReply}"` : ''}` : '')
+  $('assistantToggle').textContent = s.live ? 'Stop listening' : 'Start listening'
+}
+async function saveAssistantConfig () {
+  const sttCfg = await api.getSetting('desktopStt', {})
+  const aiCfg = await api.getSetting('ai', {})
+  const cfg = {
+    wakeWord: $('assistantWakeWord').value.trim() || 'nova',
+    clipSeconds: parseInt($('assistantClipSeconds').value, 10) || 4,
+    trustedFriends: $('assistantTrustedFriends').value.split(',').map(s => s.trim()).filter(Boolean),
+    replayMinutes: parseInt($('assistantReplayMinutes').value, 10) || 5,
+    sosWebhook: $('assistantSosWebhook').value.trim(),
+    engine: sttCfg.engine || 'cloud',
+    cloudBaseUrl: sttCfg.cloudBaseUrl || '',
+    cloudApiKey: sttCfg.cloudApiKey || '',
+    cloudModel: sttCfg.cloudModel || '',
+    localModel: sttCfg.localModel || 'tiny',
+    aiBaseUrl: aiCfg.baseUrl || '',
+    aiApiKey: aiCfg.key || '',
+    aiModel: aiCfg.model || ''
+  }
+  await api.saveSetting('assistant', cfg)
+  ensureJarvisAssistant().configure(cfg)
+  return cfg
+}
+async function setupAssistant () {
+  const saved = await api.getSetting('assistant', { wakeWord: 'nova', clipSeconds: 4, trustedFriends: [], replayMinutes: 5, sosWebhook: '' })
+  $('assistantWakeWord').value = saved.wakeWord || 'nova'
+  $('assistantClipSeconds').value = saved.clipSeconds || 4
+  $('assistantTrustedFriends').value = (saved.trustedFriends || []).join(', ')
+  $('assistantReplayMinutes').value = String(saved.replayMinutes || 5)
+  $('assistantSosWebhook').value = saved.sosWebhook || ''
+  await saveAssistantConfig()
+  ;['assistantWakeWord', 'assistantClipSeconds', 'assistantTrustedFriends', 'assistantReplayMinutes', 'assistantSosWebhook']
+    .forEach(id => $(id).addEventListener('change', saveAssistantConfig))
+}
+$('assistantToggle').addEventListener('click', async () => {
+  const c = ensureJarvisAssistant()
+  await c.setLive(!c.live)
+})
+$('assistantSosButton').addEventListener('click', async () => {
+  await ensureJarvisAssistant().triggerSos()
+})
+
 init()
+setupTts()
+setupDesktopStt()
+setupOcrTranslate()
+setupAssistant()

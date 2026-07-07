@@ -6,6 +6,9 @@ out/
 build/
 *.log
 
+# Tesseract.js downloads its OCR language models into the cwd by default
+*.traineddata
+
 # OS / editor
 .DS_Store
 Thumbs.db

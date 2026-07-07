@@ -23,6 +23,7 @@
   "nav.oscapps": "OSC-Apps",
   "nav.vrctools": "VRChat-Tools",
   "nav.live": "Live",
+  "nav.translation": "Iwwersetzung",
   "nav.oauth": "OAuth-Konten",
   "nav.discord": "Discord",
   "nav.stats": "Statistiken",
@@ -33,7 +34,6 @@
   "nav.docs": "Dokumentatioun / Astellung",
   "nav.about": "Iwwer",
   "nav.log": "OSC-Logbuch",
-
   "common.save": "Späicheren",
   "common.cancel": "Ofbriechen",
   "common.enable": "Aschalten",
@@ -45,7 +45,6 @@
   "common.send": "Schécken",
   "common.clear": "Läschen",
   "common.record": "Ophuelen",
-
   "avatarScaling.title": "Avatar-Skaléierung",
   "avatarScaling.subtitle": "VRChat säin nativen OSC Héichte-Skaléierung — funktionnéiert mat all Avatar",
   "avatarScaling.enable": "Avatar-Skaléierung aschalten",
@@ -57,7 +56,6 @@
   "avatarScaling.recordDown": "Tast fir kleng ze maachen ophuelen",
   "avatarScaling.hotkeyHint": "Hotkeys funktionnéieren global (och wann VRChat de Fokus huet). Wann eng Tast net ophole gëtt, kanns du och de Schieber uewen benotzen.",
   "avatarScaling.off": "Avatar-Skaléierung ass aus",
-
   "translator.title": "Iwwersetzer",
   "translator.provider": "Ubidder",
   "translator.endpoint": "Endpunkt-URL",
@@ -67,17 +65,14 @@
   "translator.targetLang": "Zilsprooch",
   "translator.aiGrammarFix": "Grammatik als éischt mat AI korrigéieren (benotzt den IntelliChat-Ubidder uewen)",
   "translator.note": "Gëtt vun der Live-Typing Chatbox-Iwwersetzungsoptioun benotzt, a soss iwwerall an der App, wou \"Virun dem Schécken iwwersetzen\" ugebueden gëtt.",
-
   "liveTyping.title": "Live Typing",
   "liveTyping.subtitle": "schéckt beim Schreiwen, wéi VRChat sengem eegenen Chatbox",
   "liveTyping.placeholder": "Schreif hei — dëst gëtt automatesch all puer Sekonnen un de Chatbox geschéckt, wärend s du schreifs. Schreif einfach weider iwwer 144 Zeechen eraus; VRChat weist '…' + d'Enn vun denger Noriicht.",
   "liveTyping.previewLabel": "Virschau (wat VRChat weisen wäert):",
   "liveTyping.translateLabel": "Virun dem Schécken iwwersetzen (benotzt d'Iwwersetzer-Astellungen)",
-
   "languagePicker.title": "Wiel deng Sprooch",
   "languagePicker.subtitle": "Du kanns dëst méi spéit an den Astellungen änneren.",
   "languagePicker.continue": "Weider",
-
   "settingsLanguage.title": "Sprooch",
   "settingsLanguage.label": "App-Sprooch"
 }
