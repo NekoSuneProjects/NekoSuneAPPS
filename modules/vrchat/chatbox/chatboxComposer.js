@@ -81,6 +81,7 @@ class ChatboxComposer {
       twitchFollowers: 0, twitchViewers: 0, twitchLive: false,
       kickFollowers: 0, kickViewers: 0, kickLive: false,
       discordChannel: '', discordUsers: 0, discordMute: false, discordDeaf: false,
+      weather: '',
       // ToNSaveManager (Terrors of Nowhere)
       tonConnected: false, tonRoundActive: false, tonRound: '', tonTerror: '', tonMap: '',
       tonAlive: true, tonPlayers: 0, tonRounds: 0, tonDeaths: 0, tonSurvivals: 0,
@@ -135,7 +136,7 @@ class ChatboxComposer {
       // heart rate
       hr: d.hr, hravg: d.hrAvg, hrmax: d.hrMax, hrmin: d.hrMin,
       // window / world
-      window: this.windowText(), world: d.world,
+      window: this.windowText(), world: d.world, weather: d.weather,
       // TikTok - separate data points
       tiktok: n(d.tiktokFollowers), tiktoklive: n(d.tiktokViewers),
       tiktoklikes: n(d.tiktokLikes), tiktokvideos: n(d.tiktokVideos), tiktoknew: n(d.tiktokNew),

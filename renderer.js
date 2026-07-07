@@ -2904,9 +2904,10 @@ function applyWeather () {
 ;['weatherEnable', 'weatherCity', 'weatherUnits'].forEach(id => $(id).addEventListener('change', applyWeather))
 api.on('weather:update', s => {
   if (s && s.ok) {
+    const weatherText = `${s.desc} · ${s.temp}${s.unit} (feels ${s.feels}${s.unit}) · wind ${s.wind} ${s.windUnit}`
     setText('weatherOut', `${s.desc} · ${s.temp}${s.unit} (feels ${s.feels}${s.unit})`)
     setText('weatherSub', `${s.city} · wind ${s.wind} ${s.windUnit} · use {weather} in a preset`)
-    composer.update({ weather: `${s.desc} ${s.temp}${s.unit}` })
+    composer.update({ weather: weatherText })
   } else { setText('weatherOut', '—'); if (s && s.error) setText('weatherSub', s.error) }
 })
 
