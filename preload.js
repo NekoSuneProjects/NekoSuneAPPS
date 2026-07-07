@@ -8,6 +8,7 @@ window.electronAPI = {
   saveSetting: (key, value) => ipcRenderer.invoke('saveSetting', key, value),
   getOscPort: () => ipcRenderer.invoke('getOscPort'),
   updateOscPort: port => ipcRenderer.send('updateOscPort', port),
+  updateOscTargets: targets => ipcRenderer.send('updateOscTargets', targets),
 
   // now playing / overlay
   getNowPlaying: () => ipcRenderer.invoke('getNowPlaying'),

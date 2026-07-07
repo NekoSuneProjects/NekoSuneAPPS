@@ -19,6 +19,12 @@ playing, Discord, world radar & more, in one polished themed app.
 
 | Module | What it does | Needs |
 | --- | --- | --- |
+| **Live Typing** | Sends chatbox text while you type, with optional translate-before-send | VRChat OSC; optional translator |
+| **Translation & Speech** | Translator settings, TikTok TTS, hosted/custom LibreTranslate, DeepL, Google, MyMemory, and STT/TTS roadmap | optional provider endpoint/API key |
+| **Multi-client OSC** | Mirror outgoing OSC to extra VRChat clients and listen on extra receive ports | extra VRChat OSC ports |
+| **Avatar Scaling** | VRChat native OSC height scaling from `0.01` to `10000.00`, with global hotkeys | VRChat OSC |
+| **Avatar Search Providers** | Built-in VRCX-style avatar search providers plus custom endpoint support | external avatar search endpoint |
+| **Localization** | App language picker and locale foundation with English fallback | ongoing translation coverage |
 | 💬 **Chatbox** | Type to VRChat + auto-rotate live data lines | — |
 | 📝 **Status presets** | Templated lines with `{tokens}` | — |
 | 🔊 **AudioLink** | Low/Bass/Mid/Treble spectrum over OSC | audio output device |
@@ -61,7 +67,25 @@ In VRChat, enable **OSC** (Action Menu → Options → OSC → Enabled). NekoSun
 to `127.0.0.1:9000` and can receive on `9001` (configurable in **Settings** — receive
 must be **on** for KAT, SpotiOSC and DiscordOSC).
 
+For multiple VRChat clients, add optional extra ports in **Settings -> OSC**. Example:
+primary VRChat `9000`/`9001`, second VRChat `9002`/`9003`; add `127.0.0.1:9002` as an
+extra send target and `9003` as an extra receive port.
+
 The sidebar is grouped into **VRChat**, **Tools**, and **General**.
+
+### Recent integrations
+
+- **Live Typing** sends chatbox text as you type and can translate before sending.
+- **Translator** supports LibreTranslate, DeepL, and Google Translate provider settings.
+- **Avatar Scaling** uses VRChat's native OSC height-scaling params and supports precise
+  values from `0.01` to `10000.00`, plus optional global hotkeys.
+- **Localization** adds an app language picker and locale files with English fallback.
+- **Multiple VRChat clients** can be targeted from **Settings -> OSC**. Keep the first
+  client on `9000`/`9001`; if a second client uses `9002`/`9003`, add
+  `127.0.0.1:9002` under extra send targets and `9003` under extra receive ports.
+  Outgoing chatbox, params, AudioLink, KAT text, DiscordOSC, and Avatar Scaling
+  messages are mirrored to extra send ports. OSC listeners can also hear the extra
+  receive ports while receive is enabled or another feature is listening.
 
 ---
 
@@ -118,6 +142,9 @@ The sidebar is grouped into **VRChat**, **Tools**, and **General**.
   `channel:read:redemptions` for counters and Twitch Interactive.
 - **Kick**: your channel slug (after `kick.com/`).
 - **OpenAI / compatible**: an API key from your provider.
+- **Translator**: choose LibreTranslate, DeepL, or Google Translate in Settings.
+  LibreTranslate needs your own `/translate` endpoint; DeepL and Google need API keys.
+  Live Typing can translate text before sending it to the VRChat chatbox.
 
 ---
 

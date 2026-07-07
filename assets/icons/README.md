@@ -49,6 +49,7 @@ matching icon files.
 | `oscapps.svg` | OSC Apps | a rounded electrical plug with a signal node |
 | `vrctools.png` | VRChat Tools | a wrench and screwdriver crossed (toolbox) |
 | `live.png` | Live | a broadcast tower emitting signal waves |
+| `translation.png` | Translation | a globe with two speech bubbles |
 | `oauth.svg` | OAuth Accounts | a key with two small connected authorization nodes |
 | `discord.png` | Discord | a rounded voice-chat bubble with a small headset (avoid the Discord logo) |
 | `stats.png` | Stats | a bar chart with three rising bars |

@@ -59,6 +59,7 @@ const config = {
   accessToken: '', // persisted so we don't re-authorize every launch
   oscIp: '127.0.0.1',
   oscPort: 9000,
+  extraOscTargets: [],
   enableRichPresence: true,
   rpDetails: 'In VRChat',
   rpState: 'via NekoSuneAPPS',
@@ -109,7 +110,10 @@ function emit () {
 }
 
 function sendOsc (buffer) {
-  oscSocket.send(buffer, config.oscPort, config.oscIp, err => { if (err) console.warn('Discord OSC error:', err.message) })
+  const targets = [{ host: config.oscIp, port: config.oscPort }, ...(Array.isArray(config.extraOscTargets) ? config.extraOscTargets : [])]
+  targets.forEach(target => {
+    oscSocket.send(buffer, target.port, target.host || config.oscIp, err => { if (err) console.warn('Discord OSC error:', err.message) })
+  })
 }
 
 function pushVoiceOsc () {
@@ -357,5 +361,6 @@ async function stopDiscord () {
 
 function updateActivity (activity) { setActivity(activity) }
 function getDiscordState () { return { ...state } }
+function setExtraOscTargets (targets = []) { config.extraOscTargets = Array.isArray(targets) ? targets : [] }
 
-module.exports = { startDiscord, stopDiscord, updateActivity, setVrcContext, getDiscordState }
+module.exports = { startDiscord, stopDiscord, updateActivity, setVrcContext, getDiscordState, setExtraOscTargets }

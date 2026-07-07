@@ -30,7 +30,7 @@ const { translateText, TRANSLATE_PROVIDERS } = require('./modules/ai/translatePr
 const i18n = require('./modules/i18n/i18n')
 const { loginTwitch, TWITCH_REDIRECT } = require('./modules/oauth/providers/twitch')
 const twitchInteractive = require('./modules/live/twitch/interactive')
-const { startDiscord, stopDiscord, updateActivity, setVrcContext } = require('./modules/integrations/discord/discord')
+const { startDiscord, stopDiscord, updateActivity, setVrcContext, setExtraOscTargets: setDiscordExtraOscTargets } = require('./modules/integrations/discord/discord')
 const { startVrcWorld, stopVrcWorld, getVrcWorld } = require('./modules/vrchat/world/vrchatWorld')
 const { startVrBattery, stopVrBattery } = require('./modules/vrchat/vr/vrBattery')
 const vrchatApi = require('./modules/vrchat/api/vrchatApi')
@@ -237,6 +237,8 @@ app.whenReady().then(async () => {
   }
   tonData.init(app.getPath('userData')) // load/refresh the offline ToN reference cache
   tonManager.init(app.getPath('userData'))
+  osc.setExtraOscTargets(settings.get('extraOscTargets', []))
+  setDiscordExtraOscTargets(settings.get('extraOscTargets', []))
   // Restore the ToN Tablet OSC proxy (sends avatar params on each ToN update).
   if (settings.get('tonOscEnabled', false)) { osc.setOscPort(settings.get('oscPort', 9000)); tonOsc.setEnabled(true) }
   const savedRusk = settings.get('oscApps.ruskLaserdome', {})
@@ -290,6 +292,12 @@ ipcMain.handle('getSetting', (e, key, def) => settings.get(key, def))
 ipcMain.handle('saveSetting', (e, key, value) => { settings.set(key, value); return value })
 ipcMain.handle('getOscPort', () => settings.get('oscPort', 9000))
 ipcMain.on('updateOscPort', (e, port) => settings.set('oscPort', port))
+ipcMain.on('updateOscTargets', (e, targets) => {
+  const value = Array.isArray(targets) ? targets : []
+  osc.setExtraOscTargets(value)
+  setDiscordExtraOscTargets(value)
+  settings.set('extraOscTargets', value)
+})
 ipcMain.handle('saveOscPort', (e, port) => { settings.set('oscPort', port); return port })
 ipcMain.handle('getNowPlaying', () => getNowPlaying())
 ipcMain.handle('nowPlaying:sources', () => ({ sources: getSources(), preferred: getPreferredSource() }))
@@ -988,7 +996,7 @@ ipcMain.handle('oauth:twitchLogin', async (e, { clientId, clientSecret, scopes }
 /* ------------------------------------------------------------------ */
 ipcMain.handle('discord:start', async (e, cfg) => {
   const oscPort = settings.get('oscPort', 9000)
-  const r = await startDiscord({ ...(cfg || {}), oscPort }, s => push('discord:update', s))
+  const r = await startDiscord({ ...(cfg || {}), oscPort, extraOscTargets: settings.get('extraOscTargets', []) }, s => push('discord:update', s))
   // Seed the presence with the world we've already detected.
   const w = getVrcWorld()
   setVrcContext({ worldName: w.inWorld ? w.worldName : '', joinUrl: w.joinUrl, worldUrl: w.worldUrl, profileUrl: w.profileUrl })
@@ -1276,17 +1284,20 @@ async function pollNotifications () {
   if (!vrchatApi.isLoggedIn() || vrchatApi.isRateLimited()) return
   const r = await vrchatApi.getNotifications()
   if (!r.ok) return
+  const activeIds = []
   for (const n of r.notifications) {
     const p = parseNotif(n)
-    if (gamelog.upsertNotif(p)) { push('notif:new', p); gamelog.log('alert', p.sender || p.type, notifText(p), p.world) }
+    if (p.id) activeIds.push(p.id)
+    if (gamelog.upsertNotif(p)) push('notif:new', p)
   }
+  gamelog.reconcileNotifs(activeIds)
   push('notif:update')
 }
 function startNotifPoll () { stopNotifPoll(); pollNotifications(); notifTimer = setInterval(pollNotifications, 60000) }
 function stopNotifPoll () { if (notifTimer) { clearInterval(notifTimer); notifTimer = null } }
 ipcMain.handle('notif:list', () => gamelog.listNotifs())
-ipcMain.handle('notif:dismiss', async (e, id) => { await vrchatApi.hideNotification(id); gamelog.removeNotif(id); return true })
-ipcMain.handle('notif:accept', async (e, id) => { const r = await vrchatApi.acceptFriendRequest(id); if (r.ok) gamelog.removeNotif(id); return r })
+ipcMain.handle('notif:dismiss', async (e, id) => { await vrchatApi.hideNotification(id); gamelog.removeNotif(id, 'dismissed'); return true })
+ipcMain.handle('notif:accept', async (e, id) => { const r = await vrchatApi.acceptFriendRequest(id); if (r.ok) gamelog.removeNotif(id, 'accepted'); return r })
 ipcMain.handle('notif:clear', () => { gamelog.clearNotifs(); return true })
 ipcMain.handle('notif:unreadCount', () => gamelog.unreadNotifCount())
 ipcMain.handle('notif:markAllRead', () => { gamelog.markAllNotifsRead(); return true })

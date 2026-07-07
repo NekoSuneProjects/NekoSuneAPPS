@@ -6,7 +6,9 @@
 const axios = require('axios')
 
 const TRANSLATE_PROVIDERS = {
-  libretranslate: { label: 'LibreTranslate', needsEndpoint: true, needsKey: false },
+  libretranslate: { label: 'NekoSuneVR LibreTranslate', needsEndpoint: true, needsKey: false, endpoint: 'https://translator.nekosunevr.co.uk/translate' },
+  libretranslate_custom: { label: 'LibreTranslate (custom)', needsEndpoint: true, needsKey: false, endpoint: '' },
+  mymemory: { label: 'MyMemory (no API key)', needsEndpoint: false, needsKey: false },
   deepl: { label: 'DeepL', needsEndpoint: false, needsKey: true },
   google: { label: 'Google Translate', needsEndpoint: false, needsKey: true }
 }
@@ -61,6 +63,15 @@ async function translateGoogle ({ apiKey, source, target, text }) {
   return { translatedText: translation?.translatedText || text, detectedSourceLang: translation?.detectedSourceLanguage }
 }
 
+async function translateMyMemory ({ source, target, text }) {
+  const langpair = `${source && source !== 'auto' ? source : 'auto'}|${target || 'en'}`
+  const res = await axios.get('https://api.mymemory.translated.net/get', {
+    params: { q: text, langpair },
+    timeout: 20000
+  })
+  return { translatedText: res.data?.responseData?.translatedText || text }
+}
+
 async function translateText (opts = {}) {
   const { provider, text } = opts
   const input = String(text || '').trim()
@@ -70,7 +81,9 @@ async function translateText (opts = {}) {
     switch (provider) {
       case 'deepl': return await translateDeepl(opts)
       case 'google': return await translateGoogle(opts)
+      case 'mymemory': return await translateMyMemory(opts)
       case 'libretranslate': return await translateLibreTranslate(opts)
+      case 'libretranslate_custom': return await translateLibreTranslate(opts)
       default: throw new Error(`Unknown translation provider: ${provider}`)
     }
   } catch (err) {

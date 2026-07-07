@@ -2,7 +2,7 @@
 const { loadAudioDevices, setupAudioAnalysis, stopAudioAnalysis } = require('./modules/vrchat/audio/audioModule')
 const {
   setOscPort, setOscReceiverPort, sendOsc, sendParam, sendBeat, sendChatboxMessage,
-  startOscReceiver, stopOscReceiver, addOscListener
+  startOscReceiver, stopOscReceiver, addOscListener, setExtraOscTargets, setExtraOscReceiverPorts
 } = require('./modules/vrchat/osc/oscModule')
 const { KatOscText } = require('./modules/vrchat/osc/katOscText')
 const { AvatarScalingController } = require('./modules/vrchat/osc/avatarScaling')
@@ -28,6 +28,26 @@ const BLE_OPTIONAL_SERVICES = getBleHeartRateOptionalServices()
 
 const api = window.electronAPI
 const $ = id => document.getElementById(id)
+
+;(function moveTranslationCards () {
+  const target = $('translationCards')
+  if (!target) return
+  ;['ttsText', 'aiProvider', 'translatorProvider'].forEach(id => {
+    const el = $(id)
+    const card = el && el.closest('.card')
+    if (card) target.appendChild(card)
+  })
+})()
+
+;(function moveTonToolCards () {
+  const target = $('tonToolsCards')
+  if (!target) return
+  ;['tonOscEnable', 'essAudio'].forEach(id => {
+    const el = $(id)
+    const card = el && el.closest('.card')
+    if (card) target.appendChild(card)
+  })
+})()
 
 // Custom sidebar icons: for each nav button, try assets/icons/<data-tab>.png (then
 // .svg). If found, swap it in for the emoji; if not, the emoji stays. Lets icons be
@@ -392,7 +412,7 @@ function getKatSyncParamsSetting () {
 }
 function startKat () {
   if (katText) return
-  katText = new KatOscText({ oscPort: getSendPort(), syncParams: getKatSyncParamsSetting() })
+  katText = new KatOscText({ oscPort: getSendPort(), extraOscTargets: parseOscTargetsText($('extraOscTargets')?.value || ''), syncParams: getKatSyncParamsSetting() })
   katText.onStatus = msg => setText('katNowPlayingStatus', msg)
   removeKatListener = addOscListener((a, args) => katText.handleOscInput(a, args), getRecvPort())
   katText.start(); katText.setText(lastKatText)
@@ -423,11 +443,35 @@ $('katSyncParamsCustom').addEventListener('change', async e => {
 let avatarScaling = null
 let removeAvatarScalingListener = null
 const avatarScalingHotkeys = { keyUp: null, keyDown: null }
+const AVATAR_SCALE_MIN = 0.01
+const AVATAR_SCALE_MAX = 10000
+const AVATAR_SCALE_LOG_MIN = Math.log10(AVATAR_SCALE_MIN)
+const AVATAR_SCALE_LOG_MAX = Math.log10(AVATAR_SCALE_MAX)
+
+function clampAvatarScale (value) {
+  if (!Number.isFinite(value)) return 1
+  return Math.max(AVATAR_SCALE_MIN, Math.min(AVATAR_SCALE_MAX, value))
+}
+
+function avatarScaleToSlider (scale) {
+  const safeScale = clampAvatarScale(scale)
+  return (Math.log10(safeScale) - AVATAR_SCALE_LOG_MIN) / (AVATAR_SCALE_LOG_MAX - AVATAR_SCALE_LOG_MIN)
+}
+
+function avatarSliderToScale (sliderValue) {
+  const t = Math.max(0, Math.min(1, Number(sliderValue)))
+  return 10 ** (AVATAR_SCALE_LOG_MIN + t * (AVATAR_SCALE_LOG_MAX - AVATAR_SCALE_LOG_MIN))
+}
+
+function formatAvatarScale (scale) {
+  return clampAvatarScale(scale).toFixed(2)
+}
 
 function ensureAvatarScaling () {
   if (avatarScaling) return avatarScaling
   avatarScaling = new AvatarScalingController({
     oscPort: getSendPort(),
+    extraOscTargets: parseOscTargetsText($('extraOscTargets')?.value || ''),
     useSafety: $('avatarScalingSafety').checked,
     saveScaleBetweenWorlds: $('avatarScalingSaveWorlds').checked,
     smoothing: parseInt($('avatarScalingSmoothing').value, 10) || 50
@@ -438,9 +482,9 @@ function ensureAvatarScaling () {
 }
 
 function renderAvatarScalingState (s) {
-  $('avatarScalingSlider').value = Math.min(10, s.scale)
-  $('avatarScalingValue').value = s.scale.toFixed(2)
-  setText('avatarScalingOut', s.connected ? `Avatar scaling on — ${s.scale.toFixed(2)}m` : 'Avatar scaling is off')
+  $('avatarScalingSlider').value = avatarScaleToSlider(s.scale)
+  $('avatarScalingValue').value = formatAvatarScale(s.scale)
+  setText('avatarScalingOut', s.connected ? `Avatar scaling on — ${formatAvatarScale(s.scale)}m` : 'Avatar scaling is off')
 }
 
 async function startAvatarScaling () {
@@ -460,13 +504,14 @@ $('avatarScalingEnable').addEventListener('change', async e => {
   if (e.target.checked) startAvatarScaling(); else stopAvatarScaling()
 })
 $('avatarScalingSlider').addEventListener('input', e => {
-  const v = parseFloat(e.target.value)
-  $('avatarScalingValue').value = v
+  const v = avatarSliderToScale(e.target.value)
+  $('avatarScalingValue').value = formatAvatarScale(v)
   ensureAvatarScaling().setScale(v)
 })
 $('avatarScalingValue').addEventListener('change', e => {
-  const v = parseFloat(e.target.value)
+  const v = clampAvatarScale(parseFloat(e.target.value))
   if (!Number.isFinite(v)) return
+  e.target.value = formatAvatarScale(v)
   ensureAvatarScaling().setScale(v)
 })
 $('avatarScalingSafety').addEventListener('change', async e => {
@@ -546,13 +591,74 @@ setInterval(refreshNowPlaying, 10000)
 /* ---------------- OSC settings ---------------- */
 function getSendPort () { const p = parseInt($('portInput').value, 10); return Number.isFinite(p) ? p : 9000 }
 function getRecvPort () { const p = parseInt($('receiverPortInput').value, 10); return Number.isFinite(p) ? p : 9001 }
+function parseOscTargetsText (text) {
+  return String(text || '')
+    .split(/\r?\n|,/)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map(line => {
+      const match = line.match(/^(?:(.+):)?(\d+)$/)
+      if (!match) return null
+      const port = parseInt(match[2], 10)
+      if (!Number.isFinite(port) || port < 1 || port > 65535) return null
+      return { host: (match[1] || '127.0.0.1').trim() || '127.0.0.1', port }
+    })
+    .filter(Boolean)
+}
+
+function oscTargetsToText (targets) {
+  return (Array.isArray(targets) ? targets : [])
+    .map(t => `${t.host || '127.0.0.1'}:${t.port}`)
+    .join('\n')
+}
+
+function parseOscPortsText (text) {
+  return String(text || '')
+    .split(/\r?\n|,/)
+    .map(line => parseInt(line.trim(), 10))
+    .filter(port => Number.isFinite(port) && port > 0 && port <= 65535)
+    .filter((port, index, list) => list.indexOf(port) === index)
+}
+
+function oscPortsToText (ports) {
+  return (Array.isArray(ports) ? ports : []).join('\n')
+}
+
+async function applyExtraOscTargets (targets) {
+  setExtraOscTargets(targets)
+  if (katText && typeof katText.setExtraOscTargets === 'function') katText.setExtraOscTargets(targets)
+  if (avatarScaling && typeof avatarScaling.setExtraOscTargets === 'function') avatarScaling.setExtraOscTargets(targets)
+  if (api.updateOscTargets) api.updateOscTargets(targets)
+}
+
 $('portInput').addEventListener('change', async e => {
   const p = parseInt(e.target.value, 10)
   if (!isNaN(p)) { setOscPort(p); if (katText) katText.setOscPort(p); await api.saveSetting('oscPort', p); api.updateOscPort(p) }
 })
+$('extraOscTargets').addEventListener('change', async e => {
+  const targets = parseOscTargetsText(e.target.value)
+  e.target.value = oscTargetsToText(targets)
+  await applyExtraOscTargets(targets)
+  await api.saveSetting('extraOscTargets', targets)
+  setText('extraOscTargetsOut', targets.length ? `Mirroring OSC to ${targets.length} extra target(s).` : 'Only the primary OSC send port is used.')
+})
+$('extraOscReceivers').addEventListener('change', async e => {
+  const ports = parseOscPortsText(e.target.value).filter(port => port !== getRecvPort())
+  e.target.value = oscPortsToText(ports)
+  setExtraOscReceiverPorts(ports)
+  await api.saveSetting('extraOscReceivers', ports)
+  setText('extraOscReceiversOut', ports.length ? `Listening on ${ports.length} extra receive port(s).` : 'Only the primary receive port is used.')
+})
 $('receiverPortInput').addEventListener('change', async e => {
   const p = parseInt(e.target.value, 10)
-  if (!isNaN(p)) { setOscReceiverPort(p); await api.saveSetting('receiverPort', p) }
+  if (!isNaN(p)) {
+    setOscReceiverPort(p)
+    const ports = parseOscPortsText($('extraOscReceivers').value).filter(port => port !== p)
+    $('extraOscReceivers').value = oscPortsToText(ports)
+    setExtraOscReceiverPorts(ports)
+    await api.saveSetting('extraOscReceivers', ports)
+    await api.saveSetting('receiverPort', p)
+  }
 })
 $('enableReceive').addEventListener('change', async e => {
   await api.saveSetting('receiveEnabled', e.target.checked)
@@ -2369,7 +2475,7 @@ $('tonOscRaw').addEventListener('click', async () => {
     return `${t}  ${JSON.stringify(r.msg)}`
   }).join('\n') || 'No ToN WebSocket messages yet — connect ToNSaveManager and join a round.'
 })
-document.querySelector('[data-tab="tools"]').addEventListener('click', loadTonOsc)
+document.querySelector('[data-tab="tonref"]').addEventListener('click', loadTonOsc)
 
 /* ---------------- OSC companion apps ---------------- */
 let removeRealisticLeashListener = null
@@ -4419,6 +4525,14 @@ async function init () {
   // restore settings
   $('portInput').value = await api.getSetting('oscPort', 9000); setOscPort(getSendPort())
   $('receiverPortInput').value = await api.getSetting('receiverPort', 9001)
+  const savedExtraOscTargets = await api.getSetting('extraOscTargets', [])
+  $('extraOscTargets').value = oscTargetsToText(savedExtraOscTargets)
+  await applyExtraOscTargets(savedExtraOscTargets)
+  setText('extraOscTargetsOut', savedExtraOscTargets.length ? `Mirroring OSC to ${savedExtraOscTargets.length} extra target(s).` : 'Only the primary OSC send port is used.')
+  const savedExtraOscReceivers = await api.getSetting('extraOscReceivers', [])
+  $('extraOscReceivers').value = oscPortsToText(savedExtraOscReceivers)
+  setExtraOscReceiverPorts(savedExtraOscReceivers)
+  setText('extraOscReceiversOut', savedExtraOscReceivers.length ? `Listening on ${savedExtraOscReceivers.length} extra receive port(s).` : 'Only the primary receive port is used.')
   $('enableReceive').checked = await api.getSetting('receiveEnabled', false)
   await restoreRealisticLeash()
   await restoreOscDigitalClock()
@@ -4442,7 +4556,7 @@ async function init () {
 
   const avatarScalingEnabled = await api.getSetting('avatarScalingEnabled', false)
   $('avatarScalingEnable').checked = avatarScalingEnabled
-  const asSafety = await api.getSetting('avatarScalingSafety', true)
+  const asSafety = await api.getSetting('avatarScalingSafety', false)
   $('avatarScalingSafety').checked = asSafety
   $('avatarScalingSaveWorlds').checked = await api.getSetting('avatarScalingSaveWorlds', false)
   const asSmoothing = await api.getSetting('avatarScalingSmoothing', 50)
@@ -4620,7 +4734,7 @@ async function init () {
 
   // ---- Startup / auto-start ----
   const as = await api.getSetting('autostart', {})
-  const AUTO_IDS = ['autoMinimized', 'autoDiscord', 'autoHeartrate', 'autoStats', 'autoNet', 'autoWindow', 'autoTon', 'autoTwitch', 'autoKick']
+  const AUTO_IDS = ['autoMinimized', 'autoDiscord', 'autoHeartrate', 'autoStats', 'autoNet', 'autoWindow', 'autoTon', 'autoTikTokFollowers', 'autoTwitch', 'autoKick']
   AUTO_IDS.forEach(id => { $(id).checked = !!as[id] })
   try { $('autoLaunch').checked = await api.getLaunchOnLogin() } catch (_) {}
 
@@ -4640,6 +4754,7 @@ async function init () {
   if (as.autoNet) fireToggle('enableNet')
   if (as.autoWindow) fireToggle('enableWindow')
   if (as.autoTon) fireToggle('enableTon')
+  if (as.autoTikTokFollowers && $('tiktokUser').value.trim()) api.tiktokFollowersStart($('tiktokUser').value)
   if (as.autoTwitch) $('twitchConnect').click()
   if (as.autoKick) $('kickConnect').click()
 
@@ -4660,9 +4775,18 @@ async function setupAiProviders () {
   $('aiModel').value = saved.model || providers[sel.value]?.model || ''
   $('aiKey').value = saved.key || ''
 
+  function applyAiProviderLock () {
+    const p = providers[sel.value]
+    const locked = !!p?.locked
+    $('aiBaseUrl').disabled = locked
+    $('aiModel').disabled = locked
+  }
+  applyAiProviderLock()
+
   sel.addEventListener('change', async () => {
     const p = providers[sel.value]
     if (p && sel.value !== 'custom') { $('aiBaseUrl').value = p.baseUrl; $('aiModel').value = p.model }
+    applyAiProviderLock()
     await saveAi()
   })
   ;['aiBaseUrl', 'aiModel', 'aiKey'].forEach(id => $(id).addEventListener('change', saveAi))
@@ -4676,6 +4800,7 @@ async function saveAi () {
 
 const TRANSLATOR_ROWS = {
   libretranslate: ['translatorEndpointRow'],
+  libretranslate_custom: ['translatorEndpointRow', 'translatorKeyRow'],
   deepl: ['translatorKeyRow', 'translatorDeeplTypeRow'],
   google: ['translatorKeyRow']
 }
@@ -4687,6 +4812,10 @@ function updateTranslatorRows () {
   })
 }
 async function setupTranslator () {
+  const providers = await api.translateProviders()
+  const providerSel = $('translatorProvider')
+  providerSel.innerHTML = ''
+  Object.entries(providers).forEach(([key, p]) => providerSel.appendChild(new Option(p.label, key)))
   const sourceSel = $('translatorSource')
   const targetSel = $('translatorTarget')
   LANGUAGES.forEach(({ code, name }) => {
@@ -4695,11 +4824,11 @@ async function setupTranslator () {
   })
 
   const saved = await api.getSetting('translator', {
-    provider: 'libretranslate', endpoint: '', apiKey: '', apiType: 'free',
+    provider: 'libretranslate', endpoint: providers.libretranslate?.endpoint || 'https://translator.nekosunevr.co.uk/translate', apiKey: '', apiType: 'free',
     sourceLang: 'auto', targetLang: 'en', useAiGrammarFix: false
   })
   $('translatorProvider').value = saved.provider || 'libretranslate'
-  $('translatorEndpoint').value = saved.endpoint || ''
+  $('translatorEndpoint').value = saved.endpoint || providers[$('translatorProvider').value]?.endpoint || ''
   $('translatorApiKey').value = saved.apiKey || ''
   $('translatorDeeplType').value = saved.apiType || 'free'
   $('translatorSource').value = saved.sourceLang || 'auto'
@@ -4707,7 +4836,12 @@ async function setupTranslator () {
   $('translatorAiGrammarFix').checked = !!saved.useAiGrammarFix
   updateTranslatorRows()
 
-  $('translatorProvider').addEventListener('change', async () => { updateTranslatorRows(); await saveTranslator() })
+  $('translatorProvider').addEventListener('change', async () => {
+    const p = providers[$('translatorProvider').value]
+    if (p && p.endpoint !== undefined) $('translatorEndpoint').value = p.endpoint || ''
+    updateTranslatorRows()
+    await saveTranslator()
+  })
   ;['translatorEndpoint', 'translatorApiKey', 'translatorDeeplType', 'translatorSource', 'translatorTarget', 'translatorAiGrammarFix']
     .forEach(id => $(id).addEventListener('change', saveTranslator))
 }

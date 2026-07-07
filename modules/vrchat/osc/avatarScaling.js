@@ -36,6 +36,7 @@ class AvatarScalingController {
     this.config = { ...DEFAULT_CONFIG, ...config }
     this.oscIp = this.config.oscIp
     this.oscPort = this.config.oscPort
+    this.extraOscTargets = Array.isArray(this.config.extraOscTargets) ? this.config.extraOscTargets : []
     this.useSafety = this.config.useSafety
     this.saveScaleBetweenWorlds = this.config.saveScaleBetweenWorlds
     this.smoothing = this.config.smoothing
@@ -80,6 +81,10 @@ class AvatarScalingController {
     this.currentScale = this.clampScale(value)
     if (this.connected) this.sendAllParams()
     this.emitState()
+  }
+
+  setExtraOscTargets (targets = []) {
+    this.extraOscTargets = Array.isArray(targets) ? targets : []
   }
 
   applyScaleDelta (dir) {
@@ -143,8 +148,11 @@ class AvatarScalingController {
 
   sendOsc (address, args) {
     const message = createOscMessage(address, args)
-    this.client.send(message, this.oscPort, this.oscIp, error => {
-      if (error && typeof this.onError === 'function') this.onError(error)
+    const targets = [{ host: this.oscIp, port: this.oscPort }, ...this.extraOscTargets]
+    targets.forEach(target => {
+      this.client.send(message, target.port, target.host || this.oscIp, error => {
+        if (error && typeof this.onError === 'function') this.onError(error)
+      })
     })
   }
 

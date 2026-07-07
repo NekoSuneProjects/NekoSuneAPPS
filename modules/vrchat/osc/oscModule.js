@@ -9,6 +9,9 @@ let oscReceiver = null
 let oscReceiveEnabled = false
 let receiverPort = 9001
 let oscIncomingCallback = null
+let extraOscTargets = []
+let extraReceiverPorts = []
+const extraOscReceivers = new Map()
 
 const OSC_PATHS = {
   low: '/avatar/parameters/VRCOSC/NekoSuneApps/Audiolink/Low',
@@ -26,6 +29,35 @@ function setOscPort (port) {
   oscPort = port
 }
 
+function normalizeOscTarget (target) {
+  if (typeof target === 'number') return { host: '127.0.0.1', port: target }
+  if (!target || typeof target !== 'object') return null
+  const port = Number(target.port)
+  if (!Number.isFinite(port) || port < 1 || port > 65535) return null
+  return {
+    host: String(target.host || '127.0.0.1').trim() || '127.0.0.1',
+    port: Math.floor(port)
+  }
+}
+
+function setExtraOscTargets (targets = []) {
+  extraOscTargets = (Array.isArray(targets) ? targets : [])
+    .map(normalizeOscTarget)
+    .filter(Boolean)
+}
+
+function getOscTargets () {
+  return [{ host: '127.0.0.1', port: oscPort }, ...extraOscTargets]
+}
+
+function sendBufferToTargets (buffer, label) {
+  getOscTargets().forEach(target => {
+    oscClient.send(buffer, target.port, target.host, error => {
+      if (error) console.error(`${label || 'OSC'} Error:`, error)
+    })
+  })
+}
+
 function setOscReceiverPort (port) {
   if (!Number.isFinite(port) || receiverPort === port) return
 
@@ -34,6 +66,22 @@ function setOscReceiverPort (port) {
     closeOscReceiver()
     ensureOscReceiver()
   }
+}
+
+function setExtraOscReceiverPorts (ports = []) {
+  extraReceiverPorts = (Array.isArray(ports) ? ports : [])
+    .map(port => Math.floor(Number(port)))
+    .filter(port => Number.isFinite(port) && port > 0 && port <= 65535 && port !== receiverPort)
+    .filter((port, index, list) => list.indexOf(port) === index)
+
+  for (const [port, socket] of extraOscReceivers.entries()) {
+    if (!extraReceiverPorts.includes(port)) {
+      socket.close()
+      extraOscReceivers.delete(port)
+    }
+  }
+
+  if (oscReceiveEnabled || oscListeners.size > 0) ensureExtraOscReceivers()
 }
 
 function sendOsc (levels) {
@@ -52,25 +100,19 @@ function sendOsc (levels) {
 
   values.forEach((val, i) => {
     const buffer = createOscMessage(paths[i], val)
-    oscClient.send(buffer, oscPort, '127.0.0.1', error => {
-      if (error) console.error('OSC Error:', error)
-    })
+    sendBufferToTargets(buffer, 'OSC')
   })
 }
 
 function sendBeat (value) {
   const buffer = createOscMessage(OSC_PATHS.beat, value)
-  oscClient.send(buffer, oscPort, '127.0.0.1', error => {
-    if (error) console.error('OSC Beat Error:', error)
-  })
+  sendBufferToTargets(buffer, 'OSC Beat')
 }
 
 function sendChatboxMessage (message, notify = false) {
   // send=true bypasses the VRChat keyboard; notify=false avoids the chat SFX.
   const buffer = createChatboxMessage(String(message || '').slice(0, 144), true, notify)
-  oscClient.send(buffer, oscPort, '127.0.0.1', error => {
-    if (error) console.error('OSC Chatbox Error:', error)
-  })
+  sendBufferToTargets(buffer, 'OSC Chatbox')
 }
 
 function clampOscLevel (value) {
@@ -120,22 +162,7 @@ function ensureOscReceiver () {
     console.error('OSC Receiver Error:', err)
   })
 
-  oscReceiver.on('message', (msg, rinfo) => {
-    try {
-      const packet = parseOscMessage(msg)
-      if (!packet || !packet.address) return
-
-      if (typeof oscIncomingCallback === 'function') {
-        oscIncomingCallback(packet.address, packet.args || [])
-      }
-
-      oscListeners.forEach(listener => {
-        listener(packet.address, packet.args || [], rinfo)
-      })
-    } catch (err) {
-      console.warn('Unable to parse incoming OSC packet:', err)
-    }
-  })
+  oscReceiver.on('message', handleOscMessage)
 
   oscReceiver.bind(receiverPort, '0.0.0.0', () => {
     console.log(`OSC receiver listening on port ${receiverPort}`)
@@ -143,6 +170,41 @@ function ensureOscReceiver () {
       oscIncomingCallback('/_status', [`Receiver listening on ${receiverPort}`])
     }
   })
+
+  ensureExtraOscReceivers()
+}
+
+function ensureExtraOscReceivers () {
+  extraReceiverPorts.forEach(port => {
+    if (extraOscReceivers.has(port)) return
+    const socket = dgram.createSocket('udp4')
+    socket.on('error', err => console.error(`OSC Receiver ${port} Error:`, err))
+    socket.on('message', handleOscMessage)
+    socket.bind(port, '0.0.0.0', () => {
+      console.log(`Extra OSC receiver listening on port ${port}`)
+      if (typeof oscIncomingCallback === 'function') {
+        oscIncomingCallback('/_status', [`Extra receiver listening on ${port}`])
+      }
+    })
+    extraOscReceivers.set(port, socket)
+  })
+}
+
+function handleOscMessage (msg, rinfo) {
+  try {
+    const packet = parseOscMessage(msg)
+    if (!packet || !packet.address) return
+
+    if (typeof oscIncomingCallback === 'function') {
+      oscIncomingCallback(packet.address, packet.args || [])
+    }
+
+    oscListeners.forEach(listener => {
+      listener(packet.address, packet.args || [], rinfo)
+    })
+  } catch (err) {
+    console.warn('Unable to parse incoming OSC packet:', err)
+  }
 }
 
 function closeOscReceiverIfIdle () {
@@ -156,6 +218,8 @@ function closeOscReceiver () {
 
   oscReceiver.close()
   oscReceiver = null
+  for (const socket of extraOscReceivers.values()) socket.close()
+  extraOscReceivers.clear()
 }
 
 function align4 (value) {
@@ -233,7 +297,7 @@ function sendParam (address, value, type = 'float') {
     const b = Buffer.alloc(4); b.writeFloatBE(Number(value) || 0, 0)
     buf = Buffer.concat([addr, encodeOscString(',f'), b])
   }
-  oscClient.send(buf, oscPort, '127.0.0.1', err => { if (err) console.error('OSC Error:', err) })
+  sendBufferToTargets(buf, 'OSC')
 }
 
 function createChatboxMessage (message, send, notify) {
@@ -252,7 +316,9 @@ function encodeOscString (value) {
 
 module.exports = {
   setOscPort,
+  setExtraOscTargets,
   setOscReceiverPort,
+  setExtraOscReceiverPorts,
   sendOsc,
   sendParam,
   sendBeat,

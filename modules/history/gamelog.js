@@ -36,6 +36,9 @@ async function init (userDataDir) {
   db.run(`CREATE TABLE IF NOT EXISTS notifications (
     id TEXT PRIMARY KEY, ts INTEGER, type TEXT, sender TEXT, message TEXT, world TEXT, link TEXT, read INTEGER DEFAULT 0
   )`)
+  db.run(`CREATE TABLE IF NOT EXISTS notification_history (
+    id TEXT, ts INTEGER, type TEXT, sender TEXT, message TEXT, world TEXT, link TEXT, action TEXT, archivedAt INTEGER
+  )`)
   // Migrate older DBs that predate the read flag.
   try { db.run('ALTER TABLE notifications ADD COLUMN read INTEGER DEFAULT 0') } catch (_) { /* column already exists */ }
   return true
@@ -73,8 +76,20 @@ function unreadNotifCount () {
   let c = 0; if (st.step()) c = st.getAsObject().c || 0; st.free(); return c
 }
 function markAllNotifsRead () { if (db) { db.run('UPDATE notifications SET read = 1'); persist() } }
-function removeNotif (id) { if (db) { db.run('DELETE FROM notifications WHERE id = ?', [id]); persist() } }
-function clearNotifs () { if (db) { db.run('DELETE FROM notifications'); persist() } }
+function archiveNotif (id, action = 'removed') {
+  if (!db || !id) return
+  db.run(`INSERT INTO notification_history (id,ts,type,sender,message,world,link,action,archivedAt)
+    SELECT id,ts,type,sender,message,world,link,?,? FROM notifications WHERE id = ?`, [action, Date.now(), id])
+}
+function removeNotif (id, action = 'removed') { if (db) { archiveNotif(id, action); db.run('DELETE FROM notifications WHERE id = ?', [id]); persist() } }
+function reconcileNotifs (activeIds = []) {
+  if (!db) return
+  const active = new Set(activeIds)
+  for (const n of listNotifs()) {
+    if (!active.has(n.id)) removeNotif(n.id, 'resolved')
+  }
+}
+function clearNotifs () { if (db) { for (const n of listNotifs()) archiveNotif(n.id, 'cleared'); db.run('DELETE FROM notifications'); persist() } }
 
 function persist () {
   if (!db || !dbPath) return
@@ -144,4 +159,4 @@ async function importVrcx (filePath) {
 
 function close () { try { if (db) { fs.writeFileSync(dbPath, Buffer.from(db.export())) } } catch (_) {} }
 
-module.exports = { init, log, list, clear, clearType, close, importVrcx, upsertNotif, listNotifs, unreadNotifCount, markAllNotifsRead, removeNotif, clearNotifs }
+module.exports = { init, log, list, clear, clearType, close, importVrcx, upsertNotif, listNotifs, unreadNotifCount, markAllNotifsRead, removeNotif, reconcileNotifs, clearNotifs }

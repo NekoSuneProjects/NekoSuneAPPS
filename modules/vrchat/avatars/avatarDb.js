@@ -10,7 +10,13 @@ const REQ = { validateStatus: () => true, timeout: 15000, headers: { 'User-Agent
 
 // Built-in default. Users can add their own in Settings → Avatar providers.
 const DEFAULT_PROVIDERS = [
-  { name: 'avtrdb', url: 'https://api.avtrdb.com/v2/avatar/search/{query}?page={page}&page_size=30' }
+  { name: 'avtrdb', url: 'https://api.avtrdb.com/v2/avatar/search/{query}?page={page}&page_size=30' },
+  { name: 'VRCX vrcdb', url: 'https://vrcx.vrcdb.com/avatars/Avatar/VRCX?search={query}&page={page}' },
+  { name: 'Paw API VRCX', url: 'https://paw-api.amelia.fun/vrcx_search?search={query}&page={page}' },
+  { name: 'NekoSuneVR Avatar Search', url: 'https://vrcavatarsearch.nekosunevr.co.uk/vrcx_search?search={query}&page={page}' },
+  { name: 'avtr.zip VRCX', url: 'https://vrcx.avtr.zip/?search={query}&page={page}' },
+  { name: 'avtrdb VRCX', url: 'https://api.avtrdb.com/v1/avatar/search/vrcx?search={query}&page={page}' },
+  { name: 'WorldBalancer VRCX', url: 'https://avatarwbvrcxsearch.worldbalancer.com/vrcx_search?search={query}&page={page}' }
 ]
 
 // Flexible parser — handles avtrdb / VRCX / generic shapes.
@@ -21,12 +27,17 @@ function extractAvatars (data) {
   else if (data && Array.isArray(data.results)) arr = data.results
   else if (data && Array.isArray(data.data)) arr = data.data
   else if (data && Array.isArray(data.docs)) arr = data.docs
-  return arr.map(a => ({
-    id: a.vrc_id || a.avatarId || a.AvatarId || a.id || '',
-    name: a.name || a.avatar_name || a.Name || 'Avatar',
-    image: a.thumbnail_url || a.thumbnailImageUrl || a.imageUrl || a.image || a.Thumbnail || a.thumbnail || '',
-    author: a.author_name || a.authorName || a.AuthorName || ''
-  })).filter(a => /^avtr_/.test(a.id))
+  else if (data && Array.isArray(data.items)) arr = data.items
+  return arr.map(a => {
+    const id = a.vrc_id || a.avatarId || a.AvatarId || a.avatar_id || a.id || ''
+    return {
+      id,
+      name: a.name || a.avatar_name || a.Name || 'Avatar',
+      image: a.thumbnail_url || a.thumbnailImageUrl || a.imageUrl || a.image || a.Thumbnail || a.thumbnail || a.iconUrl || '',
+      author: a.author_name || a.authorName || a.AuthorName || a.author || '',
+      performance: a.performance || null
+    }
+  }).filter(a => /^avtr_/.test(a.id))
 }
 
 async function search (providerUrl, query, page = 1) {

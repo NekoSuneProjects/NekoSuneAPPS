@@ -248,6 +248,7 @@
       <button class="navbtn" data-tab="vrctools"><span class="ico">🧰</span><span class="lbl">VRChat Tools</span></button>
       <div class="navlabel">Social</div>
       <button class="navbtn" data-tab="live"><span class="ico">📡</span><span class="lbl">Live</span></button>
+      <button class="navbtn" data-tab="translation"><span class="ico">🌐</span><span class="lbl">Translation</span></button>
       <button class="navbtn" data-tab="oauth"><span class="ico">🔑</span><span class="lbl">OAuth Accounts</span></button>
       <button class="navbtn" data-tab="discord"><span class="ico">💜</span><span class="lbl">Discord</span></button>
       <div class="navlabel">General</div>
@@ -545,6 +546,15 @@
         </div>
       </section>
 
+      <!-- TRANSLATION / SPEECH -->
+      <section id="translation" class="tabpanel">
+        <div id="translationCards" class="grid cols-2"></div>
+        <div class="card">
+          <h3>Speech Translation Roadmap</h3>
+          <div class="muted" style="font-size:.75rem">Upcoming: desktop-audio STT, OCR screen translation, and selectable TTS output engines.</div>
+        </div>
+      </section>
+
       <!-- STATS -->
       <section id="stats" class="tabpanel">
         <div class="grid cols-2">
@@ -635,6 +645,7 @@
           </div>
           <div id="tonBoard" style="max-height:540px;overflow:auto">Loading…</div>
         </div>
+        <div id="tonToolsCards" class="grid cols-2"></div>
         <div class="grid cols-2">
           <div class="card">
             <h3>📊 Player data</h3>
@@ -1340,11 +1351,11 @@
           <label class="switch"><input type="checkbox" id="avatarScalingEnable"> <span data-i18n="avatarScaling.enable">Enable avatar scaling</span></label>
           <div class="row" style="margin-top:10px;align-items:center;gap:8px">
             <label style="min-width:90px" data-i18n="avatarScaling.scaleLabel">Scale (m)</label>
-            <input type="range" id="avatarScalingSlider" min="0.1" max="10" step="0.01" value="1" style="flex:1" />
-            <input type="number" id="avatarScalingValue" min="0.01" max="10000" step="0.01" value="1" style="width:80px" />
+            <input type="range" id="avatarScalingSlider" min="0" max="1" step="0.001" value="0.333" style="flex:1" />
+            <input type="number" id="avatarScalingValue" min="0.01" max="10000" step="0.01" value="1.00" style="width:100px" />
           </div>
           <div class="row" style="margin-top:8px;flex-wrap:wrap;gap:14px">
-            <label class="switch" style="margin:0"><input type="checkbox" id="avatarScalingSafety" checked> <span data-i18n="avatarScaling.safety">Safety limits (0.1m–100m)</span></label>
+            <label class="switch" style="margin:0"><input type="checkbox" id="avatarScalingSafety"> <span data-i18n="avatarScaling.safety">Safety limits (0.1m–100m)</span></label>
             <label class="switch" style="margin:0"><input type="checkbox" id="avatarScalingSaveWorlds"> <span data-i18n="avatarScaling.saveWorlds">Save scale between worlds</span></label>
           </div>
           <div class="row" style="margin-top:10px;align-items:center;gap:8px">
@@ -1432,6 +1443,12 @@
             <div><label>OSC Send Port (to VRChat)</label><input type="number" id="portInput" placeholder="9000" /></div>
             <div><label>VRChat Receive Port</label><input type="number" id="receiverPortInput" placeholder="9001" /></div>
           </div>
+          <label style="margin-top:10px">Extra OSC send targets <span class="muted" style="font-size:.72rem">(optional, one per line)</span></label>
+          <textarea id="extraOscTargets" rows="3" placeholder="127.0.0.1:9002"></textarea>
+          <div class="muted" id="extraOscTargetsOut" style="font-size:.75rem;margin-top:6px">For multiple VRChat clients, keep the first on 9000/9001 and add the second client's send-to-VRChat port here, for example 9002.</div>
+          <label style="margin-top:10px">Extra OSC receive ports <span class="muted" style="font-size:.72rem">(optional, one per line)</span></label>
+          <textarea id="extraOscReceivers" rows="2" placeholder="9003"></textarea>
+          <div class="muted" id="extraOscReceiversOut" style="font-size:.75rem;margin-top:6px">If a second VRChat client sends OSC back on 9003, add 9003 here so listeners such as KAT can hear it.</div>
           <label class="switch" style="margin-top:12px"><input type="checkbox" id="enableReceive"> Enable VRChat OSC receive (needed for KAT auto-detect)</label>
         </div>
         <div class="card">
@@ -1473,6 +1490,7 @@
             <label class="switch"><input type="checkbox" id="autoNet"> 🌐 Network stats</label>
             <label class="switch"><input type="checkbox" id="autoWindow"> 🪟 Window activity</label>
             <label class="switch"><input type="checkbox" id="autoTon"> 👻 Terrors of Nowhere</label>
+            <label class="switch"><input type="checkbox" id="autoTikTokFollowers"> TikTok followers</label>
             <label class="switch"><input type="checkbox" id="autoTwitch"> 🟣 Twitch followers</label>
             <label class="switch"><input type="checkbox" id="autoKick"> 🟢 Kick followers</label>
           </div>

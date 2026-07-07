@@ -1,4 +1,6 @@
 const dgram = require('dgram')
+const fs = require('fs')
+const path = require('path')
 const { encodeOscString, createOscMessage } = require('./oscEncode')
 
 const DEFAULT_CONFIG = {
@@ -58,6 +60,7 @@ class KatOscText {
     this.config = { ...DEFAULT_CONFIG, ...config }
     this.oscIp = this.config.oscIp
     this.oscPort = this.config.oscPort
+    this.extraOscTargets = Array.isArray(this.config.extraOscTargets) ? this.config.extraOscTargets : []
     this.textLength = this.config.lineLength * this.config.lineCount
     this.autoDetect = this.config.syncParams === 0
     this.syncParams = this.config.syncParams
@@ -128,6 +131,10 @@ class KatOscText {
     }
   }
 
+  setExtraOscTargets (targets = []) {
+    this.extraOscTargets = Array.isArray(targets) ? targets : []
+  }
+
   setSyncParams (syncParams) {
     if (syncParams === 0) {
       this.autoDetect = true
@@ -148,7 +155,7 @@ class KatOscText {
     if (typeof address !== 'string') return
 
     if (address.startsWith(this.config.avatarChangePath)) {
-      this.handleAvatarReset()
+      this.handleAvatarReset(args)
       return
     }
 
@@ -172,10 +179,23 @@ class KatOscText {
     )
   }
 
-  requestAutoDetect () {
+  requestAutoDetect (avatarId = '') {
     if (!this.autoDetect && this.config.syncParams !== 0) return
 
     this.autoDetect = true
+    const configDetected = this.detectSyncParamsFromAvatarConfig(avatarId)
+    if (configDetected > 0) {
+      this.syncParams = configDetected
+      this.syncParamsLast = configDetected
+      this.detectedSyncParams = configDetected
+      this.pointerCount = this.getPointerCount()
+      this.oscText = ''.padEnd(this.textLength)
+      this.testStep = 0
+      this.resetSyncParams()
+      this.emitStatus(`KAT sync params: ${this.syncParams} (avatar config)`)
+      return
+    }
+
     this.syncParams = 0
     this.detectedSyncParams = 0
     this.testStep = 1
@@ -183,15 +203,56 @@ class KatOscText {
     this.emitStatus('KAT detecting sync params...')
   }
 
-  handleAvatarReset () {
+  handleAvatarReset (args = []) {
     this.visible = false
     this.lastVisibleSendAt = 0
     this.cleared = true
     this.oscText = ''.padEnd(this.textLength)
 
     if (this.autoDetect || this.config.syncParams === 0) {
-      this.requestAutoDetect()
+      const avatarId = args.find(v => typeof v === 'string' && /^avtr_/.test(v)) || ''
+      this.requestAutoDetect(avatarId)
     }
+  }
+
+  detectSyncParamsFromAvatarConfig (avatarId = '') {
+    if (!avatarId) return 0
+    const base = process.platform === 'win32'
+      ? path.join(process.env.USERPROFILE || '', 'AppData', 'LocalLow', 'VRChat', 'VRChat', 'OSC')
+      : ''
+    if (!base || !fs.existsSync(base)) return 0
+
+    const stack = [base]
+    while (stack.length) {
+      const dir = stack.pop()
+      let entries = []
+      try { entries = fs.readdirSync(dir, { withFileTypes: true }) } catch (_) { continue }
+      for (const entry of entries) {
+        const full = path.join(dir, entry.name)
+        if (entry.isDirectory()) {
+          stack.push(full)
+          continue
+        }
+        if (entry.name !== `${avatarId}.json`) continue
+        const found = this.detectSyncParamsInConfigFile(full)
+        if (found > 0) return found
+      }
+    }
+    return 0
+  }
+
+  detectSyncParamsInConfigFile (file) {
+    let json
+    try { json = JSON.parse(fs.readFileSync(file, 'utf8')) } catch (_) { return 0 }
+    const params = Array.isArray(json.parameters) ? json.parameters : Array.isArray(json.Parameters) ? json.Parameters : []
+    let maxIndex = -1
+    const re = new RegExp(`${this.config.paramSync}(\\d+)$`)
+    for (const p of params) {
+      const name = String(p?.name || p?.Name || p?.address || p?.Address || '')
+      const match = name.match(re)
+      if (match) maxIndex = Math.max(maxIndex, parseInt(match[1], 10))
+    }
+    return maxIndex >= 0 ? Math.min(maxIndex + 1, this.config.syncParamsMax) : 0
   }
 
   handleVisibleInput (value) {
@@ -363,10 +424,13 @@ class KatOscText {
 
   sendOsc (address, args) {
     const message = createOscMessage(address, args)
-    this.client.send(message, this.oscPort, this.oscIp, error => {
-      if (error && typeof this.onError === 'function') {
-        this.onError(error)
-      }
+    const targets = [{ host: this.oscIp, port: this.oscPort }, ...this.extraOscTargets]
+    targets.forEach(target => {
+      this.client.send(message, target.port, target.host || this.oscIp, error => {
+        if (error && typeof this.onError === 'function') {
+          this.onError(error)
+        }
+      })
     })
   }
 

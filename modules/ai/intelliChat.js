@@ -12,6 +12,7 @@ const axios = require('axios')
 // user point at anything. Keys are sent as a Bearer token; Ollama needs none.
 const AI_PROVIDERS = {
   openai: { label: 'OpenAI', baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o-mini', needsKey: true },
+  nekosune_ollama: { label: 'NekoSuneVR Ollama', baseUrl: 'https://ollama.nekosunevr.co.uk/v1', model: 'llama3.1', needsKey: false, locked: true },
   ollama: { label: 'Ollama (local)', baseUrl: 'http://localhost:11434/v1', model: 'llama3.1', needsKey: false },
   litellm: { label: 'LiteLLM gateway', baseUrl: 'http://localhost:4000/v1', model: 'gpt-4o-mini', needsKey: false },
   grok: { label: 'xAI (Grok)', baseUrl: 'https://api.x.ai/v1', model: 'grok-2-latest', needsKey: true },
