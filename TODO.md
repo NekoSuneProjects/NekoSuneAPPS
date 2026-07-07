@@ -156,7 +156,7 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
 - [ ] **Neko HUD** (VR overlay) — ⚠️ needs native OpenVR overlay binding (same blocker as VR battery). Ship a small C#/C++ OpenVR helper exe and spawn it.
 - [ ] **Playspace Shift** — ⚠️ needs native VR input (grip/stick) — same OpenVR helper.
 - [ ] **VoxBoard** (voice-triggered soundboard) — needs offline speech model (VOSK ~50 MB); add as optional download.
-- [ ] **Avatar Sizer** — ⚠️ VRChat has no clean external avatar-scale hook; only works via OSC params an avatar exposes. Document limits.
+- [x] **Avatar Sizer** — done via VRChat's *native* OSC height-scaling API (`/avatar/eyeheight` + `/avatar/eyeheightmin`/`max` + `/avatar/eyeheightscalingallowed`), which works on **any** avatar with no avatar-specific exposed parameters needed. `modules/vrchat/osc/avatarScaling.js` + global hotkeys (Settings → Tools → Avatar Scaling) via a PowerShell `WH_KEYBOARD_LL` hook (`modules/vrchat/osc/keyHookPs.js`), only running while the feature is connected or recording a key.
 - [ ] **VR gear battery** — real OpenVR helper to replace the current stub (`modules/vrchat/vr/vrBattery.js`).
 
 ---
@@ -171,7 +171,58 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
 
 ---
 
+## 🎨 Full layout overhaul (feature request)
+- [ ] Rebuild the app's overall layout/theme/navigation to match the look and feel of
+  [VRCNext](https://github.com/shinyflvre/VRCNext) — same *layout style*, not the same
+  internal structure/feature set (ours stays different under the hood). VRChat news as the
+  homepage/landing view instead of the current default Chatbox tab. Large effort, not started —
+  future session.
+
+## 🌍 Localization
+- [x] **i18n foundation** — `modules/i18n/i18n.js` (main) + IPC (`i18n:languages`/`i18n:strings`)
+  + renderer `t()`/`applyLanguage()` sweep (`[data-i18n]` text, `[data-i18n-ph]` placeholders,
+  nav labels via `data-tab`). First-run language picker modal (shown once, if `uiLanguage`
+  setting is unset) + a Settings → Language card for changing it later; switches instantly, no
+  restart. Seeded with **en, ja, es, ru, pl, nl, de** (`modules/i18n/locales/*.json`, flat
+  key→string maps, every non-English locale merges over `en.json` so a missing key always
+  falls back to English instead of breaking).
+- [ ] **Coverage is partial by design** — this pass only tags the sidebar nav, common
+  buttons, and the newly-added Avatar Scaling / Translator / Live Typing / language-picker UI.
+  The rest of the app (300–500+ static strings in `index.html`, 400+ dynamic
+  `setText`/template-literal call sites in `renderer.js`) is still hardcoded English. Sweeping
+  it incrementally (tag more `data-i18n`, wrap more dynamic strings in `t()`) is ongoing work —
+  add more locales here too as requested (a handful more beyond the initial 7 were flagged as
+  wanted).
+
+## 🗣️ Speech / OCR / TTS translation (deferred phase 2)
+Decisions already made (so a future session doesn't re-litigate them) — not started yet:
+- [ ] **Desktop-audio speech-to-text** (translate what you hear, e.g. Russian → English) —
+  **both** local Whisper (offline/free, needs a bundled model) **and** cloud (OpenAI/Groq,
+  reusing the existing IntelliChat provider pattern in `modules/ai/intelliChat.js`), user-
+  selectable. Desktop/loopback audio capture already exists and is reusable as-is:
+  `main.js`'s `setDisplayMediaRequestHandler` + `modules/integrations/osc/recognition/shazamOscModule.js`'s
+  `ensureAudio()`/`captureClip()`.
+- [ ] **Bidirectional**: translate the user's own typed/spoken text back to another language,
+  output via chatbox and/or TTS.
+- [ ] **OCR screen-translate** (read VRChat's on-screen text, auto-translate) — Tesseract.js
+  (bundled/offline), reusing the `getDisplayMedia` → canvas → `getImageData` pixel pipeline
+  already built for QR scanning in `modules/integrations/osc/qr/oscQrModule.js` (swap `jsQR(...)`
+  for a Tesseract call).
+- [ ] **TTS output**, multiple selectable engines with API-key entry for the cloud ones:
+  Windows built-in (SAPI via PowerShell `System.Speech.Synthesis` — same shell-out pattern as
+  `modules/vrchat/osc/mediaKeys.js` and the new `keyHookPs.js`), TikTok TTS (already exists,
+  `modules/live/tiktokTts.js`), cloud TTS (ElevenLabs/Azure/Google/etc.), and self-hosted
+  engines (Piper, XTTS) via a user-supplied endpoint URL — same shape as the Translator's
+  LibreTranslate endpoint field.
+
+---
+
 ## ⚙️ Setup reminders
 - Run **`npm install`** (adds `discord.js`, `sql.js`).
 - VRChat-API features need login on the **VRChat** tab (cookies stored locally; password never stored).
 - History DB: `nekosuneapps-history.sqlite` in the app's user-data folder.
+- New this session: **Avatar Scaling**, **Translator**, **Live Typing** chatbox, and the
+  **i18n foundation** (see sections above). No new npm dependencies were added — the
+  global-hotkey approach was switched from a third-party key-listener package (flagged by
+  antivirus) to a PowerShell-based `WH_KEYBOARD_LL` hook (`modules/vrchat/osc/keyHook.ps1` +
+  `keyHookPs.js`), matching the existing shell-out pattern already used by `mediaKeys.js`.

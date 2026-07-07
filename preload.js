@@ -136,6 +136,19 @@ window.electronAPI = {
   aiRewrite: opts => ipcRenderer.invoke('ai:rewrite', opts),
   aiProviders: () => ipcRenderer.invoke('ai:providers'),
 
+  // avatar scaling hotkeys (global keyboard hook lives in main)
+  avatarScalingRecordKey: () => ipcRenderer.invoke('avatarScaling:recordKey'),
+  avatarScalingSetHotkeys: keys => ipcRenderer.invoke('avatarScaling:setHotkeys', keys),
+  avatarScalingClearHotkeys: () => ipcRenderer.invoke('avatarScaling:clearHotkeys'),
+
+  // translator
+  translate: opts => ipcRenderer.invoke('translate:run', opts),
+  translateProviders: () => ipcRenderer.invoke('translate:providers'),
+
+  // i18n
+  i18nLanguages: () => ipcRenderer.invoke('i18n:languages'),
+  i18nStrings: lang => ipcRenderer.invoke('i18n:strings', lang),
+
   // discord
   discordStart: cfg => ipcRenderer.invoke('discord:start', cfg),
   discordStop: () => ipcRenderer.invoke('discord:stop'),

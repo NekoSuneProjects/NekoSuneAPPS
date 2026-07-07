@@ -1,4 +1,5 @@
 const dgram = require('dgram')
+const { encodeOscString, createOscMessage } = require('./oscEncode')
 
 const DEFAULT_CONFIG = {
   oscIp: '127.0.0.1',
@@ -7,6 +8,7 @@ const DEFAULT_CONFIG = {
   syncParams: 0,
   fallbackSyncParams: 4,
   syncParamsMax: 16,
+  syncParamsProbeHoldMs: 2000,
   lineLength: 32,
   lineCount: 4,
   visibleRefreshMs: 3000,
@@ -15,51 +17,6 @@ const DEFAULT_CONFIG = {
   paramVisible: 'KAT_Visible',
   paramPointer: 'KAT_Pointer',
   paramSync: 'KAT_CharSync'
-}
-
-function encodeOscString (value) {
-  const data = Buffer.from(`${value}\0`, 'utf8')
-  const padding = (4 - (data.length % 4)) % 4
-  return Buffer.concat([data, Buffer.alloc(padding)])
-}
-
-function createOscMessage (address, args = []) {
-  const payloads = []
-  let typeTags = ','
-
-  args.forEach(arg => {
-    switch (arg.type) {
-      case 'bool':
-        typeTags += arg.value ? 'T' : 'F'
-        break
-      case 'int': {
-        const payload = Buffer.alloc(4)
-        payload.writeInt32BE(arg.value, 0)
-        payloads.push(payload)
-        typeTags += 'i'
-        break
-      }
-      case 'float': {
-        const payload = Buffer.alloc(4)
-        payload.writeFloatBE(arg.value, 0)
-        payloads.push(payload)
-        typeTags += 'f'
-        break
-      }
-      case 'string':
-        payloads.push(encodeOscString(arg.value))
-        typeTags += 's'
-        break
-      default:
-        throw new Error(`Unsupported OSC argument type: ${arg.type}`)
-    }
-  })
-
-  return Buffer.concat([
-    encodeOscString(address),
-    encodeOscString(typeTags),
-    ...payloads
-  ])
 }
 
 function toKatCharValue (char) {
@@ -106,6 +63,7 @@ class KatOscText {
     this.syncParams = this.config.syncParams
     this.syncParamsLast = this.config.fallbackSyncParams
     this.detectedSyncParams = 0
+    this.probeTicksRemaining = 0
     this.pointerCount = this.getPointerCount()
     this.pointerClear = 255
     this.pointerIndexResync = 0
@@ -221,6 +179,7 @@ class KatOscText {
     this.syncParams = 0
     this.detectedSyncParams = 0
     this.testStep = 1
+    this.probeTicksRemaining = Math.max(1, Math.ceil(this.config.syncParamsProbeHoldMs / this.config.oscDelayMs))
     this.emitStatus('KAT detecting sync params...')
   }
 
@@ -300,10 +259,16 @@ class KatOscText {
     }
 
     if (this.testStep === 2) {
+      // Resend every tick and hold for syncParamsProbeHoldMs: VRChat throttles/batches
+      // outgoing OSC parameter echoes, so a single one-shot send can miss high-index
+      // params (they get overwritten by the reset in step 3 before VRChat echoes them).
       for (let i = 0; i < this.config.syncParamsMax; i++) {
         this.sendSyncParam(i, this.syncParamsTestValue)
       }
-      this.testStep = 3
+      this.probeTicksRemaining -= 1
+      if (this.probeTicksRemaining <= 0) {
+        this.testStep = 3
+      }
       return
     }
 
@@ -319,7 +284,12 @@ class KatOscText {
       this.pointerCount = this.getPointerCount()
       this.oscText = ''.padEnd(this.textLength)
       this.testStep = 0
-      this.emitStatus(`KAT sync params: ${this.syncParams}`)
+
+      if (this.detectedSyncParams > 0) {
+        this.emitStatus(`KAT sync params: ${this.syncParams} (auto-detected)`)
+      } else {
+        this.emitStatus(`KAT sync params: ${this.syncParams} (auto-detect failed, using fallback — set manually if wrong)`)
+      }
     }
   }
 

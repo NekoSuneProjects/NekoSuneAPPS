@@ -315,6 +315,18 @@
         </div>
 
         <div class="card">
+          <h3>⌨️ <span data-i18n="liveTyping.title">Live Typing</span> <span class="muted" style="font-size:.72rem" data-i18n="liveTyping.subtitle">(sends as you type, like VRChat's own chatbox)</span></h3>
+          <textarea id="liveTypingInput" rows="3" data-i18n-ph="liveTyping.placeholder" placeholder="Type here — this sends to the chatbox automatically every few seconds as you type. Keep typing past 144 chars; VRChat will show '…' + the end of your message." style="width:100%;resize:vertical"></textarea>
+          <div class="row" style="margin-top:6px;justify-content:space-between;align-items:center">
+            <span class="muted" id="liveTypingCount" style="font-size:.75rem">0 chars</span>
+            <button class="btn ghost" id="liveTypingClear" style="padding:4px 10px;font-size:.75rem" data-i18n="common.clear">Clear</button>
+          </div>
+          <div class="muted" style="margin-top:6px;font-size:.72rem" data-i18n="liveTyping.previewLabel">Preview (what VRChat will show):</div>
+          <pre id="liveTypingPreview" style="background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:8px; white-space:pre-wrap; min-height:24px; font-size:.85rem"></pre>
+          <label class="switch" style="margin-top:8px"><input type="checkbox" id="liveTypingTranslate"> <span data-i18n="liveTyping.translateLabel">Translate before sending (uses Translator settings)</span></label>
+        </div>
+
+        <div class="card">
           <h3>🕘 Message history</h3>
           <p class="muted">Your sent messages. Click <b>Repost</b> to pin one again without retyping.</p>
           <div id="chatHistoryList"></div>
@@ -434,6 +446,17 @@
           <div class="card">
             <h3>⌨️ KAT (KillFrenzy AvatarText)</h3>
             <label class="switch"><input type="checkbox" id="enableKatNowPlaying"> Send Now Playing to KAT</label>
+            <div class="row" style="margin-top:8px;align-items:center;gap:8px">
+              <label style="min-width:96px">Sync params</label>
+              <select id="katSyncParamsMode" style="flex:1">
+                <option value="0">Auto-detect (recommended)</option>
+                <option value="4">Manual: 4</option>
+                <option value="8">Manual: 8</option>
+                <option value="16">Manual: 16</option>
+                <option value="custom">Manual: custom</option>
+              </select>
+              <input type="number" id="katSyncParamsCustom" min="1" max="16" value="4" style="width:70px;display:none" />
+            </div>
             <div id="katNowPlayingStatus" class="muted" style="margin-top:8px">KAT output is off</div>
           </div>
           <div class="card">
@@ -1313,6 +1336,31 @@
         </div>
 
         <div class="card">
+          <h3>📏 <span data-i18n="avatarScaling.title">Avatar Scaling</span> <span class="muted" style="font-size:.72rem" data-i18n="avatarScaling.subtitle">(VRChat's native OSC height scaling — works on any avatar)</span></h3>
+          <label class="switch"><input type="checkbox" id="avatarScalingEnable"> <span data-i18n="avatarScaling.enable">Enable avatar scaling</span></label>
+          <div class="row" style="margin-top:10px;align-items:center;gap:8px">
+            <label style="min-width:90px" data-i18n="avatarScaling.scaleLabel">Scale (m)</label>
+            <input type="range" id="avatarScalingSlider" min="0.1" max="10" step="0.01" value="1" style="flex:1" />
+            <input type="number" id="avatarScalingValue" min="0.01" max="10000" step="0.01" value="1" style="width:80px" />
+          </div>
+          <div class="row" style="margin-top:8px;flex-wrap:wrap;gap:14px">
+            <label class="switch" style="margin:0"><input type="checkbox" id="avatarScalingSafety" checked> <span data-i18n="avatarScaling.safety">Safety limits (0.1m–100m)</span></label>
+            <label class="switch" style="margin:0"><input type="checkbox" id="avatarScalingSaveWorlds"> <span data-i18n="avatarScaling.saveWorlds">Save scale between worlds</span></label>
+          </div>
+          <div class="row" style="margin-top:10px;align-items:center;gap:8px">
+            <label style="min-width:90px" data-i18n="avatarScaling.smoothing">Smoothing</label>
+            <input type="range" id="avatarScalingSmoothing" min="0" max="100" step="1" value="50" style="flex:1" />
+            <span id="avatarScalingSmoothingVal" class="muted" style="width:36px;text-align:right">50</span>
+          </div>
+          <div class="row" style="margin-top:10px;flex-wrap:wrap;gap:8px">
+            <button class="btn ghost" id="avatarScalingRecordUp" style="padding:4px 10px;font-size:.75rem"><span data-i18n="avatarScaling.recordUp">Record scale-up key</span>: <span id="avatarScalingKeyUp">none</span></button>
+            <button class="btn ghost" id="avatarScalingRecordDown" style="padding:4px 10px;font-size:.75rem"><span data-i18n="avatarScaling.recordDown">Record scale-down key</span>: <span id="avatarScalingKeyDown">none</span></button>
+          </div>
+          <div class="muted" style="font-size:.72rem;margin-top:6px" data-i18n="avatarScaling.hotkeyHint">Hotkeys work globally (even while VRChat has focus). If a key won't record, you can still use the slider above.</div>
+          <div class="muted" id="avatarScalingOut" style="margin-top:6px;font-size:.78rem" data-i18n="avatarScaling.off">Avatar scaling is off</div>
+        </div>
+
+        <div class="card">
           <h3>🪧 ToN Tablet OSC <span class="muted" style="font-size:.72rem">(drive Terror Tablet / Gridring from ToN tracking)</span></h3>
           <div class="muted" style="font-size:.75rem;margin-bottom:8px">Forwards the core ToN state (round type, terror, map, item, alive, started) to your avatar's <code>ToN_</code> params — drives both the Terror Tablet and Gridring. ToNSaveManager still drives the full terror-grid buffer. Needs the ToN connection on (Terrors tab).</div>
           <label class="switch"><input type="checkbox" id="tonOscEnable"> Send ToN params to avatar</label>
@@ -1407,6 +1455,11 @@
           <div class="muted" style="font-size:.75rem;margin-top:6px">"Auto" defaults to Black &amp; Green. Halloween/Christmas/Pride/Easter always take over automatically during those windows — even over a custom pick below — then your pick resumes once the event ends.</div>
         </div>
         <div class="card">
+          <h3>🌍 <span data-i18n="settingsLanguage.title">Language</span></h3>
+          <label data-i18n="settingsLanguage.label">App language</label>
+          <select id="languageSelect"></select>
+        </div>
+        <div class="card">
           <h3>🚀 Startup</h3>
           <div class="grid cols-2">
             <label class="switch"><input type="checkbox" id="autoLaunch"> Launch on system login</label>
@@ -1466,6 +1519,39 @@
             <div><label>API key (blank for local Ollama)</label><input type="password" id="aiKey" placeholder="key" /></div>
           </div>
           <div class="muted" style="font-size:.75rem; margin-top:6px">Works with OpenAI, Ollama, LiteLLM, xAI (Grok), Google Gemini, Groq, OpenRouter, Anthropic, or any compatible gateway.</div>
+        </div>
+        <div class="card">
+          <h3>🌐 <span data-i18n="translator.title">Translator</span></h3>
+          <label data-i18n="translator.provider">Provider</label>
+          <select id="translatorProvider">
+            <option value="libretranslate">LibreTranslate (self-hosted / your own instance)</option>
+            <option value="deepl">DeepL</option>
+            <option value="google">Google Translate</option>
+          </select>
+          <div id="translatorEndpointRow" style="margin-top:8px">
+            <label data-i18n="translator.endpoint">Endpoint URL</label>
+            <input type="text" id="translatorEndpoint" placeholder="https://your-libretranslate-instance/translate" />
+          </div>
+          <div id="translatorKeyRow" style="margin-top:8px">
+            <label data-i18n="translator.apiKey">API key</label>
+            <input type="password" id="translatorApiKey" placeholder="key" />
+          </div>
+          <div id="translatorDeeplTypeRow" style="margin-top:8px">
+            <label data-i18n="translator.deeplType">DeepL account type</label>
+            <select id="translatorDeeplType"><option value="free">Free</option><option value="pro">Pro</option></select>
+          </div>
+          <div class="grid cols-2" style="margin-top:8px">
+            <div>
+              <label data-i18n="translator.sourceLang">Source language</label>
+              <select id="translatorSource"><option value="auto">Auto-detect</option></select>
+            </div>
+            <div>
+              <label data-i18n="translator.targetLang">Target language</label>
+              <select id="translatorTarget"></select>
+            </div>
+          </div>
+          <label class="switch" style="margin-top:8px"><input type="checkbox" id="translatorAiGrammarFix"> <span data-i18n="translator.aiGrammarFix">Fix grammar with AI first (uses the IntelliChat provider above)</span></label>
+          <div class="muted" style="font-size:.75rem;margin-top:6px" data-i18n="translator.note">Used by the Live Typing chatbox translation option and anywhere else in the app that offers "Translate before sending."</div>
         </div>
       </section>
 
@@ -1643,6 +1729,17 @@
   </div>
 
   <!-- User profile modal -->
+  <div id="languagePickerModal" class="modal-overlay" style="display:none">
+    <div class="modal-card" style="max-width:420px">
+      <h3 data-i18n="languagePicker.title">Choose your language</h3>
+      <p class="muted" data-i18n="languagePicker.subtitle">You can change this later in Settings.</p>
+      <select id="languagePickerSelect" style="margin-top:10px"></select>
+      <div class="row" style="margin-top:14px;justify-content:flex-end">
+        <button class="btn" id="languagePickerContinue" data-i18n="languagePicker.continue">Continue</button>
+      </div>
+    </div>
+  </div>
+
   <div id="userModal" class="modal-overlay" style="display:none">
     <div class="modal-card">
       <button id="userModalClose" class="modal-close">×</button>

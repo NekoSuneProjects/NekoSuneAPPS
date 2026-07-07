@@ -26,6 +26,8 @@ const { startTwitch, stopTwitch } = require('./modules/live/twitch/followers')
 const { startKick, stopKick } = require('./modules/live/kickModule')
 const { getTikTokTtsAudio, TIKTOK_VOICES } = require('./modules/live/tiktokTts')
 const { intelliRewrite, AI_PROVIDERS } = require('./modules/ai/intelliChat')
+const { translateText, TRANSLATE_PROVIDERS } = require('./modules/ai/translateProviders')
+const i18n = require('./modules/i18n/i18n')
 const { loginTwitch, TWITCH_REDIRECT } = require('./modules/oauth/providers/twitch')
 const twitchInteractive = require('./modules/live/twitch/interactive')
 const { startDiscord, stopDiscord, updateActivity, setVrcContext } = require('./modules/integrations/discord/discord')
@@ -36,6 +38,8 @@ const { startWeather, stopWeather, getWeather } = require('./modules/weather/wea
 const { startBot, stopBot, setMute: botSetMute, setDeaf: botSetDeaf, inviteUrl } = require('./modules/integrations/discord/discordBot')
 const soundpad = require('./modules/integrations/media/soundpadModule')
 const { pressMediaKey } = require('./modules/vrchat/osc/mediaKeys')
+const keyHookPs = require('./modules/vrchat/osc/keyHookPs')
+const { vkName } = require('./modules/vrchat/osc/vkCodes')
 const vrcTools = require('./modules/vrchat/tools/vrcTools')
 const pawprints = require('./modules/vrchat/tools/pawprints')
 const gamelog = require('./modules/history/gamelog')
@@ -275,6 +279,8 @@ app.on('before-quit', () => {
   disconnectTikTok(); stopTwitch(); twitchInteractive.stop(false); stopKick(); stopDiscord(); stopVrBattery(); stopVrcWorld(); stopAfk()
   stopWeather(); stopVrcStatusPoll(); stopBot(); pawprints.tickCommit(); stopFriendDiff(); stopGreeter(); gamelog.close(); photoRelay.stop(); stopGroupAlerts(); stopNotifPoll(); crashGuard.stop(); vrcTools.stopVideoCacher(); stopTonLog(); ranks.close()
   ruskLaserdome.stop(false)
+  if (unsubHotkeyHold) { unsubHotkeyHold(); unsubHotkeyHold = null }
+  stopHotkeyTick()
 })
 
 /* ------------------------------------------------------------------ */
@@ -879,6 +885,92 @@ ipcMain.handle('kick:stop', () => { stopKick(); return true })
 /* ------------------------------------------------------------------ */
 ipcMain.handle('ai:rewrite', (e, opts) => intelliRewrite(opts))
 ipcMain.handle('ai:providers', () => AI_PROVIDERS)
+
+/* ------------------------------------------------------------------ */
+/* Avatar Scaling - global hotkeys (main process only; the OSC         */
+/* controller itself lives in the renderer alongside KAT)              */
+/* ------------------------------------------------------------------ */
+let unsubHotkeyHold = null
+const hotkeyHeld = { up: false, down: false }
+let hotkeyTickTimer = null
+
+function startHotkeyTick () {
+  if (hotkeyTickTimer) return
+  hotkeyTickTimer = setInterval(() => {
+    if (hotkeyHeld.up) push('avatarScaling:scaleTick', { dir: 1 })
+    if (hotkeyHeld.down) push('avatarScaling:scaleTick', { dir: -1 })
+  }, 50)
+}
+
+function stopHotkeyTick () {
+  if (hotkeyTickTimer) { clearInterval(hotkeyTickTimer); hotkeyTickTimer = null }
+}
+
+ipcMain.handle('avatarScaling:recordKey', () => {
+  return new Promise(resolve => {
+    let done = false
+    const unsub = keyHookPs.subscribe(evt => {
+      if (done || evt.t !== 'down') return
+      done = true
+      unsub()
+      clearTimeout(timer)
+      resolve({ vk: evt.vk, name: vkName(evt.vk) })
+    })
+    const timer = setTimeout(() => {
+      if (done) return
+      done = true
+      unsub()
+      resolve(null)
+    }, 8000)
+  })
+})
+
+ipcMain.handle('avatarScaling:setHotkeys', (e, { keyUp, keyDown } = {}) => {
+  if (unsubHotkeyHold) { unsubHotkeyHold(); unsubHotkeyHold = null }
+  stopHotkeyTick()
+  hotkeyHeld.up = false
+  hotkeyHeld.down = false
+  if (!keyUp && !keyDown) return true
+
+  unsubHotkeyHold = keyHookPs.subscribe(evt => {
+    if (evt.vk === keyUp) hotkeyHeld.up = (evt.t === 'down')
+    else if (evt.vk === keyDown) hotkeyHeld.down = (evt.t === 'down')
+    if (hotkeyHeld.up || hotkeyHeld.down) startHotkeyTick()
+    else stopHotkeyTick()
+  })
+  return true
+})
+
+ipcMain.handle('avatarScaling:clearHotkeys', () => {
+  if (unsubHotkeyHold) { unsubHotkeyHold(); unsubHotkeyHold = null }
+  stopHotkeyTick()
+  hotkeyHeld.up = false
+  hotkeyHeld.down = false
+  return true
+})
+
+/* ------------------------------------------------------------------ */
+/* Translator (DeepL / Google / LibreTranslate + optional AI grammar   */
+/* pre-pass, reusing the IntelliChat provider settings)                */
+/* ------------------------------------------------------------------ */
+ipcMain.handle('translate:run', async (e, opts = {}) => {
+  let text = String(opts.text || '')
+  if (opts.useAiGrammarFix && opts.aiSettings) {
+    try {
+      text = await intelliRewrite({ ...opts.aiSettings, mode: 'spellcheck', text })
+    } catch (_) {
+      // fall back to the original text if the grammar-fix pass fails
+    }
+  }
+  return translateText({ ...opts, text })
+})
+ipcMain.handle('translate:providers', () => TRANSLATE_PROVIDERS)
+
+/* ------------------------------------------------------------------ */
+/* i18n                                                                 */
+/* ------------------------------------------------------------------ */
+ipcMain.handle('i18n:languages', () => i18n.listLanguages())
+ipcMain.handle('i18n:strings', (e, lang) => i18n.getStrings(lang))
 
 /* ------------------------------------------------------------------ */
 /* Shared OAuth providers                                              */

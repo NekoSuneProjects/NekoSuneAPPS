@@ -5,7 +5,11 @@ const {
   startOscReceiver, stopOscReceiver, addOscListener
 } = require('./modules/vrchat/osc/oscModule')
 const { KatOscText } = require('./modules/vrchat/osc/katOscText')
+const { AvatarScalingController } = require('./modules/vrchat/osc/avatarScaling')
+const { vkName } = require('./modules/vrchat/osc/vkCodes')
+const { LANGUAGES } = require('./modules/ai/languageList')
 const { ChatboxComposer } = require('./modules/vrchat/chatbox/chatboxComposer')
+const { LiveTypingSender } = require('./modules/vrchat/chatbox/liveTyping')
 const { DEFAULT_PRESETS } = require('./modules/vrchat/status/statusModule')
 const { RealisticOscLeashController } = require('./modules/integrations/osc/leash/realisticOscLeash')
 const { OscDigitalClock } = require('./modules/integrations/osc/clock/oscDigitalClock')
@@ -185,6 +189,66 @@ if ($('themeSelect')) {
 // (or starting while it's open) recolors without needing a restart.
 setInterval(() => { api.getSetting('uiTheme', 'auto').then(applyTheme) }, 30 * 60 * 1000)
 
+/* ---------------- i18n ---------------- */
+// Foundation only: covers the sidebar nav labels, common buttons, and the
+// newly-added Avatar Scaling / Translator / Live Typing / language-picker
+// UI (tagged with data-i18n / data-i18n-ph). Everything else in the app
+// stays hardcoded English for now - missing keys fall back to English so
+// partial coverage never breaks anything.
+let i18nStrings = {}
+function t (key, vars) {
+  let s = i18nStrings[key] != null ? i18nStrings[key] : key
+  if (vars) Object.entries(vars).forEach(([k, v]) => { s = s.replace(`{{${k}}}`, v) })
+  return s
+}
+async function applyLanguage (lang) {
+  i18nStrings = await api.i18nStrings(lang)
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n')
+    if (i18nStrings[key] != null) el.textContent = i18nStrings[key]
+  })
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const key = el.getAttribute('data-i18n-ph')
+    if (i18nStrings[key] != null) el.placeholder = i18nStrings[key]
+  })
+  document.querySelectorAll('.navbtn[data-tab]').forEach(btn => {
+    const key = 'nav.' + btn.dataset.tab
+    const lbl = btn.querySelector('.lbl')
+    if (lbl && i18nStrings[key] != null) lbl.textContent = i18nStrings[key]
+  })
+}
+async function populateLanguageSelects () {
+  const languages = await api.i18nLanguages()
+  ;[$('languageSelect'), $('languagePickerSelect')].forEach(sel => {
+    if (!sel) return
+    sel.innerHTML = ''
+    languages.forEach(({ code, name }) => sel.appendChild(new Option(name, code)))
+  })
+}
+async function initLanguage () {
+  await populateLanguageSelects()
+  const saved = await api.getSetting('uiLanguage', null)
+  if (!saved) {
+    $('languagePickerSelect').value = 'en'
+    $('languagePickerModal').style.display = 'flex'
+    return
+  }
+  $('languageSelect').value = saved
+  await applyLanguage(saved)
+}
+$('languagePickerContinue').addEventListener('click', async () => {
+  const lang = $('languagePickerSelect').value
+  await api.saveSetting('uiLanguage', lang)
+  $('languageSelect').value = lang
+  await applyLanguage(lang)
+  $('languagePickerModal').style.display = 'none'
+})
+$('languageSelect').addEventListener('change', async e => {
+  await api.saveSetting('uiLanguage', e.target.value)
+  await applyLanguage(e.target.value)
+})
+initLanguage()
+
 /* ---------------- helpers ---------------- */
 function setText (id, v) { const el = $(id); if (el) el.textContent = v }
 function setPill (id, on, onText, offText) {
@@ -318,9 +382,17 @@ $('nowPlayingSourceSelect').addEventListener('change', async e => {
   refreshNowPlaying()
 })
 $('nowPlayingRefreshSources').addEventListener('click', async () => { npSourcesKey = ''; await initNowPlayingSources(); refreshNowPlaying() })
+function getKatSyncParamsSetting () {
+  const mode = $('katSyncParamsMode').value
+  if (mode === 'custom') {
+    const v = parseInt($('katSyncParamsCustom').value, 10)
+    return Number.isFinite(v) ? Math.max(1, Math.min(16, v)) : 4
+  }
+  return parseInt(mode, 10) || 0
+}
 function startKat () {
   if (katText) return
-  katText = new KatOscText({ oscPort: getSendPort() })
+  katText = new KatOscText({ oscPort: getSendPort(), syncParams: getKatSyncParamsSetting() })
   katText.onStatus = msg => setText('katNowPlayingStatus', msg)
   removeKatListener = addOscListener((a, args) => katText.handleOscInput(a, args), getRecvPort())
   katText.start(); katText.setText(lastKatText)
@@ -335,6 +407,100 @@ $('enableKatNowPlaying').addEventListener('change', async e => {
   await api.saveSetting('katNowPlayingEnabled', katEnabled)
   katEnabled ? startKat() : stopKat()
 })
+$('katSyncParamsMode').addEventListener('change', async e => {
+  $('katSyncParamsCustom').style.display = e.target.value === 'custom' ? '' : 'none'
+  const value = getKatSyncParamsSetting()
+  await api.saveSetting('katSyncParams', value)
+  if (katText) katText.setSyncParams(value)
+})
+$('katSyncParamsCustom').addEventListener('change', async e => {
+  if ($('katSyncParamsMode').value !== 'custom') return
+  const value = getKatSyncParamsSetting()
+  await api.saveSetting('katSyncParams', value)
+  if (katText) katText.setSyncParams(value)
+})
+/* ---------------- avatar scaling ---------------- */
+let avatarScaling = null
+let removeAvatarScalingListener = null
+const avatarScalingHotkeys = { keyUp: null, keyDown: null }
+
+function ensureAvatarScaling () {
+  if (avatarScaling) return avatarScaling
+  avatarScaling = new AvatarScalingController({
+    oscPort: getSendPort(),
+    useSafety: $('avatarScalingSafety').checked,
+    saveScaleBetweenWorlds: $('avatarScalingSaveWorlds').checked,
+    smoothing: parseInt($('avatarScalingSmoothing').value, 10) || 50
+  })
+  avatarScaling.onStatus = renderAvatarScalingState
+  removeAvatarScalingListener = addOscListener((a, args) => avatarScaling.handleOscInput(a, args), getRecvPort())
+  return avatarScaling
+}
+
+function renderAvatarScalingState (s) {
+  $('avatarScalingSlider').value = Math.min(10, s.scale)
+  $('avatarScalingValue').value = s.scale.toFixed(2)
+  setText('avatarScalingOut', s.connected ? `Avatar scaling on — ${s.scale.toFixed(2)}m` : 'Avatar scaling is off')
+}
+
+async function startAvatarScaling () {
+  ensureAvatarScaling().start()
+  await api.avatarScalingSetHotkeys(avatarScalingHotkeys)
+}
+
+async function stopAvatarScaling () {
+  if (avatarScaling) avatarScaling.stop()
+  await api.avatarScalingClearHotkeys()
+}
+
+api.on('avatarScaling:scaleTick', ({ dir }) => { if (avatarScaling) avatarScaling.applyScaleDelta(dir) })
+
+$('avatarScalingEnable').addEventListener('change', async e => {
+  await api.saveSetting('avatarScalingEnabled', e.target.checked)
+  if (e.target.checked) startAvatarScaling(); else stopAvatarScaling()
+})
+$('avatarScalingSlider').addEventListener('input', e => {
+  const v = parseFloat(e.target.value)
+  $('avatarScalingValue').value = v
+  ensureAvatarScaling().setScale(v)
+})
+$('avatarScalingValue').addEventListener('change', e => {
+  const v = parseFloat(e.target.value)
+  if (!Number.isFinite(v)) return
+  ensureAvatarScaling().setScale(v)
+})
+$('avatarScalingSafety').addEventListener('change', async e => {
+  ensureAvatarScaling().setUseSafety(e.target.checked)
+  await api.saveSetting('avatarScalingSafety', e.target.checked)
+})
+$('avatarScalingSaveWorlds').addEventListener('change', async e => {
+  ensureAvatarScaling().setSaveScaleBetweenWorlds(e.target.checked)
+  await api.saveSetting('avatarScalingSaveWorlds', e.target.checked)
+})
+$('avatarScalingSmoothing').addEventListener('input', async e => {
+  const v = parseInt(e.target.value, 10)
+  setText('avatarScalingSmoothingVal', v)
+  ensureAvatarScaling().setSmoothing(v)
+  await api.saveSetting('avatarScalingSmoothing', v)
+})
+
+async function recordAvatarScalingKey (slot) {
+  const btn = slot === 'up' ? $('avatarScalingRecordUp') : $('avatarScalingRecordDown')
+  const label = slot === 'up' ? $('avatarScalingKeyUp') : $('avatarScalingKeyDown')
+  btn.disabled = true
+  setText('avatarScalingOut', `Press a key for scale-${slot}...`)
+  const result = await api.avatarScalingRecordKey()
+  btn.disabled = false
+  if (!result) { setText('avatarScalingOut', 'No key captured (timed out) — you can still use the slider'); return }
+  avatarScalingHotkeys[slot === 'up' ? 'keyUp' : 'keyDown'] = result.vk
+  label.textContent = result.name
+  await api.saveSetting('avatarScalingHotkeys', avatarScalingHotkeys)
+  if ($('avatarScalingEnable').checked) await api.avatarScalingSetHotkeys(avatarScalingHotkeys)
+  setText('avatarScalingOut', `Scale-${slot} key set to ${result.name}`)
+}
+$('avatarScalingRecordUp').addEventListener('click', () => recordAvatarScalingKey('up'))
+$('avatarScalingRecordDown').addEventListener('click', () => recordAvatarScalingKey('down'))
+
 $('enableChatboxNowPlaying').addEventListener('change', async e => {
   chatboxNpEnabled = e.target.checked
   await api.saveSetting('chatboxNowPlayingEnabled', chatboxNpEnabled)
@@ -494,6 +660,26 @@ $('aiRun').addEventListener('click', async () => {
     })
     $('chatInput').value = out; setText('aiStatus', 'Done')
   } catch (err) { setText('aiStatus', err.message) }
+})
+
+/* ---------------- live typing ---------------- */
+const liveTyping = new LiveTypingSender({
+  composer,
+  translate: text => ($('liveTypingTranslate').checked ? translateWithSettings(text) : text)
+})
+liveTyping.onPreview = trimmed => setText('liveTypingPreview', trimmed)
+$('liveTypingInput').addEventListener('input', e => {
+  const v = e.target.value
+  setText('liveTypingCount', `${v.length} chars${v.length > 144 ? ' (over 144 — VRChat will show the end, prefixed with "…")' : ''}`)
+  liveTyping.setText(v)
+})
+$('liveTypingClear').addEventListener('click', () => {
+  $('liveTypingInput').value = ''
+  setText('liveTypingCount', '0 chars')
+  liveTyping.setText('')
+})
+$('liveTypingTranslate').addEventListener('change', async e => {
+  await api.saveSetting('liveTypingTranslate', e.target.checked)
 })
 
 // Build the per-source mode grid (Off / Own line / Rotate).
@@ -4243,8 +4429,30 @@ async function init () {
     const v = await api.getSetting(name, def); $(name + 'Slider').value = v; setText(name + 'Value', v)
   }
   katEnabled = await api.getSetting('katNowPlayingEnabled', false); $('enableKatNowPlaying').checked = katEnabled
+  const savedKatSyncParams = await api.getSetting('katSyncParams', 0)
+  if ([0, 4, 8, 16].includes(savedKatSyncParams)) {
+    $('katSyncParamsMode').value = String(savedKatSyncParams)
+  } else {
+    $('katSyncParamsMode').value = 'custom'
+    $('katSyncParamsCustom').value = savedKatSyncParams
+    $('katSyncParamsCustom').style.display = ''
+  }
   initNowPlayingSources()
   chatboxNpEnabled = await api.getSetting('chatboxNowPlayingEnabled', false); $('enableChatboxNowPlaying').checked = chatboxNpEnabled
+
+  const avatarScalingEnabled = await api.getSetting('avatarScalingEnabled', false)
+  $('avatarScalingEnable').checked = avatarScalingEnabled
+  const asSafety = await api.getSetting('avatarScalingSafety', true)
+  $('avatarScalingSafety').checked = asSafety
+  $('avatarScalingSaveWorlds').checked = await api.getSetting('avatarScalingSaveWorlds', false)
+  const asSmoothing = await api.getSetting('avatarScalingSmoothing', 50)
+  $('avatarScalingSmoothing').value = asSmoothing
+  setText('avatarScalingSmoothingVal', asSmoothing)
+  const savedHotkeys = await api.getSetting('avatarScalingHotkeys', { keyUp: null, keyDown: null })
+  avatarScalingHotkeys.keyUp = savedHotkeys.keyUp
+  avatarScalingHotkeys.keyDown = savedHotkeys.keyDown
+  if (savedHotkeys.keyUp) $('avatarScalingKeyUp').textContent = vkName(savedHotkeys.keyUp)
+  if (savedHotkeys.keyDown) $('avatarScalingKeyDown').textContent = vkName(savedHotkeys.keyDown)
   $('presetsText').value = await api.getSetting('presets', DEFAULT_PRESETS.join('\n'))
   composer.setPresets($('presetsText').value.split('\n'))
   composer.setRotationPosition(await api.getSetting('rotationPos', 'top'))
@@ -4396,6 +4604,8 @@ async function init () {
   if (gr.enabled) api.greeterSet(gr)
 
   await setupAiProviders()
+  await setupTranslator()
+  $('liveTypingTranslate').checked = await api.getSetting('liveTypingTranslate', false)
   $('overlayEnabled') // overlay restore
   $('enableOverlay').checked = await api.getSetting('overlayEnabled', true)
   $('overlayPortInput').value = await api.getSetting('overlayPort', 39530)
@@ -4405,6 +4615,7 @@ async function init () {
 
   if ($('enableReceive').checked) startOscReceiver(getRecvPort(), (a, args) => logLine(`IN  ${a} ${args.join(',')}`))
   if (katEnabled) startKat()
+  if (avatarScalingEnabled) startAvatarScaling()
   try { renderOverlay(await api.getOverlayState()) } catch (_) {}
 
   // ---- Startup / auto-start ----
@@ -4461,6 +4672,78 @@ async function saveAi () {
     provider: $('aiProvider').value, baseUrl: $('aiBaseUrl').value,
     model: $('aiModel').value, key: $('aiKey').value
   })
+}
+
+const TRANSLATOR_ROWS = {
+  libretranslate: ['translatorEndpointRow'],
+  deepl: ['translatorKeyRow', 'translatorDeeplTypeRow'],
+  google: ['translatorKeyRow']
+}
+function updateTranslatorRows () {
+  const provider = $('translatorProvider').value
+  const visible = new Set(TRANSLATOR_ROWS[provider] || [])
+  ;['translatorEndpointRow', 'translatorKeyRow', 'translatorDeeplTypeRow'].forEach(id => {
+    $(id).style.display = visible.has(id) ? '' : 'none'
+  })
+}
+async function setupTranslator () {
+  const sourceSel = $('translatorSource')
+  const targetSel = $('translatorTarget')
+  LANGUAGES.forEach(({ code, name }) => {
+    sourceSel.appendChild(new Option(name, code))
+    targetSel.appendChild(new Option(name, code))
+  })
+
+  const saved = await api.getSetting('translator', {
+    provider: 'libretranslate', endpoint: '', apiKey: '', apiType: 'free',
+    sourceLang: 'auto', targetLang: 'en', useAiGrammarFix: false
+  })
+  $('translatorProvider').value = saved.provider || 'libretranslate'
+  $('translatorEndpoint').value = saved.endpoint || ''
+  $('translatorApiKey').value = saved.apiKey || ''
+  $('translatorDeeplType').value = saved.apiType || 'free'
+  $('translatorSource').value = saved.sourceLang || 'auto'
+  $('translatorTarget').value = saved.targetLang || 'en'
+  $('translatorAiGrammarFix').checked = !!saved.useAiGrammarFix
+  updateTranslatorRows()
+
+  $('translatorProvider').addEventListener('change', async () => { updateTranslatorRows(); await saveTranslator() })
+  ;['translatorEndpoint', 'translatorApiKey', 'translatorDeeplType', 'translatorSource', 'translatorTarget', 'translatorAiGrammarFix']
+    .forEach(id => $(id).addEventListener('change', saveTranslator))
+}
+async function saveTranslator () {
+  await api.saveSetting('translator', {
+    provider: $('translatorProvider').value,
+    endpoint: $('translatorEndpoint').value,
+    apiKey: $('translatorApiKey').value,
+    apiType: $('translatorDeeplType').value,
+    sourceLang: $('translatorSource').value,
+    targetLang: $('translatorTarget').value,
+    useAiGrammarFix: $('translatorAiGrammarFix').checked
+  })
+}
+// Translate text using the saved Translator settings. Falls back to the
+// original text on any failure (network, missing key, bad endpoint, ...)
+// so a broken translator config never blocks the feature calling this.
+async function translateWithSettings (text) {
+  const t = await api.getSetting('translator', null)
+  if (!t || !t.provider) return text
+  try {
+    const result = await api.translate({
+      provider: t.provider,
+      endpoint: t.endpoint,
+      apiKey: t.apiKey,
+      apiType: t.apiType,
+      source: t.sourceLang,
+      target: t.targetLang,
+      useAiGrammarFix: t.useAiGrammarFix,
+      aiSettings: t.useAiGrammarFix ? { baseUrl: $('aiBaseUrl').value, apiKey: $('aiKey').value, model: $('aiModel').value } : null,
+      text
+    })
+    return result?.translatedText || text
+  } catch (_) {
+    return text
+  }
 }
 
 init()
