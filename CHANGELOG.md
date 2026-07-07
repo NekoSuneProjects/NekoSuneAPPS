@@ -41,6 +41,58 @@ This project follows [Semantic Versioning](https://semver.org/).
   throttled OSC echoes had a chance to arrive. Now holds the probe for longer and also checks
   VRChat's own avatar OSC config file directly. Added a manual override as a fallback.
 
+## [1.0.40] - 2026-07-07
+
+### Added
+- **Customizable media progress tokens.** Status presets can now include Now Playing
+  timestamp/progress values, and `{songbar}` supports selectable styles — bars, stars,
+  diamonds, dots, squares, and thin blocks.
+
+## [1.0.39] - 2026-07-07
+
+### Fixed
+- **Weather chatbox token.** `{weather}` is now exposed in the chatbox token map and formats
+  without the location prefix, while the Weather page itself still shows the location.
+
+## [1.0.38] - 2026-07-07
+
+### Added
+- **Translation page.** Dedicated sidebar page for the Translator, IntelliChat AI provider,
+  and TikTok TTS voice test cards, with hosted (NekoSuneVR) and custom translation-endpoint
+  defaults plus a NekoSuneVR Ollama preset.
+- **Expanded avatar search providers.** Added VRCX vrcdb, Paw API VRCX, NekoSuneVR Avatar
+  Search, avtr.zip VRCX, avtrdb VRCX, and WorldBalancer VRCX as selectable/default providers,
+  with a more flexible response parser (handles more field-name variants, `items` arrays, and
+  now carries a `performance` rating through).
+- **Multi-client OSC send/receive.** KAT and Avatar Scaling (and Discord Rich Presence OSC)
+  can mirror to extra OSC targets, not just the primary send port.
+- **KAT avatar-config detection.** In addition to probing, KAT now reads VRChat's own per-
+  avatar OSC config JSON directly to detect the exact sync-param count when available.
+- **Notification history / archive.** Removed, resolved, and cleared notifications are now
+  archived to a `notification_history` table instead of just being deleted, and the
+  notification list can be reconciled against the currently-active set.
+
+### Changed
+- **Avatar Scaling range improvements.**
+- **TikTok follower tracking auto-start.**
+- Moved ToN Tablet OSC and Emerald Sound System into the Terrors page; updated README feature
+  coverage.
+
+## [1.0.37] - 2026-07-07
+
+### Changed
+- **Sidebar icon manifest.** Documented the current icon set, moved Ranks/About into their
+  live tab positions, and marked the old `osccontrol` icon as legacy/unused.
+
+## [1.0.36] - 2026-07-07
+
+### Added
+- **Localization foundation.** i18n locale loading, a first-run/Settings language picker, and
+  the first batch of seeded locales (coverage still ongoing at this point).
+- **Translator provider settings** and **Live Typing chatbox** support.
+- **Avatar Scaling** with global hotkeys.
+- **KAT sync-parameter controls** (manual override alongside auto-detect).
+
 ## [1.0.35] - 2026-07-01
 
 ### Added
