@@ -704,6 +704,26 @@ ipcMain.handle('update:check', () => updater.check(app.getVersion()))
 ipcMain.handle('app:version', () => app.getVersion())
 ipcMain.handle('app:contributors', () => updater.contributors())
 
+// Downloads the update .msi to the current install directory (falling back
+// to temp if that's not writable without elevation), then hands off to a
+// detached helper that waits for this process to exit, runs msiexec, and
+// relaunches the app - see updater.js/applyUpdate.ps1 for why it can't just
+// happen inline here.
+ipcMain.handle('update:downloadMsi', async (e, { url, name } = {}) => {
+  if (!url) throw new Error('No update file to download')
+  try {
+    const msiPath = await updater.downloadMsi(url, name, progress => push('update:downloadProgress', progress))
+    return { ok: true, path: msiPath }
+  } catch (err) {
+    throw new Error(`Could not download the update: ${err.message}`)
+  }
+})
+ipcMain.handle('update:applyMsi', (e, { msiPath } = {}) => {
+  if (!msiPath || !fs.existsSync(msiPath)) throw new Error('Downloaded update file is missing')
+  updater.applyUpdate(msiPath, () => app.quit())
+  return true
+})
+
 // Achievements auto-unlock from the live WS feed; all categories are click-to-toggle.
 const tonSetFor = cat => ({ achievements: tonUnlockAch, items: tonUnlockItems, rounds: tonUnlockRounds, terrors: tonSeenTerrors, locations: tonSeenMaps }[cat])
 const tonKeyFor = cat => ({ achievements: 'tonUnlockAch', items: 'tonUnlockItems', rounds: 'tonUnlockRounds', terrors: 'tonSeenTerrors', locations: 'tonSeenMaps' }[cat])

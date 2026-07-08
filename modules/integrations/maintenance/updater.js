@@ -1,10 +1,16 @@
 // modules/integrations/maintenance/updater.js
-// Lightweight update checker — asks the GitHub Releases API for the latest release
-// of NekoSuneAPPS and compares it to the running version. No auto-install (the app
-// isn't wired to electron-updater feeds); "Install update" opens the installer asset
-// so the user runs it. Runs in the MAIN process.
+// Update checker + installer for NekoSuneAPPS - asks the GitHub Releases API
+// for the latest release and compares it to the running version. The actual
+// install downloads the .msi asset, then hands off to applyUpdate.ps1 (a
+// detached helper, since this process needs to fully exit before msiexec can
+// replace its own files) which runs msiexec and relaunches the app once it's
+// done. Runs in the MAIN process.
 
 const axios = require('axios')
+const fs = require('fs')
+const os = require('os')
+const path = require('path')
+const { spawn } = require('child_process')
 
 const REPO = 'NekoSuneProjects/NekoSuneAPPS'
 const API = `https://api.github.com/repos/${REPO}/releases/latest`
@@ -33,6 +39,11 @@ async function check (currentVersion) {
     // Prefer the Windows NSIS installer, then MSI, then any asset.
     const pick = re => assets.find(a => re.test(a.name || ''))
     const installer = pick(/Setup.*\.exe$/i) || pick(/\.exe$/i) || pick(/\.msi$/i)
+    // The in-app update flow specifically wants the .msi (msiexec supports a
+    // silent/passive install and a clean way to detect the app is closed),
+    // separate from installerUrl above which is only used as a manual
+    // open-in-browser fallback when no .msi asset was published.
+    const msi = pick(/\.msi$/i)
     return {
       ok: true,
       available: cmp(latest, currentVersion) > 0,
@@ -40,11 +51,65 @@ async function check (currentVersion) {
       latest,
       notes: String(data.body || '').slice(0, 4000),
       url: data.html_url || RELEASES_PAGE,
-      installerUrl: installer ? installer.browser_download_url : (data.html_url || RELEASES_PAGE)
+      installerUrl: installer ? installer.browser_download_url : (data.html_url || RELEASES_PAGE),
+      msiUrl: msi ? msi.browser_download_url : null,
+      msiName: msi ? msi.name : null,
+      msiSize: msi ? msi.size : null
     }
   } catch (err) {
     return { ok: false, error: err.message, current: currentVersion }
   }
+}
+
+// Downloads the .msi asset. Prefers saving it next to the running exe (the
+// current install location, per how the user wants updates handled) - that
+// directory doesn't need to be writable for msiexec to work, it's only
+// where the downloaded file itself lands, so this falls back to a temp
+// folder if the install dir isn't writable without elevation (e.g. a
+// per-machine install under Program Files).
+async function downloadMsi (url, fileName, onProgress) {
+  const res = await axios.get(url, {
+    responseType: 'stream', timeout: 60000, headers: { 'User-Agent': 'NekoSuneAPPS-Updater' }
+  })
+  const total = parseInt(res.headers['content-length'] || '0', 10)
+  let received = 0
+
+  const installDir = path.dirname(process.execPath)
+  let outDir = installDir
+  try {
+    fs.accessSync(outDir, fs.constants.W_OK)
+  } catch (_) {
+    outDir = os.tmpdir()
+  }
+  const outPath = path.join(outDir, fileName || 'NekoSuneAPPS-Update.msi')
+
+  await new Promise((resolve, reject) => {
+    const writer = fs.createWriteStream(outPath)
+    res.data.on('data', chunk => {
+      received += chunk.length
+      if (onProgress) onProgress({ received, total })
+    })
+    res.data.on('error', reject)
+    writer.on('error', reject)
+    writer.on('finish', resolve)
+    res.data.pipe(writer)
+  })
+
+  return outPath
+}
+
+// Hands off to a detached helper script (applyUpdate.ps1) and quits - this
+// process needs to fully exit before msiexec can replace the files it has
+// open, so it can't just run msiexec directly and wait. The helper waits for
+// this process to exit, installs, then relaunches the app.
+function applyUpdate (msiPath, quitApp) {
+  const scriptPath = path.join(__dirname, 'applyUpdate.ps1')
+  const child = spawn('powershell', [
+    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', scriptPath,
+    '-MsiPath', msiPath, '-ExePath', process.execPath, '-WaitProcessId', String(process.pid)
+  ], { detached: true, stdio: 'ignore', windowsHide: true })
+  child.unref()
+  quitApp()
 }
 
 // Static collaborators who may not yet appear in GitHub's contributor API
@@ -73,4 +138,4 @@ async function contributors () {
   }
 }
 
-module.exports = { check, cmp, contributors, RELEASES_PAGE }
+module.exports = { check, cmp, contributors, downloadMsi, applyUpdate, RELEASES_PAGE }

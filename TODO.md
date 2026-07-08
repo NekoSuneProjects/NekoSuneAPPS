@@ -112,6 +112,19 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 - [ ] **Deeper collaborator / collab-code auto-detection** — beyond GitHub contributors:
   parse `Co-Authored-By:` trailers from git history and any in-source `@author`/credit
   comment markers, and surface named collaborations on the About page.
+- [x] **In-app update installs** — `modules/integrations/maintenance/updater.js` +
+  `applyUpdate.ps1`. "Update available" no longer just opens the release page for the user to
+  handle manually: clicking "Download & install" downloads the release's `.msi` asset (into the
+  current install directory, i.e. next to the running exe, falling back to a temp folder if that
+  location needs elevation to write to — msiexec doesn't need the `.msi` file itself to sit
+  somewhere writable-without-admin, only the actual install target, which it prompts to elevate
+  for on its own), shows live download progress, then hands off to a **detached** PowerShell
+  helper and quits — the running app has its own files open, so it has to fully exit before
+  `msiexec` can replace them. The helper waits for the old process to exit, runs
+  `msiexec /passive`, then relaunches the newly-installed exe automatically. Falls back to the
+  previous open-in-browser behavior if a release has no `.msi` asset. Verified the download +
+  file-write path and the exact detached-spawn command/args with mocked HTTP/child_process, and
+  the PowerShell helper's syntax, without actually triggering a real install.
 
 ## 🥽 Requested big features (next session)
 

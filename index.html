@@ -2062,9 +2062,13 @@
         <div style="font-weight:700;font-size:1.05rem;margin-bottom:6px">🎉 Update available</div>
         <div id="updateText" class="muted" style="font-size:.9rem">A new version of NekoSuneAPPS is available.</div>
         <div id="updateNotes" style="display:none;max-height:220px;overflow:auto;font-size:.8rem;line-height:1.5;background:var(--panel2,#1a1a1a);padding:10px 12px;border-radius:8px;margin-top:8px"></div>
+        <div id="updateProgressWrap" style="display:none;margin-top:10px">
+          <div style="height:6px;border-radius:3px;background:var(--panel2,#1a1a1a);overflow:hidden"><div id="updateProgressBar" style="height:100%;width:0%;background:var(--accent,#7c5cff)"></div></div>
+          <div id="updateProgressText" class="muted" style="font-size:.75rem;margin-top:4px">Downloading…</div>
+        </div>
         <div class="row" style="justify-content:flex-end;margin-top:16px;gap:8px">
           <button class="btn ghost" id="updateLater">Remind me later</button>
-          <button class="btn" id="updateInstall">⬇ Install update</button>
+          <button class="btn" id="updateInstall">⬇ Download &amp; install</button>
         </div>
       </div>
     </div>

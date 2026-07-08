@@ -4333,13 +4333,43 @@ function showUpdate (info) {
   }
   $('updateModal').style.display = 'flex'
 }
-if ($('updateInstall')) $('updateInstall').addEventListener('click', () => {
-  if (_updateInfo) api.openExternal(_updateInfo.installerUrl || _updateInfo.url)
-  if ($('updateModal')) $('updateModal').style.display = 'none'
+api.on('update:downloadProgress', ({ received, total }) => {
+  if (!$('updateProgressBar')) return
+  const pct = total ? Math.min(100, Math.round((received / total) * 100)) : 0
+  $('updateProgressBar').style.width = `${pct}%`
+  setText('updateProgressText', total ? `Downloading… ${pct}% (${(received / 1e6).toFixed(1)} / ${(total / 1e6).toFixed(1)} MB)` : `Downloading… ${(received / 1e6).toFixed(1)} MB`)
+})
+if ($('updateInstall')) $('updateInstall').addEventListener('click', async () => {
+  if (!_updateInfo) return
+  // No .msi asset was published on this release (e.g. only the NSIS Setup.exe
+  // built) - fall back to the old manual-download behavior rather than
+  // failing outright.
+  if (!_updateInfo.msiUrl) {
+    api.openExternal(_updateInfo.installerUrl || _updateInfo.url)
+    $('updateModal').style.display = 'none'
+    return
+  }
+  const btn = $('updateInstall')
+  const laterBtn = $('updateLater')
+  btn.disabled = true
+  if (laterBtn) laterBtn.disabled = true
+  if ($('updateProgressWrap')) $('updateProgressWrap').style.display = 'block'
+  setText('updateProgressText', 'Downloading…')
+  try {
+    const dl = await api.updateDownloadMsi({ url: _updateInfo.msiUrl, name: _updateInfo.msiName })
+    if (!dl?.ok) throw new Error(dl?.error || 'Download failed')
+    setText('updateProgressText', 'Installing — NekoSuneAPPS will close and reopen automatically…')
+    await api.updateApplyMsi({ msiPath: dl.path })
+    // The app quits itself right after this call succeeds; nothing else to do.
+  } catch (err) {
+    setText('updateProgressText', `Update failed: ${err.message}`)
+    btn.disabled = false
+    if (laterBtn) laterBtn.disabled = false
+  }
 })
 // "Remind me later" — just dismiss; it'll check again next launch.
 if ($('updateLater')) $('updateLater').addEventListener('click', () => { if ($('updateModal')) $('updateModal').style.display = 'none' })
-if ($('updateModal')) $('updateModal').addEventListener('click', e => { if (e.target === $('updateModal')) $('updateModal').style.display = 'none' })
+if ($('updateModal')) $('updateModal').addEventListener('click', e => { if (e.target === $('updateModal') && !$('updateInstall').disabled) $('updateModal').style.display = 'none' })
 api.on('update:available', info => { if (info && info.available) showUpdate(info) })
 
 /* ---------------- About page ---------------- */

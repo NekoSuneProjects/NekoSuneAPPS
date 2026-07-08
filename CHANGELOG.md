@@ -6,6 +6,16 @@ This project follows [Semantic Versioning](https://semver.org/).
 ## Unreleased
 
 
+## [1.0.51] - 2026-07-08
+
+### Added
+- **In-app update installs.** The "Update available" dialog no longer just opens a browser link
+  for you to download and run manually — clicking "Download & install" now downloads the
+  release's .msi directly (saved next to the current install, falling back to a temp folder if
+  that location needs admin rights to write to), shows real download progress, then closes the
+  app and runs the installer for you, relaunching NekoSuneAPPS automatically once it's done. If a
+  release doesn't have an .msi asset, it falls back to the old open-in-browser behavior.
+
 ## [1.0.50] - 2026-07-08
 
 ### Added
