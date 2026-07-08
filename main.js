@@ -1,8 +1,18 @@
 const { app, BrowserWindow, ipcMain, Tray, Menu, shell, dialog, clipboard, desktopCapturer } = require('electron')
 const path = require('path')
 const fs = require('fs')
-const { spawn } = require('child_process')
+const { spawn, execFile } = require('child_process')
 const settings = require('./settings')
+
+// ffmpeg-static's own path points inside app.asar when packaged, which can't
+// be executed directly - asarUnpack (package.json build config) places the
+// real binary alongside it under app.asar.unpacked, so redirect there.
+// Resolved lazily (not at module load) since app.isPackaged isn't safe to
+// read before Electron has fully initialized the main process.
+function getFfmpegBinPath () {
+  const p = require('ffmpeg-static')
+  return app.isPackaged ? p.replace('app.asar', 'app.asar.unpacked') : p
+}
 
 const { getNowPlaying, setPreferredSource, getPreferredSource, getSources } = require('./modules/media/nowPlaying')
 const {
@@ -29,7 +39,8 @@ const { intelliRewrite, AI_PROVIDERS } = require('./modules/ai/intelliChat')
 const { translateText, TRANSLATE_PROVIDERS } = require('./modules/ai/translateProviders')
 const { speak, listSapiVoices, TTS_PROVIDERS } = require('./modules/ai/ttsProviders')
 const { transcribeCloud, transcribeLocal, STT_CLOUD_PROVIDERS, STT_LOCAL_MODELS } = require('./modules/ai/speechToText')
-const { interpretCommand } = require('./modules/ai/assistantBrain')
+const { interpretCommand, summarizeSearchResults } = require('./modules/ai/assistantBrain')
+const { searchWeb } = require('./modules/ai/webSearch')
 const i18n = require('./modules/i18n/i18n')
 const { loginTwitch, TWITCH_REDIRECT } = require('./modules/oauth/providers/twitch')
 const twitchInteractive = require('./modules/live/twitch/interactive')
@@ -147,13 +158,20 @@ function createWindow () {
 
   mainWindow.loadFile('index.html')
 
-  // OSCQR and ShazamOSC use Chromium's supported screen-sharing path. Prefer
-  // the Windows system picker; the primary display is a fallback on systems
-  // where Electron cannot expose that picker. Audio is loopback-only.
+  // OSCQR, ShazamOSC, desktop STT/OCR and the SOS instant-replay buffer all
+  // share this one handler (Electron only allows one per session), so there
+  // is never an OS picker shown - we pick the source ourselves. An explicit
+  // user selection (oscAppsCaptureSourceId, set via the capture-source
+  // picker in Settings) always wins; otherwise auto-prefer the actual
+  // VRChat window over the whole desktop, since this is a VRChat companion
+  // app and grabbing the full screen produced replay clips of whatever
+  // happened to be in focus rather than the game itself.
   mainWindow.webContents.session.setDisplayMediaRequestHandler(async (request, callback) => {
     try {
       const sources = await desktopCapturer.getSources({ types: ['screen', 'window'] })
-      const selected = sources.find(source => source.id === oscAppsCaptureSourceId) || sources.find(source => source.id.startsWith('screen:')) || sources[0]
+      const selected = sources.find(source => source.id === oscAppsCaptureSourceId) ||
+        sources.find(source => /vrchat/i.test(source.name)) ||
+        sources.find(source => source.id.startsWith('screen:')) || sources[0]
       callback(selected ? { video: selected, audio: request.audioRequested ? 'loopback' : undefined } : {})
     } catch (err) {
       console.warn('Display media request failed:', err.message)
@@ -920,19 +938,28 @@ function stopHotkeyTick () {
 ipcMain.handle('avatarScaling:recordKey', () => {
   return new Promise(resolve => {
     let done = false
-    const unsub = keyHookPs.subscribe(evt => {
-      if (done || evt.t !== 'down') return
-      done = true
-      unsub()
-      clearTimeout(timer)
-      resolve({ vk: evt.vk, name: vkName(evt.vk) })
-    })
-    const timer = setTimeout(() => {
+    const finish = (result) => {
       if (done) return
       done = true
       unsub()
-      resolve(null)
-    }, 8000)
+      clearTimeout(timer)
+      clearTimeout(healthCheck)
+      resolve(result)
+    }
+    const unsub = keyHookPs.subscribe(evt => {
+      if (evt.t !== 'down') return
+      finish({ vk: evt.vk, name: vkName(evt.vk) })
+    })
+    // If the hook process never actually comes up (blocked by antivirus, a
+    // restrictive PowerShell execution policy, etc.) this used to just sit
+    // silent until the 8s timeout and report a generic "no key captured",
+    // which looked identical to "recording is broken". Surface the real
+    // reason instead once it's had a couple seconds to start.
+    const healthCheck = setTimeout(() => {
+      if (done || keyHookPs.isRunning()) return
+      finish({ error: keyHookPs.getLastError() || "The keyboard hook didn't start - check that PowerShell scripts aren't blocked (antivirus or execution policy) and try again." })
+    }, 2500)
+    const timer = setTimeout(() => finish(null), 8000)
   })
 })
 
@@ -1002,17 +1029,57 @@ ipcMain.handle('stt:localModels', () => STT_LOCAL_MODELS)
 /* Voice assistant command interpretation (wake-word body -> action)   */
 /* ------------------------------------------------------------------ */
 ipcMain.handle('assistant:interpret', (e, opts) => interpretCommand(opts))
+ipcMain.handle('assistant:summarizeSearch', (e, opts) => summarizeSearchResults(opts))
+ipcMain.handle('assistant:searchWeb', (e, { query, provider, endpoint } = {}) => searchWeb(query, { provider, endpoint }))
+
+function runFfmpeg (args) {
+  return new Promise((resolve, reject) => {
+    execFile(getFfmpegBinPath(), args, { windowsHide: true }, (err, stdout, stderr) => {
+      if (err) reject(new Error(String(stderr || '').trim().slice(-400) || err.message))
+      else resolve()
+    })
+  })
+}
 
 // Saves an SOS instant-replay clip to ~/Videos/NekoSuneAPPS (created if
 // missing), alongside any Discord-webhook upload the assistant also does.
-ipcMain.handle('assistant:saveClip', (e, { base64, mime } = {}) => {
-  if (!base64) return null
+// The renderer sends one or more independently-valid webm segments (see
+// jarvisAssistant.js's segment-rotation replay buffer) - ffmpeg stitches
+// them into a single real, seekable .mp4 rather than a naive byte
+// concatenation, which is what previously produced unplayable clips.
+ipcMain.handle('assistant:saveClip', async (e, { segments } = {}) => {
+  if (!Array.isArray(segments) || !segments.length) throw new Error('No clip data was captured')
+
   const dir = path.join(app.getPath('videos'), 'NekoSuneAPPS')
   fs.mkdirSync(dir, { recursive: true })
-  const ext = String(mime || '').includes('mp4') ? 'mp4' : 'webm'
-  const file = path.join(dir, `sos-clip-${new Date().toISOString().replace(/[:.]/g, '-')}.${ext}`)
-  fs.writeFileSync(file, Buffer.from(base64, 'base64'))
-  return file
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+  const tmpDir = path.join(app.getPath('temp'), `nekosune-clip-${stamp}`)
+  fs.mkdirSync(tmpDir, { recursive: true })
+
+  try {
+    const partFiles = segments.map((seg, i) => {
+      const p = path.join(tmpDir, `part${i}.webm`)
+      fs.writeFileSync(p, Buffer.from(seg.base64 || seg, 'base64'))
+      return p
+    })
+
+    const outFile = path.join(dir, `sos-clip-${stamp}.mp4`)
+    const encodeArgs = ['-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23', '-c:a', 'aac', '-movflags', '+faststart', outFile]
+
+    if (partFiles.length === 1) {
+      await runFfmpeg(['-y', '-i', partFiles[0], ...encodeArgs])
+    } else {
+      const listFile = path.join(tmpDir, 'concat.txt')
+      fs.writeFileSync(listFile, partFiles.map(p => `file '${p.replace(/'/g, "'\\''")}'`).join('\n'))
+      await runFfmpeg(['-y', '-f', 'concat', '-safe', '0', '-i', listFile, ...encodeArgs])
+    }
+
+    return outFile
+  } catch (err) {
+    throw new Error(`Could not save clip: ${err.message}`)
+  } finally {
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }) } catch (_) {}
+  }
 })
 
 /* ------------------------------------------------------------------ */

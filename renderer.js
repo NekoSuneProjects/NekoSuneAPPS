@@ -592,6 +592,7 @@ async function recordAvatarScalingKey (slot) {
   const result = await api.avatarScalingRecordKey()
   btn.disabled = false
   if (!result) { setText('avatarScalingOut', 'No key captured (timed out) — you can still use the slider'); return }
+  if (result.error) { setText('avatarScalingOut', result.error); return }
   avatarScalingHotkeys[slot === 'up' ? 'keyUp' : 'keyDown'] = result.vk
   label.textContent = result.name
   await api.saveSetting('avatarScalingHotkeys', avatarScalingHotkeys)
@@ -5166,7 +5167,9 @@ function ensureJarvisAssistant () {
     transcribeCloud: opts => api.sttTranscribeCloud(opts),
     transcribeLocal: opts => api.sttTranscribeLocal(opts),
     interpretCommand: opts => api.assistantInterpret(opts),
-    sendChatboxMessage,
+    summarizeSearch: opts => api.assistantSummarizeSearch(opts),
+    searchWeb: opts => api.assistantSearchWeb(opts),
+    getWeather: () => api.weatherGet(),
     speakText: speakWithSettings,
     // vrchatFriends() (offline=false) returns friend objects with NO `online`
     // field at all - that flag only gets set by the reconciled all-friends
@@ -5186,7 +5189,9 @@ function ensureJarvisAssistant () {
   return jarvisAssistant
 }
 function renderAssistantState (s) {
-  setText('assistantStatus', s.status + (s.error ? ` — ${s.error}` : ''))
+  let statusLine = s.status + (s.error ? ` — ${s.error}` : '')
+  if (s.live && s.config?.enableReplayBuffer) statusLine += s.replayActive ? ' · 🔴 instant-replay recording' : ' · ⚠ instant-replay not capturing'
+  setText('assistantStatus', statusLine)
   setText('assistantHeard', s.lastHeard ? `Heard: "${s.lastHeard}"${s.lastReply ? ` → "${s.lastReply}"` : ''}` : '')
   $('assistantToggle').textContent = s.live ? 'Stop listening' : 'Start listening'
 }
@@ -5211,6 +5216,8 @@ async function saveAssistantConfig () {
     enableReplayBuffer: $('assistantEnableReplay').checked,
     replayMinutes: parseInt($('assistantReplayMinutes').value, 10) || 5,
     sosWebhook: $('assistantSosWebhook').value.trim(),
+    searchProvider: $('assistantSearchProvider').value,
+    searxngEndpoint: $('assistantSearxngEndpoint').value.trim() || 'https://searxng.nekosunevr.co.uk/',
     engine: sttCfg.engine || 'cloud',
     cloudBaseUrl: sttCfg.cloudBaseUrl || '',
     cloudApiKey: sttCfg.cloudApiKey || '',
@@ -5224,10 +5231,14 @@ async function saveAssistantConfig () {
   ensureJarvisAssistant().configure(cfg)
   return cfg
 }
+function updateAssistantSearchRows () {
+  $('assistantSearxngRow').style.display = $('assistantSearchProvider').value === 'searxng' ? '' : 'none'
+}
 async function setupAssistant () {
   const saved = await api.getSetting('assistant', {
     wakeWord: 'nova', micDeviceId: '', clipSeconds: 4, trustedFriends: [],
-    enableReplayBuffer: false, replayMinutes: 5, sosWebhook: ''
+    enableReplayBuffer: false, replayMinutes: 5, sosWebhook: '',
+    searchProvider: 'searxng', searxngEndpoint: 'https://searxng.nekosunevr.co.uk/'
   })
   $('assistantWakeWord').value = saved.wakeWord || 'nova'
   $('assistantClipSeconds').value = saved.clipSeconds || 4
@@ -5235,10 +5246,14 @@ async function setupAssistant () {
   $('assistantEnableReplay').checked = !!saved.enableReplayBuffer
   $('assistantReplayMinutes').value = String(saved.replayMinutes || 5)
   $('assistantSosWebhook').value = saved.sosWebhook || ''
+  $('assistantSearchProvider').value = saved.searchProvider || 'searxng'
+  $('assistantSearxngEndpoint').value = saved.searxngEndpoint || 'https://searxng.nekosunevr.co.uk/'
+  updateAssistantSearchRows()
   await refreshAssistantMicDevices()
   if (saved.micDeviceId) $('assistantMicDevice').value = saved.micDeviceId
   await saveAssistantConfig()
-  ;['assistantWakeWord', 'assistantMicDevice', 'assistantClipSeconds', 'assistantTrustedFriends', 'assistantEnableReplay', 'assistantReplayMinutes', 'assistantSosWebhook']
+  $('assistantSearchProvider').addEventListener('change', async () => { updateAssistantSearchRows(); await saveAssistantConfig() })
+  ;['assistantWakeWord', 'assistantMicDevice', 'assistantClipSeconds', 'assistantTrustedFriends', 'assistantEnableReplay', 'assistantReplayMinutes', 'assistantSosWebhook', 'assistantSearxngEndpoint']
     .forEach(id => $(id).addEventListener('change', saveAssistantConfig))
 }
 $('assistantToggle').addEventListener('click', async () => {

@@ -6,6 +6,40 @@ This project follows [Semantic Versioning](https://semver.org/).
 ## Unreleased
 
 
+## [1.0.48] - 2026-07-08
+
+### Added
+- **Voice assistant is now also a VRChat world-creation brainstorming partner and a general,
+  Alexa-like assistant** — weather, news/current events, general questions, small talk — while
+  explicitly declining to help write, debug, or explain code.
+- **Web search for the voice assistant**, user-selectable: a self-hosted **SearXNG** instance
+  (JSON API) or **DuckDuckGo's** no-key Instant Answer API (limited — often returns nothing for
+  ordinary queries, offered as a no-setup fallback). Used for "what's the weather", "what's the
+  news", and anything else current/factual.
+
+### Changed
+- **The voice assistant never posts to the VRChat chatbox anymore.** Every response is spoken
+  via TTS only.
+- **SOS instant-replay clips are now real, playable .mp4 files** (previously .webm). The rolling
+  buffer now rotates to a fresh self-contained recording every 10 seconds instead of pruning
+  chunks from one continuous recording, and the main process stitches the kept segments together
+  with a bundled ffmpeg and transcodes to H.264/AAC.
+- **Screen-capture features (SOS instant-replay, OCR, Desktop STT, OSCQR/Shazam) now auto-prefer
+  the actual VRChat window** instead of defaulting to the whole primary screen.
+
+### Fixed
+- **SOS instant-replay clips were corrupted/unplayable.** Root cause: pruning old chunks off a
+  single continuous recording eventually dropped the one chunk holding the file's container
+  header, so exported clips had no valid header at all (a static/garbage frame in most players).
+  Fixed by the segment-rotation rework above — verified end-to-end with a generated test clip
+  that now decodes cleanly.
+- **Avatar Scaling's hotkey recorder gave no reason when it failed ("hotkey broken, doesn't
+  save").** If the underlying keyboard-hook process couldn't actually start (blocked by
+  antivirus, a restrictive PowerShell execution policy, etc.), "Record" silently sat until an 8s
+  timeout with the same generic "no key captured" message, indistinguishable from just not
+  pressing anything in time — and since nothing was ever captured, nothing was ever saved. It now
+  surfaces the real reason after a 2.5s health check instead.
+
 ## [1.0.47] - 2026-07-08
 
 ### Fixed

@@ -15,15 +15,26 @@ const readline = require('readline')
 
 let proc = null
 let listeners = new Set()
+let lastError = null
 
 function isRunning () {
   return !!proc
 }
 
+// Surfaced by the "record key" flow so a hook that never actually installs
+// (blocked by antivirus, restrictive PowerShell execution policy, no .NET,
+// etc.) shows a real reason instead of just silently timing out and looking
+// like "recording never saves".
+function getLastError () {
+  return lastError
+}
+
 function start () {
   if (proc || process.platform !== 'win32') return
+  lastError = null
 
   const scriptPath = path.join(__dirname, 'keyHook.ps1')
+  let stderrBuf = ''
   proc = spawn('powershell', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', scriptPath], {
     windowsHide: true
   })
@@ -35,9 +46,13 @@ function start () {
     if (!evt || (evt.t !== 'down' && evt.t !== 'up') || !Number.isFinite(evt.vk)) return
     listeners.forEach(fn => { try { fn(evt) } catch (_) {} })
   })
+  proc.stderr.on('data', chunk => { stderrBuf += chunk.toString() })
 
-  proc.on('exit', () => { proc = null })
-  proc.on('error', () => { proc = null })
+  proc.on('exit', code => {
+    if (code) lastError = `Keyboard hook exited unexpectedly (code ${code}). ${stderrBuf.trim().slice(-300) || 'Check that PowerShell can run scripts and that antivirus isn\'t blocking it.'}`
+    proc = null
+  })
+  proc.on('error', err => { lastError = err.message; proc = null })
 }
 
 function stop () {
@@ -58,4 +73,4 @@ function subscribe (fn) {
   }
 }
 
-module.exports = { subscribe, isRunning }
+module.exports = { subscribe, isRunning, getLastError }

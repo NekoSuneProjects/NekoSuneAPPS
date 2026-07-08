@@ -164,6 +164,8 @@ window.electronAPI = {
   // voice assistant
   assistantInterpret: opts => ipcRenderer.invoke('assistant:interpret', opts),
   assistantSaveClip: opts => ipcRenderer.invoke('assistant:saveClip', opts),
+  assistantSummarizeSearch: opts => ipcRenderer.invoke('assistant:summarizeSearch', opts),
+  assistantSearchWeb: opts => ipcRenderer.invoke('assistant:searchWeb', opts),
 
   // discord
   discordStart: cfg => ipcRenderer.invoke('discord:start', cfg),

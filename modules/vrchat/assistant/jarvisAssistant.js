@@ -18,8 +18,11 @@
 // Commands are interpreted by an LLM (assistantBrain.js, main process) into
 // one small JSON action, then executed here against the real VRChat API
 // surface the app already exposes (friends list, current location, profile
-// update, invite). The assistant NEVER changes the user's bio - only
-// statusDescription, and only via an explicit "set_status" command.
+// update, invite), the app's own Weather feature, or a self-hosted SearXNG
+// instance for anything else factual/current. The assistant NEVER changes
+// the user's bio - only statusDescription, and only via an explicit
+// "set_status" command. Responses are spoken via TTS ONLY - never posted to
+// the VRChat chatbox, since a voice reply has no reason to also be text.
 //
 // SOS is manual-only (an explicit spoken "sos" command, matched by the LLM
 // interpreter, or a UI button) - never auto-triggered by the emotional-cue
@@ -28,7 +31,13 @@
 // uploads the rolling replay clip to a configured webhook so those friends
 // can see what happened before they arrive.
 
+const path = require('path')
+const fs = require('fs')
 const { detectCue, CHECK_IN_MESSAGES } = require('./emotionCues')
+
+// How often the instant-replay recorder rotates to a fresh, independently
+// valid segment (see startReplayBuffer below).
+const REPLAY_SEGMENT_MS = 10000
 
 const INSTANCE_SPEECH = {
   public: 'a public instance',
@@ -43,15 +52,17 @@ const INSTANCE_SPEECH = {
 
 class JarvisAssistant {
   constructor ({
-    transcribeCloud, transcribeLocal, interpretCommand,
-    sendChatboxMessage, speakText,
+    transcribeCloud, transcribeLocal, interpretCommand, summarizeSearch, searchWeb,
+    speakText,
     getFriends, getMyLocation, resolveWorldName, getStatus, updateStatus, invite, saveClip,
+    getWeather,
     onUpdate = () => {}, getUserMedia, getDisplayMedia
   } = {}) {
     this.transcribeCloud = transcribeCloud
     this.transcribeLocal = transcribeLocal
     this.interpretCommand = interpretCommand
-    this.sendChatboxMessage = sendChatboxMessage
+    this.summarizeSearch = summarizeSearch
+    this.searchWeb = searchWeb
     this.speakText = speakText
     this.getFriends = getFriends
     this.getMyLocation = getMyLocation
@@ -60,6 +71,7 @@ class JarvisAssistant {
     this.updateStatus = updateStatus
     this.invite = invite
     this.saveClip = saveClip
+    this.getWeather = getWeather
     this.onUpdate = onUpdate
     this.getUserMedia = getUserMedia || (c => navigator.mediaDevices.getUserMedia(c))
     this.getDisplayMedia = getDisplayMedia || (c => navigator.mediaDevices.getDisplayMedia(c))
@@ -69,6 +81,8 @@ class JarvisAssistant {
       micDeviceId: '',
       engine: 'cloud', cloudBaseUrl: '', cloudApiKey: '', cloudModel: '', localModel: 'tiny',
       aiBaseUrl: '', aiApiKey: '', aiModel: '',
+      searchProvider: 'searxng', // 'searxng' | 'duckduckgo'
+      searxngEndpoint: 'https://searxng.nekosunevr.co.uk/',
       clipSeconds: 4,
       trustedFriends: [],
       enableReplayBuffer: false,
@@ -88,7 +102,9 @@ class JarvisAssistant {
     this.lastCue = null
 
     this.replayRecorder = null
-    this.replayChunks = []
+    this.replaySegments = []
+    this.replayBufferActive = false
+    this.replaySegmentTimer = null
   }
 
   configure (config = {}) {
@@ -300,7 +316,35 @@ class JarvisAssistant {
       case 'my_status': return this.handleMyStatus()
       case 'set_status': return this.handleSetStatus(action.text)
       case 'sos': return this.triggerSos()
+      case 'get_weather': return this.handleGetWeather()
+      case 'search_web': return this.handleSearchWeb(action.query)
       default: return this.respond(action?.reply || "Sorry, I didn't catch that.")
+    }
+  }
+
+  async handleGetWeather () {
+    const w = await this.getWeather?.().catch(() => null)
+    if (w?.ok) {
+      return this.respond(`It's ${w.temp}${w.unit} and ${w.desc.replace(/^[^\w]*/, '')} in ${w.city}, feels like ${w.feels}${w.unit}.`)
+    }
+    // Weather feature isn't configured with a city - fall back to a web
+    // search so the question still gets answered.
+    return this.handleSearchWeb('current weather')
+  }
+
+  async handleSearchWeb (query) {
+    if (!query) return this.respond("What do you want me to look up?")
+    if (!this.searchWeb) return this.respond("Web search isn't available right now.")
+    try {
+      const results = await this.searchWeb({ query, provider: this.config.searchProvider, endpoint: this.config.searxngEndpoint })
+      if (!results?.length) return this.respond(`I couldn't find anything about "${query}".`)
+      const answer = await this.summarizeSearch({
+        baseUrl: this.config.aiBaseUrl, apiKey: this.config.aiApiKey, model: this.config.aiModel,
+        query, results
+      })
+      return this.respond(answer || `I found some results for "${query}" but couldn't summarize them.`)
+    } catch (err) {
+      return this.respond(`I couldn't search the web just now (${err.message}).`)
     }
   }
 
@@ -350,17 +394,34 @@ class JarvisAssistant {
 
   async triggerSos () {
     this.emit('sos-triggered')
-    const clip = await this.exportReplayClip().catch(() => null)
+
+    // Figure out exactly why a clip might not exist, instead of just
+    // silently having none - this was previously indistinguishable from a
+    // working-but-empty buffer, which made "the clip never shows up" hard
+    // to diagnose.
+    let clip = null
+    let clipNote = ''
+    if (!this.config.enableReplayBuffer) {
+      clipNote = "Instant-replay isn't enabled, so no clip was captured."
+    } else if (!this.replayStream || !this.replayRecorder) {
+      clipNote = 'Instant-replay never started capturing (the screen-share prompt may have been cancelled or denied) - no clip available.'
+    } else {
+      clip = await this.exportReplayClip().catch(() => null)
+      if (!clip) clipNote = "The instant-replay buffer hasn't captured any footage yet - no clip available."
+    }
 
     // Always save the clip to disk (Videos/NekoSuneAPPS) regardless of
     // whether a Discord webhook is configured, so it isn't lost if the
-    // upload fails or no webhook is set.
+    // upload fails or no webhook is set. The main process stitches the
+    // segments together and transcodes to a real, playable .mp4 via ffmpeg.
     let savedPath = null
     if (clip && this.saveClip) {
       try {
-        const base64 = await blobToBase64(clip)
-        savedPath = await this.saveClip({ base64, mime: clip.type })
-      } catch (_) {}
+        const segments = await Promise.all(clip.map(blob => blobToBase64(blob)))
+        savedPath = await this.saveClip({ segments })
+      } catch (err) {
+        clipNote = `Clip was captured but saving it failed: ${err.message}.`
+      }
     }
 
     let invited = 0
@@ -379,51 +440,86 @@ class JarvisAssistant {
       }
     }
 
-    if (clip && this.config.sosWebhook) { await this.uploadClip(clip).catch(() => {}) }
+    // Upload the same finished .mp4 that got saved to disk, not the raw
+    // segments - uploading the pre-stitch segments would hit the exact same
+    // "no container header" problem this whole rework fixes.
+    if (savedPath && this.config.sosWebhook) { await this.uploadClip(savedPath).catch(() => {}) }
 
     const parts = [invited
       ? `SOS sent to ${invited} friend${invited === 1 ? '' : 's'}.`
       : "I tried to send SOS, but couldn't reach your trusted friends - check they're online and on your friends list."]
     if (savedPath) parts.push(`Clip saved to ${savedPath}.`)
+    else if (clipNote) parts.push(clipNote)
     await this.respond(parts.join(' '))
   }
 
-  async uploadClip (blob) {
+  async uploadClip (filePath) {
+    const buffer = fs.readFileSync(filePath)
+    const blob = new Blob([buffer], { type: 'video/mp4' })
     const form = new FormData()
-    form.append('file', blob, 'sos-clip.webm')
+    form.append('file', blob, path.basename(filePath))
     form.append('content', `SOS triggered - last ${this.config.replayMinutes} minute(s) before the alert.`)
     await fetch(this.config.sosWebhook, { method: 'POST', body: form })
   }
 
+  // A single continuously-recorded MediaRecorder stream only has ONE valid
+  // container header, in its very first chunk. Pruning old chunks by time
+  // (the previous approach) eventually drops that header chunk, so anything
+  // exported afterwards is a webm file missing its header - most players
+  // either refuse it outright or show a single static/garbage frame, which
+  // is exactly the "broken clip" symptom this replaces. Instead, the
+  // recorder is rotated every REPLAY_SEGMENT_MS: each rotation is its own
+  // complete start()->stop() cycle, so every segment is independently valid
+  // and it's whole segments (not chunks) that get pruned by age.
   startReplayBuffer () {
     if (!this.replayStream) return
-    this.replayChunks = []
+    this.replaySegments = []
+    this.replayBufferActive = true
+    this.recordReplaySegment()
+  }
+
+  recordReplaySegment () {
+    if (!this.replayBufferActive || !this.replayStream) return
     const preferred = ['video/webm;codecs=vp8,opus', 'video/webm'].find(t => MediaRecorder.isTypeSupported(t)) || ''
-    this.replayRecorder = new MediaRecorder(this.replayStream, preferred ? { mimeType: preferred } : undefined)
-    this.replayRecorder.ondataavailable = e => {
-      if (!e.data || !e.data.size) return
-      this.replayChunks.push({ blob: e.data, ts: Date.now() })
-      const cutoff = Date.now() - this.config.replayMinutes * 60000
-      this.replayChunks = this.replayChunks.filter(c => c.ts >= cutoff)
+    const recorder = new MediaRecorder(this.replayStream, preferred ? { mimeType: preferred } : undefined)
+    this.replayRecorder = recorder
+    const chunks = []
+    recorder.ondataavailable = e => { if (e.data?.size) chunks.push(e.data) }
+    recorder.onstop = () => {
+      if (chunks.length) {
+        this.replaySegments.push({ blob: new Blob(chunks, { type: recorder.mimeType || 'video/webm' }), ts: Date.now() })
+        const cutoff = Date.now() - this.config.replayMinutes * 60000
+        this.replaySegments = this.replaySegments.filter(s => s.ts >= cutoff)
+      }
+      if (this.replayBufferActive) this.recordReplaySegment()
     }
-    this.replayRecorder.start(5000)
+    recorder.start()
+    this.replaySegmentTimer = setTimeout(() => { try { recorder.stop() } catch (_) {} }, REPLAY_SEGMENT_MS)
   }
 
   stopReplayBuffer () {
-    if (this.replayRecorder && this.replayRecorder.state !== 'inactive') { try { this.replayRecorder.stop() } catch (_) {} }
+    this.replayBufferActive = false
+    if (this.replaySegmentTimer) { clearTimeout(this.replaySegmentTimer); this.replaySegmentTimer = null }
+    if (this.replayRecorder && this.replayRecorder.state !== 'inactive') {
+      this.replayRecorder.onstop = null
+      try { this.replayRecorder.stop() } catch (_) {}
+    }
     this.replayRecorder = null
-    this.replayChunks = []
+    this.replaySegments = []
   }
 
+  // Returns the segments covering the configured window, oldest first, each
+  // one an independently-decodable webm blob - the caller (main process,
+  // which has ffmpeg) stitches them into a single real clip.
   async exportReplayClip () {
-    if (!this.replayChunks.length) return null
-    return new Blob(this.replayChunks.map(c => c.blob), { type: this.replayChunks[0].blob.type || 'video/webm' })
+    if (!this.replaySegments.length) return null
+    return this.replaySegments.map(s => s.blob)
   }
 
+  // TTS only - the assistant deliberately never posts to the VRChat chatbox.
   async respond (text) {
     this.lastReply = text
     this.emit('reply')
-    if (this.sendChatboxMessage) { try { this.sendChatboxMessage(String(text).slice(0, 144), false) } catch (_) {} }
     if (this.speakText) { try { await this.speakText(text) } catch (_) {} }
   }
 
@@ -433,6 +529,9 @@ class JarvisAssistant {
     return {
       event, live: this.live, busy: this.busy, status: this.status, error: this.error,
       lastHeard: this.lastHeard, lastReply: this.lastReply,
+      // Lets the UI show at a glance whether an SOS trigger will actually
+      // have footage to attach, instead of only finding out after the fact.
+      replayActive: !!(this.replayStream && this.replayRecorder),
       config: { ...this.config, cloudApiKey: this.config.cloudApiKey ? '••••••••' : '', aiApiKey: this.config.aiApiKey ? '••••••••' : '' }
     }
   }

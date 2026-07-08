@@ -304,7 +304,8 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
   "who's online", "what's my status", "change my status to `<text>`" (sets `statusDescription`
   **only** — the assistant can never touch the bio field, enforced both in the LLM system prompt
   and in the code path itself, verified by a unit test), and free-form conversational replies
-  for anything else. Responses are sent to chatbox and spoken aloud via the TTS engine above.
+  for anything else. Responses are spoken aloud via the TTS engine above **only** — never posted
+  to the VRChat chatbox (a spoken reply has no reason to also be text in-world).
 - [x] **SOS — manual trigger only.** Either an explicit spoken "sos" command or the button in
   the UI; **never** auto-triggered. On trigger: invites everyone in a configured trusted-friends
   list (by display name, matched against your live friends list) to your current instance,
@@ -334,6 +335,44 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
   instant-replay buffer's long-running recording behavior all need a real account + a live
   desktop session to smoke-test; only the pure dispatch/command logic was unit-tested here
   (mocked callbacks, no live VRChat/audio).
+- [x] **Never posts to chatbox — TTS only.** `sendChatboxMessage` was removed from the assistant
+  entirely; `respond()` only ever calls the configured TTS engine.
+- [x] **World-creation brainstorming partner + general Alexa-like assistant.** Expanded the
+  command-interpreter system prompt (`assistantBrain.js`) so the assistant is also a genuinely
+  opinionated creative partner for VRChat world ideas/mechanics/pacing/naming, and a general
+  conversational assistant (weather, news/current events, general questions, small talk) — while
+  explicitly refusing to help write, debug, or explain code even if asked, since that's not what
+  this assistant is for.
+- [x] **Weather + web search actions.** Added `get_weather` (reuses the app's existing Weather
+  feature) and `search_web` actions. Web search is a user-selectable provider:
+  **SearXNG** (`modules/ai/webSearch.js`, JSON API against a self-hosted instance, e.g.
+  `https://searxng.nekosunevr.co.uk/`) or **DuckDuckGo's Instant Answer API** (no setup, no key,
+  but explicitly limited — it only returns an abstract/infobox-style answer and often nothing at
+  all for ordinary queries; offered as a no-setup fallback, not a like-for-like replacement).
+  Results are summarized into a short spoken answer by the same AI provider used for command
+  interpretation.
+- [x] **Fixed: SOS instant-replay clips were corrupted/unplayable ("clip is broken").** The
+  rolling buffer recorded continuously with a single `MediaRecorder` and pruned old *chunks* by
+  age — but only the very first chunk of a continuous recording contains the container's header
+  (EBML/Segment/Tracks info), so once that chunk aged out, every exported clip was a webm file
+  with no valid header at all. Most players either refused it or showed a single static/garbage
+  frame, which is exactly what was reported. Rewrote the buffer to rotate to a **fresh, fully
+  self-contained recording every 10 seconds** (`REPLAY_SEGMENT_MS`) and prune whole aged-out
+  *segments* instead of chunks, so every segment always has its own valid header. Verified with a
+  real ffmpeg-generated two-segment test that the exported result decodes cleanly end-to-end.
+- [x] **Clips are now real, playable .mp4 files (were .webm).** The main process now stitches the
+  kept segments together with a bundled `ffmpeg-static` binary (`concat` demuxer + transcode to
+  H.264/AAC, `+faststart`) instead of a raw byte-concatenation, producing one proper seekable
+  `sos-clip-*.mp4` in `Videos/NekoSuneAPPS/`. The same finished .mp4 (not the raw segments) is
+  what gets uploaded to a configured Discord webhook, so the webhook attachment can't hit the
+  same corruption issue either. `ffmpeg-static`'s binary is unpacked from the asar (like
+  `sharp`/`onnxruntime`) since it can't be executed from inside the archive.
+- [x] **Fixed: replay clips weren't actually capturing VRChat.** The shared screen-capture picker
+  (used by OSCQR/Shazam/Desktop STT/OCR/the SOS replay buffer — Electron only allows one
+  `setDisplayMediaRequestHandler` per session) fell back to grabbing the entire primary screen
+  when nothing had been explicitly selected. It now auto-prefers a source whose window title
+  contains "VRChat" before falling back to the full screen, so the replay buffer (and the other
+  screen-capture features) target the actual game by default.
 
 ---
 
@@ -350,6 +389,16 @@ e.g. the TTS engine fields, which already save correctly through `TTS_ALL_FIELD_
 - [x] **Avatar Scaling "Safety limits" default was inconsistent** — the checkbox defaults to
   checked in the HTML, but the boot-restore code's fallback default was `false`, so a fresh
   install would silently start with safety off despite showing the box checked. Fixed to `true`.
+- [x] **Hotkey recording gave no reason when it silently failed ("hotkey broken, doesn't
+  save").** The save/restore/re-arm wiring itself checked out correct (recording a key saves it
+  immediately and re-registers it on boot if enabled; the underlying PowerShell `WH_KEYBOARD_LL`
+  hook was verified end-to-end with a real synthetic keypress). The actual gap: if the hook
+  process fails to actually install (blocked by antivirus, a restrictive execution policy, no
+  .NET, etc.), "Record" just silently sat until an 8s timeout and reported the same generic
+  "no key captured" — indistinguishable from "nothing was pressed in time", and since nothing
+  ever got captured, nothing ever got saved either. `keyHookPs.js` now tracks *why* the hook
+  process exited; the record flow health-checks after 2.5s and surfaces that real reason instead
+  of waiting out the full timeout.
 - [x] **`enableVr` (VR gear battery) had no persistence at all** — only called `vrStart()`/
   `vrStop()`, never `saveSetting`, and had no boot-restore. Fixed to match the identical
   `enableNet`/`enableWindow` pattern elsewhere in the same file.

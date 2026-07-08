@@ -743,6 +743,14 @@
           <div class="grid cols-2" style="margin-top:8px">
             <div><label>Clip length (s)</label><input type="number" id="assistantClipSeconds" min="2" max="10" value="4" /></div>
           </div>
+          <label style="margin-top:8px">Web search <span class="muted" style="font-size:.7rem">(used for "what's the news"-style questions and anything needing current info)</span></label>
+          <select id="assistantSearchProvider">
+            <option value="searxng">SearXNG (self-hosted, real web results)</option>
+            <option value="duckduckgo">DuckDuckGo (no setup, limited — instant-answer only, often returns nothing)</option>
+          </select>
+          <div id="assistantSearxngRow" style="margin-top:8px">
+            <input type="text" id="assistantSearxngEndpoint" placeholder="https://searxng.nekosunevr.co.uk/" />
+          </div>
           <label style="margin-top:8px">Trusted friends (for SOS) <span class="muted" style="font-size:.7rem">comma-separated display names, must be on your friends list</span></label>
           <input type="text" id="assistantTrustedFriends" placeholder="name1, name2" />
           <label class="switch" style="margin-top:8px"><input type="checkbox" id="assistantEnableReplay"> Enable instant-replay clip for SOS <span class="muted" style="font-size:.7rem">(needs a separate screen-share prompt; optional — voice commands work without it)</span></label>
