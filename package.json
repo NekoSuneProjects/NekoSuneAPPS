@@ -1,6 +1,6 @@
 {
   "name": "nekosuneapps",
-  "version": "1.0.55",
+  "version": "1.0.56",
   "main": "main.js",
   "bin": "main.js",
   "scripts": {
@@ -86,20 +86,6 @@
         {
           "from": "updater/linux-unpacked",
           "to": "updater"
-        }
-      ]
-    },
-    "mac": {
-      "category": "public.app-category.utilities",
-      "icon": "assets/logo.png",
-      "target": [
-        "dmg",
-        "zip"
-      ],
-      "extraResources": [
-        {
-          "from": "updater/NekoSuneAPPS Updater.app",
-          "to": "NekoSuneAPPS Updater.app"
         }
       ]
     }

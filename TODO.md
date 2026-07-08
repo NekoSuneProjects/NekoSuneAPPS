@@ -204,17 +204,39 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
   that failure surfaces as a clear, actionable error message instead of a crash. Also confirmed
   the full 64-field `VR_IVROverlay_FnTable` struct definition is valid and correctly sized (512
   bytes) via koffi.
-- [ ] **NOT verified: any actual `IVROverlay` method call** (`CreateOverlay`, `ShowOverlay`,
-  `SetOverlayFromFile`, etc.) — that requires a physically connected, powered-on headset, which
-  this environment doesn't have. Considered (and rejected) editing this machine's live SteamVR
-  config to force a "null driver" fake-HMD for testing, since that risks disrupting the user's
-  real, actively-used SteamVR setup for an unrelated testing purpose. If the overlay struct
-  layout has any error, expect to debug it together against a real headset.
+- [ ] **UPDATE: confirmed broken on real hardware, and the straightforward fix crashes.** A real
+  headset test (via a partner) hit `"table.CreateOverlay is not a function"` — the
+  `koffi.decode(ptr, PtrType, '*')` call wasn't actually dereferencing the raw OpenVR interface
+  pointer into a usable struct. Reproduced this safely using `IVRSystem` (works without a headset)
+  as a stand-in, and found the correct-looking fix (`koffi.decode(ptr, StructType)` to read the
+  struct, then `koffi.decode(rawFnPtrField, protoType)` to get a callable function from each
+  field) - but **actually calling the resulting function segfaults the whole process**, reproduced
+  three times through slightly different argument-marshaling approaches. This is a real,
+  unresolved problem with calling through a struct-of-raw-function-pointers ("vtable") via koffi,
+  not yet a proven-safe pattern. Left the current safe-but-non-functional error in place rather
+  than ship something that crashes. Needs real investigation (koffi's own examples/issue tracker,
+  or reconsidering the FFI approach) before this feature can actually work.
 - [ ] **Follow-ups, not done this pass**: click-through interactivity (translating controller
   laser-pointer intersection into real mouse events on the mirrored UI); the long-standing "VR
   gear battery" placeholder (`modules/vrchat/vr/vrBattery.js`, previously blocked on "no
   well-maintained pure-Node OpenVR binding") can now likely be wired for real using the same
-  koffi/openvr_capi.h approach and an `IVRSystem` struct, since that blocker no longer applies.
+  koffi/openvr_capi.h approach and an `IVRSystem` struct, since that blocker no longer applies —
+  once the vtable-calling crash above is actually resolved.
+
+## 📦 Release pipeline
+- [x] **Removed macOS builds** — VRChat doesn't run on Mac, so a Mac build of a VRChat companion
+  app wasn't serving a real purpose. Removed the `macos-latest` matrix leg and its updater-helper
+  build step from `.github/workflows/build.yml`, and the `mac` electron-builder config from both
+  `package.json` and `updater/package.json`. Windows and Linux builds unaffected — verified both
+  still built and released successfully.
+- [x] **VirusTotal scanning in the release pipeline** — CI submits the Windows installers
+  (`.exe`/`.msi`) to VirusTotal after they build and links the scan report in the release notes,
+  so "installers are unsigned, SmartScreen may warn" doesn't have to be taken purely on faith.
+  Handles the large-file upload flow (VirusTotal's direct `/files` endpoint caps at 32MB; the
+  NSIS installer is bigger, so it goes through `/files/upload_url` instead) and polls for the
+  analysis to finish (up to ~5 minutes) before summarizing flagged-engine counts with a link to
+  the full report. Opt-in via a `VT_API_KEY` repo/org secret (a free VirusTotal API key) — skips
+  cleanly with no report section in the notes if that secret isn't reachable by this repo.
 
 ## 🥽 Requested big features (next session)
 

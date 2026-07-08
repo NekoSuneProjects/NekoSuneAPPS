@@ -21,8 +21,6 @@ jobs:
             artifact: windows
           - os: ubuntu-latest
             artifact: linux
-          - os: macos-latest
-            artifact: macos
 
     steps:
       - name: Checkout
@@ -58,17 +56,6 @@ jobs:
           Copy-Item "dist\updater.exe" "updater.exe" -Force
         shell: pwsh
 
-      - name: Build updater helper (macOS)
-        if: matrix.os == 'macos-latest'
-        working-directory: updater
-        run: |
-          npx electron-builder --mac dir --publish never
-          APP_PATH=$(find dist -maxdepth 2 -iname '*.app' | head -1)
-          rm -rf "NekoSuneAPPS Updater.app"
-          cp -R "$APP_PATH" "NekoSuneAPPS Updater.app"
-        env:
-          CSC_IDENTITY_AUTO_DISCOVERY: false
-
       - name: Build updater helper (Linux)
         if: matrix.os == 'ubuntu-latest'
         working-directory: updater
@@ -82,8 +69,6 @@ jobs:
         run: npx electron-builder --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # No Apple certs on CI — don't attempt to sign/notarize (would fail the mac job).
-          CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -95,15 +80,13 @@ jobs:
             dist/*.msi
             dist/*.AppImage
             dist/*.deb
-            dist/*.dmg
-            dist/*.zip
           if-no-files-found: ignore
 
   release:
     name: Publish release
     needs: build
     # Publish on ANY tag (v1.0.7 or 1.0.7). !cancelled() lets the release run and
-    # attach whatever built even if one OS leg failed (e.g. mac signing).
+    # attach whatever built even if one OS leg failed.
     if: ${{ !cancelled() && startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
     steps:
@@ -113,6 +96,66 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+
+      # Scans the Windows installers with VirusTotal and links the reports in
+      # the release notes, so "installers are unsigned" doesn't have to be
+      # taken on faith. Skips cleanly (no report section at all) if the
+      # VT_API_KEY repo secret isn't set - a free key from
+      # https://www.virustotal.com/gui/my-apikey, added under
+      # Settings -> Secrets and variables -> Actions.
+      - name: Scan installers with VirusTotal
+        id: vtscan
+        run: |
+          : > vt-notes.md
+          if [ -z "${VT_API_KEY:-}" ]; then
+            echo "No VT_API_KEY secret set - skipping VirusTotal scan."
+            exit 0
+          fi
+          echo "## 🛡️ VirusTotal" >> vt-notes.md
+          shopt -s nullglob
+          files=(artifacts/NekoSuneAPPS-windows/*.exe artifacts/NekoSuneAPPS-windows/*.msi)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No Windows installers found to scan." >> vt-notes.md
+            exit 0
+          fi
+          for f in "${files[@]}"; do
+            name=$(basename "$f")
+            echo "Scanning $name..."
+            size=$(stat -c%s "$f")
+            if [ "$size" -gt 33554432 ]; then
+              upload_url=$(curl -sS -H "x-apikey: $VT_API_KEY" https://www.virustotal.com/api/v3/files/upload_url | jq -r '.data')
+            else
+              upload_url="https://www.virustotal.com/api/v3/files"
+            fi
+            resp=$(curl -sS -X POST "$upload_url" -H "x-apikey: $VT_API_KEY" -F "file=@$f")
+            analysis_id=$(echo "$resp" | jq -r '.data.id // empty')
+            if [ -z "$analysis_id" ]; then
+              echo "- **$name**: could not submit to VirusTotal" >> vt-notes.md
+              continue
+            fi
+            status="queued"
+            for i in $(seq 1 20); do
+              sleep 15
+              status_resp=$(curl -sS -H "x-apikey: $VT_API_KEY" "https://www.virustotal.com/api/v3/analyses/$analysis_id")
+              status=$(echo "$status_resp" | jq -r '.data.attributes.status // "unknown"')
+              [ "$status" = "completed" ] && break
+            done
+            if [ "$status" != "completed" ]; then
+              echo "- **$name**: scan still in progress — [check status](https://www.virustotal.com/gui/file-analysis/$analysis_id)" >> vt-notes.md
+              continue
+            fi
+            malicious=$(echo "$status_resp" | jq -r '.data.attributes.stats.malicious // 0')
+            suspicious=$(echo "$status_resp" | jq -r '.data.attributes.stats.suspicious // 0')
+            harmless=$(echo "$status_resp" | jq -r '.data.attributes.stats.harmless // 0')
+            undetected=$(echo "$status_resp" | jq -r '.data.attributes.stats.undetected // 0')
+            total=$((malicious + suspicious + harmless + undetected))
+            flagged=$((malicious + suspicious))
+            echo "- **$name**: $flagged/$total engines flagged something — [full report](https://www.virustotal.com/gui/file-analysis/$analysis_id)" >> vt-notes.md
+          done
+        env:
+          VT_API_KEY: ${{ secrets.VT_API_KEY }}
+        continue-on-error: true
+
       - name: Build release notes from CHANGELOG
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
@@ -128,8 +171,9 @@ jobs:
           {
             printf "\n---\n## 📦 Downloads\n"
             printf -- "- **Windows:** \`NekoSuneAPPS-Setup-%s.exe\` (installer) or \`.msi\`\n" "$VERSION"
-            printf -- "- **macOS:** \`.dmg\` / \`.zip\`   ·   **Linux:** \`.AppImage\` / \`.deb\`\n"
+            printf -- "- **Linux:** \`.AppImage\` / \`.deb\`\n"
             printf -- "\n> Installers are unsigned, so Windows SmartScreen may warn on first run — click *More info → Run anyway*.\n"
+            if [ -s vt-notes.md ]; then printf "\n"; cat vt-notes.md; fi
           } >> NOTES.md
           echo "----- release notes -----"; cat NOTES.md
       - name: Create GitHub Release

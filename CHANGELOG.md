@@ -6,6 +6,27 @@ This project follows [Semantic Versioning](https://semver.org/).
 ## Unreleased
 
 
+## [1.0.56] - 2026-07-08
+
+### Added
+- **VirusTotal scanning in the release pipeline.** CI now submits the Windows installers
+  (`.exe`/`.msi`) to VirusTotal and links the scan report in the release notes, so "installers
+  are unsigned" doesn't have to be taken on faith. Opt-in via a `VT_API_KEY` repo secret (a free
+  VirusTotal API key) — skips cleanly with no report section if that secret isn't set.
+
+### Removed
+- **macOS builds.** VRChat doesn't run on Mac, so a Mac build of a VRChat companion app wasn't
+  serving a real purpose. Windows and Linux are unaffected.
+
+### Known issues
+- **VR Overlay (experimental, added in 1.0.55) doesn't work yet.** Real-headset testing found it
+  fails with "table.CreateOverlay is not a function". Investigating why turned up something more
+  serious: the straightforward fix (properly decoding the raw OpenVR interface pointer into
+  callable functions) reliably **crashes the process** in this environment, reproduced three
+  separate times through slightly different approaches — not just a JS error. Rather than ship a
+  "fix" that trades a safe dead-end for a crash, the current safe-but-non-functional behavior is
+  being left in place until this is solved properly. Still needs real work.
+
 ## [1.0.55] - 2026-07-08
 
 ### Added

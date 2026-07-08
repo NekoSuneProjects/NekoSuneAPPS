@@ -33,11 +33,6 @@
     "portable": {
       "artifactName": "updater.exe"
     },
-    "mac": {
-      "target": "dir",
-      "icon": "assets/logo.png",
-      "category": "public.app-category.utilities"
-    },
     "linux": {
       "target": "dir",
       "icon": "assets/logo.png",
