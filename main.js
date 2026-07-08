@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, Tray, Menu, shell, dialog, clipboard, deskt
 const path = require('path')
 const fs = require('fs')
 const { spawn, execFile } = require('child_process')
+const axios = require('axios')
 const settings = require('./settings')
 
 // ffmpeg-static's own path points inside app.asar when packaged, which can't

@@ -4428,6 +4428,10 @@ async function loadAbout () {
           return `<a href="#" data-ext="${link}" title="${esc(tip)}" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--text)">` +
             `<img src="${avatar}" referrerpolicy="no-referrer" style="width:28px;height:28px;border-radius:50%" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'"/></a>`
         }).join('')
+      } else if (r && !r.ok) {
+        el.innerHTML = ''
+        console.warn('appSupporters failed:', r.error)
+        setText('aboutSupporters', 'Could not load supporters (offline?).')
       } else {
         el.innerHTML = ''
         setText('aboutSupporters', 'No supporters linked yet — be the first!')

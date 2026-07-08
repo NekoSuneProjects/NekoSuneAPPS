@@ -6,6 +6,17 @@ This project follows [Semantic Versioning](https://semver.org/).
 ## Unreleased
 
 
+## [1.0.58] - 2026-07-08
+
+### Fixed
+- **Supporters card always showed "No supporters linked yet"**, even with active supporters on
+  the linkup site — the `app:supporters` handler in `main.js` called `axios.get(...)` but never
+  actually required `axios` in that file, so every call threw `ReferenceError: axios is not
+  defined` and was silently swallowed by the fail-soft `catch`. Added the missing `require`.
+  Also fixed the About page collapsing a failed fetch and a genuinely empty supporter list into
+  the same message — a real fetch error now shows "Could not load supporters (offline?)." instead
+  of "No supporters linked yet", so this class of bug is visible next time instead of silent.
+
 ## [1.0.57] - 2026-07-08
 
 ### Added
