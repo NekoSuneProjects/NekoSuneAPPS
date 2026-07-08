@@ -6,6 +6,33 @@ This project follows [Semantic Versioning](https://semver.org/).
 ## Unreleased
 
 
+## [1.0.57] - 2026-07-08
+
+### Added
+- **Supporters card on the About page** — shows Patreon/Ko-fi supporters (via their linked
+  Discord account on linkup.nekosunevr.co.uk) with their Discord avatar, name and platform on
+  hover, linking out to the Patreon/Ko-fi pages. Includes a note pointing supporters who haven't
+  linked yet to linkup.nekosunevr.co.uk so they show up too, and a message about how support
+  helps fund ongoing development. Backed by a new public, unauthenticated endpoint on the linkup
+  site (`GET /api/supporters`) — no API key, since embedding one in a shipped desktop app would
+  just leak it to anyone who unpacks it; deliberately returns only non-sensitive fields (no
+  email, no payment amounts, no banned users).
+- **The Multi-line chatbox's Now Playing line now shows the progress bar and elapsed/duration
+  time**, not just the bare song name. The `{songbar}`/`{songtime}` values were already computed
+  and available to Status presets, they just weren't wired into this specific line - fixed by
+  actually using them there too. Falls back to just the song name when a source doesn't report
+  duration.
+
+### Fixed
+- **Discord Rich Presence's elapsed timer reset every time your status changed**, instead of
+  showing how long the app has actually been running. Root cause: the code was reading a
+  `startTime` property directly off the `discord-rpc` library's `Client` object - which doesn't
+  actually exist (confirmed against the library's own source) - so the real timestamp anchor was
+  always `undefined`, and Discord fell back to showing time-since-last-update instead of a fixed
+  start time. Now anchors to a real timestamp taken once on connect and reused for every
+  presence update afterward. Verified with a mocked Discord client: the timestamp stays
+  identical across multiple simulated status changes.
+
 ## [1.0.56] - 2026-07-08
 
 ### Added

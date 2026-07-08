@@ -282,7 +282,14 @@ async function startDiscord (opts = {}, listener) {
     const c = new RPC.Client({ transport: 'ipc' })
     c.on('ready', () => {
       state.connected = true
-      startTimestamp = c.startTime || undefined
+      // discord-rpc's Client doesn't actually expose a `startTime` property
+      // (confirmed against its source - there is no such field), so this
+      // was always reading undefined. With no real anchor, Discord shows
+      // its own "time since last update" instead of a fixed elapsed timer -
+      // which is exactly why it looked like the timer reset on every status
+      // change, since every setActivity() call counts as an update. Anchor
+      // it to a real timestamp taken once here, on genuine (re)connect only.
+      if (!startTimestamp) startTimestamp = Date.now()
       setActivity()
       emit()
     })

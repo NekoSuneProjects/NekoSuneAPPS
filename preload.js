@@ -102,6 +102,7 @@ window.electronAPI = {
   vrOverlayIsRunning: () => ipcRenderer.invoke('vrOverlay:isRunning'),
   appVersion: () => ipcRenderer.invoke('app:version'),
   appContributors: () => ipcRenderer.invoke('app:contributors'),
+  appSupporters: () => ipcRenderer.invoke('app:supporters'),
 
   // Manage the ToNSaveManager app (download/run/stop/update)
   tonMgrStatus: () => ipcRenderer.invoke('tonmgr:status'),

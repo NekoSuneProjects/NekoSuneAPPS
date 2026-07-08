@@ -713,6 +713,19 @@ ipcMain.handle('update:check', () => updater.check(app.getVersion()))
 ipcMain.handle('app:version', () => app.getVersion())
 ipcMain.handle('app:contributors', () => updater.contributors())
 
+// Public, unauthenticated supporters list (Patreon/Ko-fi via linked Discord
+// accounts) for the About page - see NekoSuneLinkupSite's
+// api/publicSupporters.js. Fetched from main to avoid the renderer's CORS
+// restrictions; fails soft (empty list) if the linkup site is unreachable.
+ipcMain.handle('app:supporters', async () => {
+  try {
+    const { data } = await axios.get('https://linkup.nekosunevr.co.uk/api/supporters', { timeout: 10000 })
+    return { ok: true, supporters: Array.isArray(data?.supporters) ? data.supporters : [] }
+  } catch (err) {
+    return { ok: false, supporters: [], error: err.message }
+  }
+})
+
 // Launches the standalone updater helper (updater/ - its own little Electron
 // app with its own branded window) and quits - the helper owns the whole
 // download + install + relaunch flow from here, since it has to run outside

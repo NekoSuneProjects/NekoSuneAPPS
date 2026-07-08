@@ -4413,6 +4413,27 @@ async function loadAbout () {
       } else el.textContent = 'Could not load contributors.'
     }
   } catch (_) { if ($('aboutContributors')) setText('aboutContributors', 'Could not load contributors.') }
+
+  // Supporters (Patreon/Ko-fi, via linked Discord accounts on the linkup site)
+  try {
+    const r = await api.appSupporters()
+    const el = $('aboutSupporters'); if (el) {
+      const PLATFORM_LINK = { patreon: 'https://www.patreon.com/c/nekosunevr', kofi: 'https://ko-fi.com/nekosunevr' }
+      const PLATFORM_LABEL = { patreon: 'Patreon supporter', kofi: 'Ko-fi supporter' }
+      if (r && r.ok && r.supporters.length) {
+        el.innerHTML = r.supporters.map(s => {
+          const link = PLATFORM_LINK[s.platform] || 'https://linkup.nekosunevr.co.uk/'
+          const tip = `${s.username || 'Anonymous'} · ${PLATFORM_LABEL[s.platform] || s.platform}`
+          const avatar = s.avatarUrl || 'https://cdn.discordapp.com/embed/avatars/0.png'
+          return `<a href="#" data-ext="${link}" title="${esc(tip)}" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--text)">` +
+            `<img src="${avatar}" referrerpolicy="no-referrer" style="width:28px;height:28px;border-radius:50%" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'"/></a>`
+        }).join('')
+      } else {
+        el.innerHTML = ''
+        setText('aboutSupporters', 'No supporters linked yet — be the first!')
+      }
+    }
+  } catch (_) { if ($('aboutSupporters')) setText('aboutSupporters', 'Could not load supporters.') }
 }
 if ($('aboutCheckUpdate')) $('aboutCheckUpdate').addEventListener('click', async () => {
   const el = $('aboutUpdate'); if (el) el.textContent = 'Checking…'

@@ -33,6 +33,18 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 - [x] **History (SQLite)**: player join/leave, friend add/remove, world visits
 - [x] **Auto-Greeter** (auto-accept friend requests, all/allow-list)
 - [x] Discord Rich Presence (world + HR + song; buttons auto-drop over IPC)
+- [x] **Fixed: Discord Rich Presence's elapsed timer reset on every status change** instead of
+  showing real uptime. The code read a `startTime` property directly off `discord-rpc`'s
+  `Client` object, which doesn't exist at all (confirmed against the library's own source) - so
+  the timestamp anchor was always `undefined`, and Discord fell back to its own "time since last
+  update" display, which recalculates on every single presence push. Now anchors to a real
+  `Date.now()` taken once on connect, reused for every update after. Verified with a mocked
+  Discord client: identical timestamp across multiple simulated status changes.
+- [x] **Fixed: Multi-line chatbox's Now Playing line never showed progress/duration**, only the
+  bare song name - even though `{songbar}`/`{songtime}` were already fully working tokens for
+  Status presets. `chatboxComposer.js`'s hardcoded `nowPlaying` line just never referenced them.
+  Now appends the progress bar + elapsed/duration when a source reports one, falls back to just
+  the song name when it doesn't (e.g. some sources don't report duration at all).
 - [x] VRChat auto-status (login + 2FA), Radar, Weather, VRChat Tools (yt-dlp/cache)
 - [x] Heart rate (Pulsoid + HypeRate) + session analytics
 - [x] Param Lab (OSC), Photo Relay (screenshots→Discord), Soundpad, SpotiOSC, DiscordOSC, Discord voice bot
@@ -133,6 +145,36 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 - [ ] **Deeper collaborator / collab-code auto-detection** — beyond GitHub contributors:
   parse `Co-Authored-By:` trailers from git history and any in-source `@author`/credit
   comment markers, and surface named collaborations on the About page.
+- [x] **Supporters card** — Patreon/Ko-fi supporters shown on the About page with Discord avatar
+  (animated .gif for Nitro users, static .png otherwise, matching Discord's own rules exactly)
+  and name-on-hover, linking out to the general Patreon/Ko-fi pages
+  (`patreon.com/c/nekosunevr`, `ko-fi.com/nekosunevr`), plus a note pointing supporters who
+  haven't linked their Discord to `linkup.nekosunevr.co.uk` yet so they show up too. Fetched from
+  main.js (`app:supporters` IPC) to avoid renderer CORS restrictions, fails soft to "could not
+  load" if the linkup site is unreachable.
+  - **New endpoint on the separate NekoSuneLinkupSite repo**
+    (`D:\DEV\NekoSuneVRAPPS\Websites\NekoSuneLinkupSite\SocialLinkUpOnly\api\publicSupporters.js`,
+    registered as `GET /api/supporters`): public, no API key at all (by design — a key embedded
+    in a shipped desktop app isn't actually secret once someone unpacks it, so a genuinely public
+    read-only endpoint is the correct shape here, not a leakable one). Reuses the site's existing,
+    already-tested supporter-status logic (`services/supporterStatus.js`,
+    `services/discordapi.js`) rather than re-deriving "is this person currently supporting"
+    itself. Returns only `discordId`, `username`, `platform`, `avatarUrl` - no email, no payment
+    amounts/dates, no internal ids, and banned users are excluded.
+  - **Found and fixed a real staleness bug while building this**: the site's existing
+    `loadPatreonSupporterMap()` only writes `LinkedAccount.isSupporting` back to the database for
+    patrons still found in the live Patreon fetch - someone who fully churned (removed from
+    Patreon entirely, not just downgraded) never gets their stale `isSupporting: true` cleared in
+    the DB by that function. The new endpoint doesn't trust that DB flag for its final decision;
+    it uses the freshly-computed status map the function actually returns instead (which does
+    default everyone to inactive first). Verified with a mocked test covering all four cases:
+    active Patreon included, churned-but-DB-stale Patreon excluded, active Ko-fi included,
+    inactive Ko-fi excluded.
+  - **Not deployed by this session** — implemented and tested in isolation (mocked DB/Discord/
+    Patreon calls, since this is a live production site with a real database I don't have local
+    access to), but the linkup site is a separate repo/deployment the user manages; needs their
+    own review + deploy before the About page's supporters card will show real data instead of
+    "could not load supporters."
 - [x] **In-app update installs, via a standalone updater app** — went through a few iterations
   this session (in-app Electron download → a `/passive` PowerShell+msiexec helper → the final
   design below) before landing on a fully separate helper app, since the thing doing the

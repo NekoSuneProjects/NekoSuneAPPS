@@ -165,7 +165,16 @@ class ChatboxComposer {
   lineFor (key) {
     const d = this.data
     switch (key) {
-      case 'nowPlaying': return d.song ? `🎵 ${d.song}` : ''
+      case 'nowPlaying': {
+        if (!d.song) return ''
+        // songBar/songTime are the same progress-bar + "elapsed-duration"
+        // values already available as {songbar}/{songtime} tokens in Status
+        // presets - this line just hadn't been wired to use them, so the
+        // Multi-line chatbox's Now Playing line only ever showed the bare
+        // song name with no progress/duration at all.
+        const extra = [d.songBar, d.songTime].filter(Boolean).join(' ')
+        return `🎵 ${d.song}${extra ? ' ' + extra : ''}`
+      }
       case 'world': return d.world ? `🌍 ${d.world}` : ''
       case 'stats': return `🖥 CPU ${d.cpu}%${d.cpuTemp ? ' ' + d.cpuTemp + '°C' : ''} | GPU ${d.gpu}% | RAM ${d.ramPct}%`
       case 'network': return `🌐 ↓${d.down} ↑${d.up} Mbps${d.ping ? ' | ' + d.ping + 'ms' : ''}`
