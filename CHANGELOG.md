@@ -6,6 +6,16 @@ This project follows [Semantic Versioning](https://semver.org/).
 ## Unreleased
 
 
+## [1.0.47] - 2026-07-08
+
+### Fixed
+- **Voice assistant's "who's online" always said nobody was, even when friends were.** It was
+  calling the VRChat API method whose friend objects never carry an `online` flag at all (that
+  flag only exists on the *reconciled* all-friends call, which fetches the online and offline
+  buckets separately and tags each). Every friend's `online` was `undefined`, so the online
+  filter was always empty. Switched to the reconciled call; verified against the real API
+  response shape.
+
 ## [1.0.46] - 2026-07-08
 
 ### Fixed

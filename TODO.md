@@ -291,6 +291,14 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
   as opposed to a deliberately keyless provider like Ollama, which has a non-empty base URL),
   `setLive(true)` now fails immediately with a clear message pointing at Settings → IntelliChat,
   instead of only discovering the problem on the first spoken command.
+- [x] **Fixed: "who's online" always said nobody was, even when friends genuinely were.** The
+  assistant's `getFriends` wiring called `api.vrchatFriends()` (`vrchatApi.getFriends()`, offline
+  bucket = false), whose friend objects (`pickFriend()`) never carry an `online` field at all —
+  that flag is only ever set by the *reconciled* all-friends call, which fetches both the online
+  and offline buckets separately and tags each one. `f.online` was always `undefined` for every
+  friend, so the `online` filter was always empty regardless of who was actually online. Switched
+  to `api.vrchatAllFriends()`, which returns friend objects with `online` correctly set. Verified
+  with a test using the real response shape from `vrchatApi.js`'s `_getAllFriends()`.
 - [x] **Commands**: "is `<friend>` online / which world" (reuses the friends list's existing
   `location`/`worldId`/`instanceType` fields, same ones the Friends panel already renders),
   "who's online", "what's my status", "change my status to `<text>`" (sets `statusDescription`

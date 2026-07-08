@@ -5168,7 +5168,13 @@ function ensureJarvisAssistant () {
     interpretCommand: opts => api.assistantInterpret(opts),
     sendChatboxMessage,
     speakText: speakWithSettings,
-    getFriends: async () => { const r = await api.vrchatFriends(); return Array.isArray(r) ? r : (r?.friends || []) },
+    // vrchatFriends() (offline=false) returns friend objects with NO `online`
+    // field at all - that flag only gets set by the reconciled all-friends
+    // call, which fetches both the online and offline buckets and tags each
+    // one accordingly. Using the wrong one here means f.online is always
+    // undefined, so "who's online" always came back empty regardless of who
+    // was actually online.
+    getFriends: async () => { const r = await api.vrchatAllFriends(); return r?.friends || [] },
     getMyLocation: () => api.vrcGet(),
     resolveWorldName: async id => { const r = await api.vrchatWorldName(id); return typeof r === 'string' ? r : (r?.name || r?.worldName || '') },
     getStatus: () => api.vrchatStatus(),
