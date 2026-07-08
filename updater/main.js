@@ -160,14 +160,11 @@ async function run () {
 
   // The download's own destination just needs to be SOME writable folder -
   // it doesn't need to be inside the install location (unlike the actual
-  // install step below). Falls back to temp if the app's own folder needs
-  // elevation to write to (e.g. a per-machine Windows install).
-  let destDir = path.dirname(exePath)
-  try {
-    fs.accessSync(destDir, fs.constants.W_OK)
-  } catch (_) {
-    destDir = app.getPath('temp')
-  }
+  // install step below). Always use temp: a per-machine install's own
+  // folder (e.g. Program Files) needs elevation to write to, and
+  // fs.accessSync(dir, W_OK) is not a reliable predictor of that on Windows
+  // - confirmed by a real EPERM failure despite that check passing.
+  const destDir = app.getPath('temp')
   const downloadPath = path.join(destDir, fileName)
 
   try {

@@ -6,6 +6,34 @@ This project follows [Semantic Versioning](https://semver.org/).
 ## Unreleased
 
 
+## [1.0.55] - 2026-07-08
+
+### Added
+- **VR Overlay (experimental)** — Settings → mirrors the app into a floating panel visible in
+  your headset via SteamVR, so you don't have to tab out to desktop. First version is view-only
+  (not yet clickable in VR — that's a planned follow-up once this base mirror is confirmed
+  working on real hardware). Windows + SteamVR only. Talks to OpenVR via `koffi` (FFI) rather
+  than a compiled native addon — no build step, lower risk than node-gyp. The function
+  signatures/struct layout are transcribed directly from Valve's own `openvr_capi.h` (OpenVR's
+  official C-compatible API surface for FFI bindings), not guessed. Verified live against a real,
+  running SteamVR install on this machine: DLL discovery, initialization, and error handling all
+  behave exactly as expected (including correctly detecting and reporting "no headset connected"
+  rather than crashing) — the one thing that could **not** be verified in this environment is the
+  actual overlay rendering itself (creating/showing/updating the panel), since that needs a
+  physically connected, powered-on headset, which this dev machine doesn't have.
+
+### Changed
+- **Crash auto-rejoin now launches straight into VRChat via its own `vrchat://launch?id=...`
+  protocol handler** (the same mechanism VRCX and other community tools use) instead of only
+  opening the vrchat.com web page and hoping it hands off to the client. Confirmed the protocol
+  handler registration and target command directly against a real VRChat install
+  (`HKCR\vrchat\shell\open\command` → VRChat's own `launch.exe`). Falls back to the web link
+  automatically if that registration isn't present for some reason.
+- **The updater now always downloads to a temp folder**, never the install directory. It
+  previously tried the install directory first (falling back to temp only if that looked
+  unwritable), but that writability check isn't a reliable predictor on Windows — confirmed by a
+  real `EPERM` failure downloading into `Program Files` despite the check passing.
+
 ## [1.0.54] - 2026-07-08
 
 ### Fixed

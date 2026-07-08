@@ -2376,6 +2376,31 @@ api.on('vr:update', s => {
 })
 $('enableVr').addEventListener('change', e => { e.target.checked ? api.vrStart() : api.vrStop(); api.saveSetting('vrEnabled', e.target.checked) })
 
+/* ---------------- VR overlay (experimental) ---------------- */
+function renderVrOverlayState (running, error) {
+  setPill('vrOverlayState', running, 'on')
+  $('vrOverlayToggle').textContent = running ? 'Stop VR overlay' : 'Start VR overlay'
+  setText('vrOverlayOut', error ? `Error: ${error}` : (running ? 'Running — check your headset.' : 'Stopped'))
+}
+api.on('vrOverlay:status', s => renderVrOverlayState(!!s.running, s.error))
+$('vrOverlayToggle').addEventListener('click', async () => {
+  $('vrOverlayToggle').disabled = true
+  try {
+    const running = await api.vrOverlayIsRunning()
+    if (running) {
+      await api.vrOverlayStop()
+      renderVrOverlayState(false)
+    } else {
+      setText('vrOverlayOut', 'Starting…')
+      const result = await api.vrOverlayStart()
+      if (!result?.ok) renderVrOverlayState(false, result?.error || 'Could not start the VR overlay.')
+      else renderVrOverlayState(true)
+    }
+  } finally {
+    $('vrOverlayToggle').disabled = false
+  }
+})
+
 /* ---------------- discord ---------------- */
 let discordAccessToken = ''
 function currentDiscordCfg () {

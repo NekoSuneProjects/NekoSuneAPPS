@@ -60,6 +60,7 @@ const gamelog = require('./modules/history/gamelog')
 const photoRelay = require('./modules/integrations/media/photoRelay')
 const avatarDb = require('./modules/vrchat/avatars/avatarDb')
 const crashGuard = require('./modules/vrchat/tools/crashGuard')
+const vrOverlay = require('./modules/vr/overlay/vrOverlayController')
 const { startTon, stopTon, getTonState, getTonRaw } = require('./modules/integrations/ton/tonModule')
 const tonOsc = require('./modules/integrations/ton/tonOsc')
 const osc = require('./modules/vrchat/osc/oscModule')
@@ -229,6 +230,8 @@ function createWindow () {
   })
   mainWindow.on('restore', () => mainWindow.show())
 
+  vrOverlay.init(mainWindow, state => push('vrOverlay:status', state))
+
   createTray()
 }
 
@@ -313,6 +316,7 @@ app.on('before-quit', () => {
   ruskLaserdome.stop(false)
   if (unsubHotkeyHold) { unsubHotkeyHold(); unsubHotkeyHold = null }
   stopHotkeyTick()
+  vrOverlay.stop()
 })
 
 /* ------------------------------------------------------------------ */
@@ -729,6 +733,21 @@ ipcMain.handle('update:startUpdate', (e, { url, name, version } = {}) => {
     throw new Error(`Could not start the update: ${err.message}`)
   }
 })
+
+// VR overlay (experimental, Windows + SteamVR only) - mirrors the main
+// window into a floating VR panel. Non-interactive first slice; see
+// modules/vr/overlay/openvrOverlay.js for what is/isn't verified.
+ipcMain.handle('vrOverlay:isAvailable', () => vrOverlay.isAvailable())
+ipcMain.handle('vrOverlay:start', async () => {
+  try {
+    await vrOverlay.start()
+    return { ok: true }
+  } catch (err) {
+    return { ok: false, error: err.message }
+  }
+})
+ipcMain.handle('vrOverlay:stop', () => { vrOverlay.stop(); return true })
+ipcMain.handle('vrOverlay:isRunning', () => vrOverlay.isRunning())
 
 // Achievements auto-unlock from the live WS feed; all categories are click-to-toggle.
 const tonSetFor = cat => ({ achievements: tonUnlockAch, items: tonUnlockItems, rounds: tonUnlockRounds, terrors: tonSeenTerrors, locations: tonSeenMaps }[cat])

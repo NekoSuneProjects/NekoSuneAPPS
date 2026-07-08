@@ -36,16 +36,37 @@ function hadRecentCrashEvent (cb) {
   })
 }
 
+// VRChat's own installer registers a "vrchat://" protocol handler that
+// launches straight into an instance (same mechanism VRCX and other
+// community tools use) - much more direct than the vrchat.com web page,
+// which just prompts the browser to hand off to the client anyway.
+// Confirmed on this machine: HKCR\vrchat\shell\open\command exists and
+// invokes VRChat's own launch.exe. Only used if that registration is
+// actually present; otherwise falls back to the web link, which always
+// works as long as a browser is available.
+function hasVrchatProtocolHandler (cb) {
+  exec('reg query "HKCR\\vrchat\\shell\\open\\command"', (err) => cb(!err))
+}
+
+function rejoin (loc) {
+  const [worldId, ...rest] = loc.split(':')
+  const instancePart = rest.join(':')
+  hasVrchatProtocolHandler(hasHandler => {
+    if (hasHandler) {
+      shell.openExternal(`vrchat://launch?id=${worldId}:${instancePart}`)
+    } else {
+      shell.openExternal(`https://vrchat.com/home/launch?worldId=${worldId}&instanceId=${encodeURIComponent(instancePart)}`)
+    }
+  })
+}
+
 function tick () {
   isVrchatRunning(running => {
     if (enabled && wasRunning && !running) {
       hadRecentCrashEvent(crashed => {
         if (!crashed) return // closed normally - nothing to recover from
         const loc = getLocation && getLocation()
-        if (loc) {
-          const [worldId, ...rest] = loc.split(':')
-          shell.openExternal(`https://vrchat.com/home/launch?worldId=${worldId}&instanceId=${encodeURIComponent(rest.join(':'))}`)
-        }
+        if (loc) rejoin(loc)
       })
     }
     wasRunning = running

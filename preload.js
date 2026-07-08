@@ -96,6 +96,10 @@ window.electronAPI = {
   openExternal: url => ipcRenderer.invoke('app:openExternal', url),
   updateCheck: () => ipcRenderer.invoke('update:check'),
   updateStart: opts => ipcRenderer.invoke('update:startUpdate', opts),
+  vrOverlayIsAvailable: () => ipcRenderer.invoke('vrOverlay:isAvailable'),
+  vrOverlayStart: () => ipcRenderer.invoke('vrOverlay:start'),
+  vrOverlayStop: () => ipcRenderer.invoke('vrOverlay:stop'),
+  vrOverlayIsRunning: () => ipcRenderer.invoke('vrOverlay:isRunning'),
   appVersion: () => ipcRenderer.invoke('app:version'),
   appContributors: () => ipcRenderer.invoke('app:contributors'),
 

@@ -87,6 +87,13 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
   kept false-positiving on more than half of them, reproducing the exact bug reported. Verified
   both directions with a real, unmocked Windows Event Log query: correctly silent with no crash
   event present, and correctly fires the rejoin when a matching event is simulated.
+- [x] **Auto-rejoin now uses VRChat's own `vrchat://launch?id=...` protocol handler** (same
+  mechanism VRCX and other community tools use) instead of only the vrchat.com web page, which
+  just prompts the browser to hand off to the client anyway - `vrchat://` launches directly.
+  Confirmed for real against this machine's actual VRChat install:
+  `HKCR\vrchat\shell\open\command` exists and points at VRChat's own `launch.exe`. Falls back to
+  the web link automatically if that registration isn't present. Verified both branches with the
+  real (unmocked) registry check plus mocked process/event state for the crash-detection side.
 - [ ] **Custom themes** (optional — currently fixed green + seasonal by design)
 - [ ] **Registry tools** — VRChat registry backup/restore (Windows registry under VRChat)
 - [ ] **Multiple dashboards / customizable widgets** (VRCX-style configurable panels)
@@ -161,6 +168,53 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
     stub) — that's a genuinely different packaging pipeline (Squirrel.Windows/electron-winstaller)
     that would replace the working MSI/NSIS build entirely; kept the existing, proven MSI/NSIS
     install and added the standalone updater on top of it instead.
+- [x] **Fixed: updater failed with `EPERM` trying to download into the install directory.** It
+  tried the install directory first (e.g. `Program Files\NekoSuneAPPS\`) and only fell back to
+  temp if `fs.accessSync(dir, W_OK)` said that wasn't writable — but that check isn't a reliable
+  predictor of real write access on Windows, confirmed by an actual `EPERM` in the wild despite it
+  passing. Now always downloads to temp, regardless.
+
+## 🥽 VR Overlay (experimental — this session)
+- [x] **Mirrors the app into a floating VR panel via SteamVR** — `modules/vr/overlay/`
+  (`openvrOverlay.js` for the raw OpenVR FFI bindings, `vrOverlayController.js` for the
+  screenshot-and-push loop). Settings → "VR Overlay" card, Windows + SteamVR only. First slice is
+  **view-only** — see the app floating in your headset, not yet clickable — click-through
+  (controller-to-mouse translation) is a planned follow-up once this base mirror is confirmed
+  working on real hardware.
+- [x] **Talks to OpenVR via `koffi` (FFI), not a compiled native addon** — there's no pure-JS way
+  to call a C++ SDK, and koffi needs no build step (lower AV-flag/CI-fragility risk than
+  node-gyp, the same reasoning that ruled out `node-global-key-listener` earlier in this
+  project). Chosen explicitly over the alternative (a small native Node addon) after discussing
+  the tradeoff.
+- [x] **Function signatures and the `VR_IVROverlay_FnTable` struct layout are transcribed
+  directly from Valve's own `openvr_capi.h`** (OpenVR's official C-compatible API surface,
+  published specifically for FFI bindings from other languages) — sourced from a copy bundled
+  inside an old, otherwise-unrelated npm package (`ovrjs`), not guessed or hallucinated. Only the
+  methods actually called (`CreateOverlay`, `DestroyOverlay`, `ShowOverlay`, `HideOverlay`,
+  `SetOverlayWidthInMeters`, `SetOverlayTransformAbsolute`, `SetOverlayFromFile`) get a real typed
+  callback prototype; every other field in the 60+-method struct is an opaque pointer purely to
+  keep the byte offsets correct, since every field is pointer-sized regardless of which function
+  it points to.
+- [x] **Verified live against a real, running SteamVR install on this dev machine**: DLL discovery
+  (via the Steam install path in the registry, with hardcoded fallbacks), `VR_InitInternal`,
+  `VR_GetGenericInterface`, and error-description lookups all behave exactly as documented.
+  Confirmed that `VRApplication_Utility` can initialize without a headset but is explicitly denied
+  the `IVROverlay` interface ("not available to utility applications"), while
+  `VRApplication_Overlay` correctly fails with "Hmd Not Found" when no headset is detected — and
+  that failure surfaces as a clear, actionable error message instead of a crash. Also confirmed
+  the full 64-field `VR_IVROverlay_FnTable` struct definition is valid and correctly sized (512
+  bytes) via koffi.
+- [ ] **NOT verified: any actual `IVROverlay` method call** (`CreateOverlay`, `ShowOverlay`,
+  `SetOverlayFromFile`, etc.) — that requires a physically connected, powered-on headset, which
+  this environment doesn't have. Considered (and rejected) editing this machine's live SteamVR
+  config to force a "null driver" fake-HMD for testing, since that risks disrupting the user's
+  real, actively-used SteamVR setup for an unrelated testing purpose. If the overlay struct
+  layout has any error, expect to debug it together against a real headset.
+- [ ] **Follow-ups, not done this pass**: click-through interactivity (translating controller
+  laser-pointer intersection into real mouse events on the mirrored UI); the long-standing "VR
+  gear battery" placeholder (`modules/vrchat/vr/vrBattery.js`, previously blocked on "no
+  well-maintained pure-Node OpenVR binding") can now likely be wired for real using the same
+  koffi/openvr_capi.h approach and an `IVRSystem` struct, since that blocker no longer applies.
 
 ## 🥽 Requested big features (next session)
 
