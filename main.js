@@ -1045,7 +1045,14 @@ ipcMain.handle('tts:sapiVoices', () => listSapiVoices())
 /* Speech-to-text (cloud OpenAI/Groq + local Whisper via transformers) */
 /* ------------------------------------------------------------------ */
 ipcMain.handle('stt:transcribeCloud', (e, opts) => transcribeCloud(opts))
-ipcMain.handle('stt:transcribeLocal', (e, opts) => transcribeLocal(opts))
+ipcMain.handle('stt:transcribeLocal', (e, opts) => transcribeLocal({
+  ...opts,
+  // Functions can't cross the IPC boundary from the renderer, so the
+  // progress callback is built here and forwarded as an event instead -
+  // matters most for medium/large/turbo, which are 1-3GB downloads on
+  // first use and would otherwise look like a silent hang.
+  onProgress: data => { if (data?.status === 'progress') push('stt:downloadProgress', data) }
+}))
 ipcMain.handle('stt:cloudProviders', () => STT_CLOUD_PROVIDERS)
 ipcMain.handle('stt:localModels', () => STT_LOCAL_MODELS)
 

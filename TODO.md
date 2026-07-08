@@ -408,6 +408,45 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
   actually works for the rest of the process's lifetime, and only falling back to libx264 if none
   of them do. Verified live: this machine's NVENC was detected and a real webm→mp4 transcode
   through it produced a clean, fully decodable file.
+- [x] **Fixed: voice assistant kept "hearing" the word "you" out of nowhere and burning through
+  the cloud STT rate limit.** Root cause: every listen cycle transcribed unconditionally, even
+  ones that were just silence/room noise — precisely the condition Whisper is known to
+  hallucinate short stock phrases on ("you" being the classic one). Added a silence gate
+  (`isSilentSamples`, RMS energy over the decoded clip against a `vadThreshold` — exposed as a
+  "Mic sensitivity" setting: quiet room / normal / noisy room) that skips transcription entirely
+  for near-silent clips, plus a small second-layer filter for known Whisper hallucination phrases
+  ("you", "thank you", "thanks for watching", etc.) so none of them ever reach wake-word matching
+  or the "overheard" status line. Verified all three paths (silence skipped, hallucination
+  filtered, real speech passes through) with a mocked capture/transcribe cycle.
+- [x] **Voice assistant no longer cuts off a long command mid-sentence.** Recording used to be a
+  fixed `clipSeconds` (default 4s) regardless of what was being said. `captureClip` now uses live
+  end-of-speech detection (`recordUntilSilence`): it waits at least `clipSeconds`, then keeps
+  extending in ~150ms polls for as long as it keeps detecting speech, only stopping once there's
+  been ~1.2s of real silence after the last speech - up to a 15s hard cap so continuous background
+  noise can't hold the mic open forever. An idle cycle (nothing said at all) still ends right at
+  the minimum window, same as before. Verified with mocked audio: pure silence ends at ~1.1s,
+  3 seconds of continuous "speech" extends to ~4.1s before cutting off, and continuous noise hits
+  the 15s cap.
+- [x] **Voice assistant: time in other regions.** "What time is it in Eastern Time?" previously
+  always answered with local time regardless of what was asked. `get_time` now carries an
+  optional IANA timezone (resolved by the AI provider itself) plus a human-readable place label;
+  `modules/vrchat/assistant/timezones.js` is a deterministic alias-table fallback covering common
+  USA/Canada/EU/Asia names for when a smaller/local model doesn't reliably produce a real IANA
+  name, and asks for clarification on names too broad to guess a single zone for (e.g. "Asia"
+  alone spans ~9 time zones). Verified against USA, Canada, EU, and Asia example phrasings plus
+  the ambiguous/unknown-place edge cases.
+- [x] **More local Whisper models + GPU acceleration.** Added Medium, Large v3, and Large v3
+  Turbo (OpenAI's own ~8x-faster distilled variant — "faster whisper" without a separate native
+  runtime like the Python/CTranslate2 faster-whisper project, keeping this app's no-native-binary
+  approach for STT). Downloads happen automatically the first time a model is actually selected
+  and used, never eagerly, and reuse `@huggingface/transformers`'s own cache on subsequent runs
+  (no re-download). Added a live download-progress bar since the larger models are multi-GB.
+  GPU is now used automatically (DirectML on Windows / CUDA on Linux / CoreML on Mac) with a real
+  fallback to CPU — initially tried the library's own `device:'auto'`, which turned out to crash
+  ("DML EP can only be used with CPU EPs") because it unconditionally mixes in a WebGPU provider
+  that isn't actually usable from the main process; fixed by picking the platform GPU device
+  explicitly with an actual try-then-fall-back-to-CPU. Verified live: DML pipeline creation
+  succeeds standalone on this machine, and a full transcription run completes without error.
 
 ---
 

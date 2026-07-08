@@ -34,6 +34,7 @@
 const path = require('path')
 const fs = require('fs')
 const { detectCue, CHECK_IN_MESSAGES } = require('./emotionCues')
+const { resolveTimezone } = require('./timezones')
 
 // How often the instant-replay recorder rotates to a fresh, independently
 // valid segment (see startReplayBuffer below).
@@ -84,6 +85,13 @@ class JarvisAssistant {
       searchProvider: 'searxng', // 'searxng' | 'duckduckgo'
       searxngEndpoint: 'https://searxng.nekosunevr.co.uk/',
       clipSeconds: 4,
+      // Minimum RMS energy (0-1, normalized signal) a captured clip needs
+      // before it's even sent to transcription. Below this it's treated as
+      // silence/room noise and skipped entirely - lower = more sensitive
+      // (picks up quieter speech, but also more background noise), higher =
+      // less sensitive. ~0.015 is a conservative default: comfortably above
+      // typical mic self-noise/room hum, comfortably below normal speech.
+      vadThreshold: 0.015,
       trustedFriends: [],
       enableReplayBuffer: false,
       sosWebhook: '',
@@ -216,14 +224,29 @@ class JarvisAssistant {
     this.busy = true
     try {
       const blob = await this.captureClip()
-      const text = await this.transcribe(blob)
-      if (text) await this.handleUtterance(text)
+      // Decoded once here and reused for local transcription below - this
+      // is also what the silence gate measures. Skipping near-silent clips
+      // before they ever reach transcription is what actually fixes both
+      // the "you" hallucination (Whisper's well-known behavior on quiet/
+      // silent audio) and burning through the cloud STT rate limit, since
+      // most listen cycles happen while nobody's actually talking.
+      const samples = await this.decodeTo16kMono(blob).catch(() => null)
+      if (samples && this.isSilentSamples(samples)) return
+      const text = await this.transcribe(blob, samples)
+      if (text && !isHallucinatedFiller(text)) await this.handleUtterance(text)
     } catch (err) {
       this.error = err.message
       this.emit('error')
     } finally {
       this.busy = false
     }
+  }
+
+  isSilentSamples (samples) {
+    let sumSquares = 0
+    for (let i = 0; i < samples.length; i++) sumSquares += samples[i] * samples[i]
+    const rms = Math.sqrt(sumSquares / samples.length)
+    return rms < this.config.vadThreshold
   }
 
   async captureClip () {
@@ -236,11 +259,65 @@ class JarvisAssistant {
       recorder.onstop = resolve
       recorder.onerror = e => reject(e.error || new Error('Recording failed'))
     })
-    recorder.start(500)
-    await new Promise(resolve => setTimeout(resolve, this.config.clipSeconds * 1000))
+    recorder.start(250)
+    // clipSeconds is now a MINIMUM window, not a fixed one: if the user is
+    // still talking when it elapses, recording keeps extending (up to a
+    // hard cap) instead of cutting them off mid-command - it only actually
+    // stops once it detects a real pause after having heard speech.
+    await this.recordUntilSilence(audioStream)
     recorder.stop()
     await stopped
     return new Blob(chunks, { type: recorder.mimeType || 'audio/webm' })
+  }
+
+  // Live end-of-speech detection: waits at least clipSeconds, then keeps
+  // extending in short polls for as long as the user keeps talking, only
+  // returning once there's been SILENCE_TAIL_MS of real quiet after having
+  // heard actual speech - so a 10+ second command isn't cut off partway
+  // through. If nothing was said at all by the end of the minimum window,
+  // it returns immediately rather than waiting it out (keeps idle cycles
+  // just as fast as before). MAX_LISTEN_MS is a hard backstop so continuous
+  // background noise can't hold the mic open indefinitely.
+  async recordUntilSilence (audioStream) {
+    const AudioContext = window.AudioContext || window.webkitAudioContext
+    const ctx = new AudioContext()
+    const source = ctx.createMediaStreamSource(audioStream)
+    const analyser = ctx.createAnalyser()
+    analyser.fftSize = 512
+    source.connect(analyser)
+    const data = new Uint8Array(analyser.fftSize)
+
+    const sampleRms = () => {
+      analyser.getByteTimeDomainData(data)
+      let sumSquares = 0
+      for (let i = 0; i < data.length; i++) { const v = (data[i] - 128) / 128; sumSquares += v * v }
+      return Math.sqrt(sumSquares / data.length)
+    }
+
+    const POLL_MS = 150
+    const SILENCE_TAIL_MS = 1200
+    const MAX_LISTEN_MS = 15000
+    const minMs = Math.max(1000, (this.config.clipSeconds || 4) * 1000)
+
+    const start = Date.now()
+    let lastLoudAt = start
+    let heardSpeech = false
+
+    try {
+      while (true) {
+        await new Promise(resolve => setTimeout(resolve, POLL_MS))
+        const elapsed = Date.now() - start
+        if (sampleRms() >= this.config.vadThreshold) { lastLoudAt = Date.now(); heardSpeech = true }
+
+        if (elapsed >= MAX_LISTEN_MS) break
+        if (elapsed >= minMs) {
+          if (!heardSpeech) break
+          if ((Date.now() - lastLoudAt) >= SILENCE_TAIL_MS) break
+        }
+      }
+    } finally {
+      try { await ctx.close() } catch (_) {}
+    }
   }
 
   async decodeTo16kMono (blob) {
@@ -258,9 +335,9 @@ class JarvisAssistant {
     return rendered.getChannelData(0)
   }
 
-  async transcribe (blob) {
+  async transcribe (blob, precomputedSamples) {
     if (this.config.engine === 'local') {
-      const samples = await this.decodeTo16kMono(blob)
+      const samples = precomputedSamples || await this.decodeTo16kMono(blob)
       const r = await this.transcribeLocal({ samples, model: this.config.localModel })
       return String(r?.text || '').trim()
     }
@@ -317,7 +394,7 @@ class JarvisAssistant {
       case 'set_status': return this.handleSetStatus(action.text)
       case 'sos': return this.triggerSos()
       case 'get_weather': return this.handleGetWeather()
-      case 'get_time': return this.handleGetTime()
+      case 'get_time': return this.handleGetTime(action.timezone, action.place)
       case 'search_web': return this.handleSearchWeb(action.query)
       default: return this.respond(action?.reply || "Sorry, I didn't catch that.")
     }
@@ -336,12 +413,30 @@ class JarvisAssistant {
   // Answered locally from the system clock, never by the LLM - a language
   // model has no way to actually know the current time, only to guess from
   // whatever's in its training data or the request timestamp, either of
-  // which can be wrong.
-  async handleGetTime () {
+  // which can be wrong. The AI provider is asked to resolve a mentioned
+  // place/region to a real IANA timezone itself, but that's only reliable
+  // with a capable model - resolveTimezone() is a deterministic fallback
+  // covering common USA/Canada/EU/Asia names for when it isn't (a small
+  // local model returning "Eastern Time" literally instead of the IANA
+  // name, for example).
+  async handleGetTime (timezone, place) {
+    let tz = null
+    if (timezone || place) {
+      const byTimezone = resolveTimezone(timezone)
+      const resolved = byTimezone.tz || byTimezone.ambiguous ? byTimezone : resolveTimezone(place)
+      if (resolved.ambiguous) return this.respond(`${place || timezone} spans several time zones - which city or country did you mean?`)
+      tz = resolved.tz
+      if (!tz) return this.respond(`I don't recognize "${place || timezone}" as a place I can get the time for.`)
+    }
+
     const now = new Date()
-    const time = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
-    const date = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })
-    return this.respond(`It's ${time} on ${date}.`)
+    const timeOpts = { hour: 'numeric', minute: '2-digit' }
+    const dateOpts = { weekday: 'long', month: 'long', day: 'numeric' }
+    if (tz) { timeOpts.timeZone = tz; dateOpts.timeZone = tz }
+    const time = now.toLocaleTimeString([], timeOpts)
+    const date = now.toLocaleDateString([], dateOpts)
+    const suffix = tz ? ` in ${place || tz.split('/').pop().replace(/_/g, ' ')}` : ''
+    return this.respond(`It's ${time} on ${date}${suffix}.`)
   }
 
   async handleSearchWeb (query) {
@@ -565,6 +660,19 @@ class JarvisAssistant {
 
 function blobToBase64 (blob) {
   return blob.arrayBuffer().then(buffer => Buffer.from(buffer).toString('base64'))
+}
+
+// Whisper (cloud and local) has a well-documented habit of hallucinating a
+// handful of short stock phrases on quiet/near-silent audio - "you" is the
+// single most common one. The silence gate above (isSilentSamples) catches
+// most of these before they're even sent to transcription, but this is a
+// second layer for the audio that's quiet-but-not-quite-below-threshold.
+const HALLUCINATION_PHRASES = new Set([
+  'you', 'you.', 'thank you', 'thank you.', 'thanks for watching', 'thanks for watching.',
+  'thank you for watching', 'thank you for watching.', 'bye', 'bye.', 'goodbye', 'goodbye.', '.'
+])
+function isHallucinatedFiller (text) {
+  return HALLUCINATION_PHRASES.has(String(text).trim().toLowerCase())
 }
 
 module.exports = { JarvisAssistant }

@@ -19,7 +19,14 @@ const STT_CLOUD_PROVIDERS = {
 const STT_LOCAL_MODELS = {
   tiny: 'onnx-community/whisper-tiny.en',
   base: 'onnx-community/whisper-base',
-  small: 'onnx-community/whisper-small'
+  small: 'onnx-community/whisper-small',
+  medium: 'onnx-community/whisper-medium',
+  large: 'onnx-community/whisper-large-v3',
+  // OpenAI's own distilled, ~8x-faster variant of large-v3 - this is what
+  // "faster whisper" gets you within this same WASM/ONNX pipeline, no
+  // separate native runtime (e.g. the Python/CTranslate2 faster-whisper
+  // project) needed.
+  turbo: 'onnx-community/whisper-large-v3-turbo'
 }
 
 async function transcribeCloud ({ baseUrl, apiKey, model, audioBase64, mimeType, language }) {
@@ -43,24 +50,54 @@ async function transcribeCloud ({ baseUrl, apiKey, model, audioBase64, mimeType,
   return { text: String(data?.text || '').trim() }
 }
 
-// Lazily loaded so the (sizeable) local model only downloads/loads if the
-// user actually picks "local" - never on app startup.
+// transformers.js's own device:'auto'/'gpu' resolution always includes
+// 'webgpu' in the execution-provider list even when running in Node (this
+// module runs in the main process), and onnxruntime-node's DirectML EP
+// throws ("DML EP can only be used with CPU EPs") when webgpu is mixed in -
+// confirmed by an actual failed run, not just a theoretical concern. So the
+// GPU device is picked explicitly per platform here instead, with a real
+// try-then-fall-back-to-CPU on top in case no compatible GPU/driver exists.
+function preferredGpuDevice () {
+  if (process.platform === 'win32') return 'dml'
+  if (process.platform === 'linux' && process.arch === 'x64') return 'cuda'
+  if (process.platform === 'darwin') return 'coreml'
+  return null
+}
+
+// Lazily loaded so the (sizeable - medium/large/turbo can be 1-3GB) local
+// model only downloads/loads if the user actually picks "local" AND starts
+// listening (never eagerly, never on app startup) - @huggingface/transformers
+// caches downloaded model files itself, so a model that's already been
+// downloaded once loads straight from that cache with no network access.
 let localPipelinePromise = null
 let localPipelineModel = null
 
-async function getLocalWhisperPipeline (modelId) {
+async function getLocalWhisperPipeline (modelId, onProgress) {
   const useModel = STT_LOCAL_MODELS[modelId] || modelId || STT_LOCAL_MODELS.tiny
   if (localPipelinePromise && localPipelineModel === useModel) return localPipelinePromise
 
   const { pipeline } = await import('@huggingface/transformers')
+  const gpuDevice = preferredGpuDevice()
+
   localPipelineModel = useModel
-  localPipelinePromise = pipeline('automatic-speech-recognition', useModel)
+  localPipelinePromise = (async () => {
+    if (gpuDevice) {
+      try {
+        return await pipeline('automatic-speech-recognition', useModel, { device: gpuDevice, progress_callback: onProgress })
+      } catch (_) {
+        // No compatible GPU/driver (or a partial download from the failed
+        // attempt above) - fall through to a clean CPU load.
+      }
+    }
+    return pipeline('automatic-speech-recognition', useModel, { device: 'cpu', progress_callback: onProgress })
+  })().catch(err => { localPipelinePromise = null; localPipelineModel = null; throw err })
+
   return localPipelinePromise
 }
 
-async function transcribeLocal ({ samples, model, language }) {
+async function transcribeLocal ({ samples, model, language, onProgress }) {
   if (!samples || !samples.length) throw new Error('No audio to transcribe')
-  const pipe = await getLocalWhisperPipeline(model)
+  const pipe = await getLocalWhisperPipeline(model, onProgress)
   const float32 = samples instanceof Float32Array ? samples : Float32Array.from(samples)
   const result = await pipe(float32, language && language !== 'auto' ? { language } : undefined)
   const text = Array.isArray(result) ? result.map(r => r.text).join(' ') : result?.text

@@ -5150,6 +5150,17 @@ async function setupDesktopStt () {
   ;['sttCloudProvider', 'sttCloudKey', 'sttLocalModel', 'sttSourceLang', 'sttClipSeconds', 'sttToChatbox', 'sttSpeakTranslation']
     .forEach(id => $(id).addEventListener('change', saveSttConfig))
 }
+// Medium/Large/Turbo are multi-GB first-time downloads - without this, a
+// first transcription attempt with one of them selected just looks hung.
+api.on('stt:downloadProgress', data => {
+  if (!$('sttLocalProgressWrap')) return
+  const pct = Number.isFinite(data?.progress) ? Math.min(100, Math.round(data.progress)) : 0
+  $('sttLocalProgressWrap').style.display = 'block'
+  $('sttLocalProgressBar').style.width = `${pct}%`
+  const mb = v => (v / 1e6).toFixed(1)
+  setText('sttLocalProgressText', data?.total ? `Downloading ${data.file || 'model'}… ${pct}% (${mb(data.loaded || 0)} / ${mb(data.total)} MB)` : `Downloading ${data?.file || 'model'}…`)
+  if (pct >= 100) setTimeout(() => { if ($('sttLocalProgressWrap')) $('sttLocalProgressWrap').style.display = 'none' }, 2000)
+})
 $('sttToggle').addEventListener('click', async () => {
   const c = ensureDesktopStt()
   await c.setLive(!c.live)
@@ -5242,6 +5253,7 @@ async function saveAssistantConfig () {
     wakeWord: $('assistantWakeWord').value.trim() || 'nova',
     micDeviceId: $('assistantMicDevice').value,
     clipSeconds: parseInt($('assistantClipSeconds').value, 10) || 4,
+    vadThreshold: parseFloat($('assistantMicSensitivity').value) || 0.015,
     trustedFriends: $('assistantTrustedFriends').value.split(',').map(s => s.trim()).filter(Boolean),
     enableReplayBuffer: $('assistantEnableReplay').checked,
     replayMinutes: parseInt($('assistantReplayMinutes').value, 10) || 5,
@@ -5272,6 +5284,7 @@ async function setupAssistant () {
   })
   $('assistantWakeWord').value = saved.wakeWord || 'nova'
   $('assistantClipSeconds').value = saved.clipSeconds || 4
+  $('assistantMicSensitivity').value = String(saved.vadThreshold || 0.015)
   $('assistantTrustedFriends').value = (saved.trustedFriends || []).join(', ')
   $('assistantEnableReplay').checked = !!saved.enableReplayBuffer
   $('assistantReplayMinutes').value = String(saved.replayMinutes || 5)
@@ -5283,7 +5296,7 @@ async function setupAssistant () {
   if (saved.micDeviceId) $('assistantMicDevice').value = saved.micDeviceId
   await saveAssistantConfig()
   $('assistantSearchProvider').addEventListener('change', async () => { updateAssistantSearchRows(); await saveAssistantConfig() })
-  ;['assistantWakeWord', 'assistantMicDevice', 'assistantClipSeconds', 'assistantTrustedFriends', 'assistantEnableReplay', 'assistantReplayMinutes', 'assistantSosWebhook', 'assistantSearxngEndpoint']
+  ;['assistantWakeWord', 'assistantMicDevice', 'assistantClipSeconds', 'assistantMicSensitivity', 'assistantTrustedFriends', 'assistantEnableReplay', 'assistantReplayMinutes', 'assistantSosWebhook', 'assistantSearxngEndpoint']
     .forEach(id => $(id).addEventListener('change', saveAssistantConfig))
 }
 $('assistantToggle').addEventListener('click', async () => {

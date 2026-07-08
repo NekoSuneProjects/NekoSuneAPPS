@@ -687,7 +687,15 @@
               <option value="tiny">Tiny (fastest, least accurate)</option>
               <option value="base">Base</option>
               <option value="small">Small (slower, more accurate)</option>
+              <option value="medium">Medium (slower, more accurate)</option>
+              <option value="large">Large v3 (slowest, most accurate)</option>
+              <option value="turbo">Large v3 Turbo (faster whisper — near-large accuracy, ~8x faster)</option>
             </select>
+            <div class="muted" style="font-size:.72rem;margin-top:4px">Uses your GPU automatically if available (falls back to CPU). Larger models download once on first use (up to a few GB) — the app will show progress below.</div>
+            <div id="sttLocalProgressWrap" style="display:none;margin-top:6px">
+              <div style="height:6px;border-radius:3px;background:var(--panel2,#1a1a1a);overflow:hidden"><div id="sttLocalProgressBar" style="height:100%;width:0%;background:var(--accent,#7c5cff)"></div></div>
+              <div id="sttLocalProgressText" class="muted" style="font-size:.72rem;margin-top:3px"></div>
+            </div>
           </div>
           <div class="grid cols-2" style="margin-top:8px">
             <div><label>Source language</label><select id="sttSourceLang"><option value="auto">Auto-detect</option></select></div>
@@ -741,7 +749,14 @@
             <div><label>Wake word</label><input type="text" id="assistantWakeWord" placeholder="e.g. nova" /></div>
           </div>
           <div class="grid cols-2" style="margin-top:8px">
-            <div><label>Clip length (s)</label><input type="number" id="assistantClipSeconds" min="2" max="10" value="4" /></div>
+            <div><label>Min. listen time (s) <span class="muted" style="font-size:.7rem">(keeps listening longer automatically while you're still talking)</span></label><input type="number" id="assistantClipSeconds" min="2" max="10" value="4" /></div>
+            <div><label>Mic sensitivity</label>
+              <select id="assistantMicSensitivity">
+                <option value="0.008">Quiet room (picks up softer speech)</option>
+                <option value="0.015" selected>Normal</option>
+                <option value="0.03">Noisy room (ignores more background noise)</option>
+              </select>
+            </div>
           </div>
           <label style="margin-top:8px">Web search <span class="muted" style="font-size:.7rem">(used for "what's the news"-style questions and anything needing current info)</span></label>
           <select id="assistantSearchProvider">

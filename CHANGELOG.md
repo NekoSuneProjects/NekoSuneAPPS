@@ -6,6 +6,40 @@ This project follows [Semantic Versioning](https://semver.org/).
 ## Unreleased
 
 
+## [1.0.52] - 2026-07-08
+
+### Added
+- **Voice assistant: time in other regions/timezones.** "What time is it in Eastern Time?"
+  now actually answers for that region instead of always giving local time. The AI provider
+  resolves the place to a real IANA timezone itself; a built-in alias table covering common
+  USA/Canada/EU/Asia names (Eastern/Pacific/Mountain, Toronto/Vancouver, UK/EU/Germany/Greece,
+  Japan/China/India/Singapore/Dubai, etc.) acts as a deterministic fallback for weaker/local
+  models that don't reliably produce IANA names. Genuinely ambiguous regions ("Asia" alone spans
+  ~9 time zones) get a clarifying question instead of a guess.
+- **More local Whisper models: Medium, Large v3, and Large v3 Turbo** (OpenAI's own ~8x-faster
+  distilled variant of Large v3 — this is "faster whisper" without needing a separate native
+  runtime). Downloads happen automatically the first time a model is actually selected and used
+  (never eagerly), with a real progress bar since the larger ones are multi-gigabyte; a model
+  that's already been downloaded loads straight from cache.
+- **Local Whisper now uses your GPU automatically, falling back to CPU** if none is available or
+  usable (confirmed via a real DirectML pipeline creation, not just a device-name guess).
+- **Voice assistant: "mic sensitivity" setting** (quiet room / normal / noisy room), and the
+  minimum listen time now dynamically extends while you're still talking (up to 15s), only
+  cutting off after a real pause — a 10-second command no longer gets truncated.
+
+### Fixed
+- **Voice assistant kept hearing "you" out of nowhere and burning through the cloud
+  speech-to-text rate limit.** It was transcribing every listen cycle unconditionally, including
+  ones that were just silence/room noise — which is exactly when Whisper is known to hallucinate
+  short stock phrases like "you". Near-silent clips are now skipped before they're ever sent to
+  transcription at all (fixes both the false "heard" spam and the wasted API quota), and a small
+  filter catches the handful of known Whisper hallucination phrases as a second layer.
+- Local Whisper's automatic GPU selection could crash outright ("DML EP can only be used with CPU
+  EPs") because the library's own 'auto'/'gpu' device resolution mixes in a WebGPU provider that
+  isn't actually usable from the main process. Fixed by picking the platform-appropriate GPU
+  device explicitly (DirectML on Windows, CUDA on Linux, CoreML on Mac) with a real fallback to
+  CPU if that fails to initialize.
+
 ## [1.0.51] - 2026-07-08
 
 ### Added
