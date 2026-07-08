@@ -45,7 +45,11 @@ async function interpretCommand ({ baseUrl, apiKey, model, text }) {
     const raw = res.data?.choices?.[0]?.message?.content?.trim() || ''
     return parseAction(raw, input)
   } catch (err) {
-    return { action: 'chat', reply: "Sorry, I couldn't reach my brain just now." }
+    // Surface the real cause instead of a generic message - almost always
+    // either "no/invalid API key" (401) or the AI provider isn't reachable
+    // (wrong base URL, or a local provider like Ollama isn't running).
+    const detail = err?.response?.data?.error?.message || err?.response?.status || err.code || err.message
+    return { action: 'chat', reply: `Sorry, I couldn't reach my brain just now (${detail}). Check the AI provider settings in Settings → IntelliChat.` }
   }
 }
 

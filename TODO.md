@@ -282,6 +282,15 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
   The instant-replay screen+audio capture for SOS clips is now a separate, **opt-in** capture
   (its own checkbox, only requests a screen-share prompt if enabled) instead of being the same
   stream the wake-word listener used.
+- [x] **Fixed: "Sorry, I couldn't reach my brain just now" gave no way to diagnose the actual
+  problem.** `assistantBrain.js`'s command-interpretation call (which reuses the IntelliChat AI
+  provider settings) was swallowing the real HTTP error and always returning the same generic
+  message. Now surfaces the actual cause (e.g. "Incorrect API key provided", or a connection
+  error if a local provider like Ollama isn't running) directly in the reply. Also added upfront
+  validation: if the AI provider was never configured at all (blank base URL *and* blank key —
+  as opposed to a deliberately keyless provider like Ollama, which has a non-empty base URL),
+  `setLive(true)` now fails immediately with a clear message pointing at Settings → IntelliChat,
+  instead of only discovering the problem on the first spoken command.
 - [x] **Commands**: "is `<friend>` online / which world" (reuses the friends list's existing
   `location`/`worldId`/`instanceType` fields, same ones the Friends panel already renders),
   "who's online", "what's my status", "change my status to `<text>`" (sets `statusDescription`

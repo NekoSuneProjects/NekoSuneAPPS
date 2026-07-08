@@ -6,6 +6,15 @@ This project follows [Semantic Versioning](https://semver.org/).
 ## Unreleased
 
 
+## [1.0.45] - 2026-07-08
+
+### Fixed
+- **"Sorry, I couldn't reach my brain just now" gave no way to diagnose the problem.** The
+  voice assistant's command-interpretation call was swallowing the real HTTP error and always
+  showing the same generic message. Now shows the actual cause (bad API key, connection
+  refused, etc.) directly in the reply, and validates upfront that an AI provider is configured
+  at all before starting to listen, instead of only finding out on the first spoken command.
+
 ## [1.0.44] - 2026-07-08
 
 ### Fixed

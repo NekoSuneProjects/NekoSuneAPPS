@@ -134,6 +134,14 @@ class JarvisAssistant {
     if (!this.config.wakeWord) {
       throw new Error('Set a wake word first.')
     }
+    // A blank base URL + blank key means the IntelliChat AI provider was
+    // never configured at all (as opposed to deliberately pointed at a
+    // keyless local provider like Ollama, which would have a non-empty
+    // base URL) - that combination always fails against the real OpenAI
+    // default endpoint, which requires a key.
+    if (!this.config.aiBaseUrl && !this.config.aiApiKey) {
+      throw new Error('No AI provider is configured for command interpretation. Set one up in Settings → IntelliChat first (any OpenAI-compatible provider works).')
+    }
   }
 
   async setLive (enabled) {
