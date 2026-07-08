@@ -73,6 +73,20 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 - [x] **Configured Start** — launch companion apps (+ optional VRChat)
 - [x] **Data export/import** — settings + history to JSON
 - [x] **Crash recovery / auto-rejoin** — opt-in; relaunches last instance if VRChat closes
+- [x] **Fixed: auto-rejoin treated every normal VRChat close as a crash.** It only checked "is
+  VRChat.exe still running", which is equally true after a real crash and after just closing the
+  game normally - so it couldn't actually tell the two apart, and always assumed the worst. Now
+  cross-checks Windows' own crash reporter (WER): a real crash (unhandled exception, access
+  violation, etc.) always logs an "Application Error" event (Application log, Event ID 1000) for
+  the crashing process, a normal quit never does. Cross-checked this against 26 real historical
+  VRChat logs pulled from the user's own backup: **none contained an actual engine/native crash
+  dump** — every "abrupt-looking" ending was just a routine, non-fatal in-world Udon script
+  exception (`NullReferenceException` mid-EXTERN-call, common and harmless) — and VRChat's own
+  clean-quit log marker (`VRCApplication: HandleApplicationQuit`) only appeared in 12 of the 26,
+  confirming that "the log doesn't end cleanly" alone (the other heuristic considered) would have
+  kept false-positiving on more than half of them, reproducing the exact bug reported. Verified
+  both directions with a real, unmocked Windows Event Log query: correctly silent with no crash
+  event present, and correctly fires the rejoin when a matching event is simulated.
 - [ ] **Custom themes** (optional — currently fixed green + seasonal by design)
 - [ ] **Registry tools** — VRChat registry backup/restore (Windows registry under VRChat)
 - [ ] **Multiple dashboards / customizable widgets** (VRCX-style configurable panels)
@@ -259,6 +273,15 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
   Russian, German, French, Chinese, Korean, Arabic, Portuguese, Italian, Dutch, Polish,
   Ukrainian, Vietnamese) — Tesseract's language codes don't map 1:1 to the app's i18n codes, so
   this is a separate, smaller list.
+- [x] **Fixed: OCR failed to start with "worker script...must be an absolute path"** in a
+  packaged build. Same root cause as an earlier ffmpeg-static fix this session: tesseract.js
+  computes its worker script path via its own internal `__dirname`, which resolves to a path
+  inside `app.asar`, and `worker_threads` can't load a script from inside an asar archive at all
+  (unlike `require()`/`fs`, which Electron transparently redirects). tesseract.js is already
+  unpacked from the asar (`asarUnpack`); the worker path just needed to actually point there -
+  patched to swap `app.asar` for `app.asar.unpacked` in the computed default. A no-op in dev,
+  where there's no asar at all. Verified by creating and tearing down a real tesseract worker
+  with the fix applied.
 - [x] **TTS output**, `modules/ai/ttsProviders.js`, **15 engines** selectable in the Translation
   tab, ported from [TTS-Voice-Wizard](https://github.com/VRCWizard/TTS-Voice-Wizard) for feature
   parity: Windows built-in (SAPI via PowerShell `System.Speech.Synthesis`, text piped over
@@ -469,6 +492,17 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
   that isn't actually usable from the main process; fixed by picking the platform GPU device
   explicitly with an actual try-then-fall-back-to-CPU. Verified live: DML pipeline creation
   succeeds standalone on this machine, and a full transcription run completes without error.
+- [x] **Fixed: local Whisper crashed with "ENOTDIR" and models appeared to re-download every
+  time.** `@huggingface/transformers`'s own default cache lives under its own node_modules folder
+  (`.../node_modules/@huggingface/transformers/dist/.cache/`), which on a per-machine Windows
+  install is under Program Files — not writable by a normal, non-elevated user. Models now
+  download to `<userData>/models/whisper/<repo>/<model-name>/...` instead (e.g.
+  `%AppData%/nekosuneapps/models/whisper/onnx-community/whisper-tiny.en/`), always writable and
+  easy to find/inspect. Verified live: files land in exactly that structure, and — since
+  `@huggingface/transformers`'s file cache only ever exposes a file at its final path once fully
+  downloaded (downloads land in a `.tmp.<pid>.<random>` file first, renamed into place only on
+  completion) — a second run with the same model loads straight from disk with an unchanged file
+  timestamp, confirming no re-download and no risk of ever running against a partial file.
 
 ---
 

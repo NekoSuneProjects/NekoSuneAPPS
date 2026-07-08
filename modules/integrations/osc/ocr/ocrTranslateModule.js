@@ -8,6 +8,22 @@
 
 const { createWorker } = require('tesseract.js')
 
+// tesseract.js computes its worker script path internally via its own
+// __dirname, which resolves to a path inside app.asar in a packaged build.
+// Unlike require()/fs, worker_threads can't load a script from inside an
+// asar archive at all (confirmed by a real "worker script...must be an
+// absolute path" failure) - tesseract.js IS in asarUnpack (package.json),
+// so the real file exists on disk, just not at this computed path. Patch
+// it to the unpacked copy; a no-op in dev where there's no asar at all.
+function getWorkerPath () {
+  try {
+    const defaultPath = require('tesseract.js/src/worker/node/defaultOptions.js').workerPath
+    return defaultPath.replace('app.asar', 'app.asar.unpacked')
+  } catch (_) {
+    return null
+  }
+}
+
 class OcrTranslateController {
   constructor ({ translate, sendChatboxMessage, onUpdate = () => {}, getDisplayMedia } = {}) {
     this.translate = typeof translate === 'function' ? translate : null
@@ -44,7 +60,8 @@ class OcrTranslateController {
   async ensureWorker () {
     if (this.worker && this.workerLang === this.config.tesseractLang) return this.worker
     if (this.worker) { try { await this.worker.terminate() } catch (_) {} }
-    this.worker = await createWorker(this.config.tesseractLang)
+    const workerPath = getWorkerPath()
+    this.worker = await createWorker(this.config.tesseractLang, undefined, workerPath ? { workerPath } : {})
     this.workerLang = this.config.tesseractLang
     return this.worker
   }

@@ -38,7 +38,7 @@ const { getTikTokTtsAudio, TIKTOK_VOICES } = require('./modules/live/tiktokTts')
 const { intelliRewrite, AI_PROVIDERS } = require('./modules/ai/intelliChat')
 const { translateText, TRANSLATE_PROVIDERS } = require('./modules/ai/translateProviders')
 const { speak, listSapiVoices, TTS_PROVIDERS } = require('./modules/ai/ttsProviders')
-const { transcribeCloud, transcribeLocal, STT_CLOUD_PROVIDERS, STT_LOCAL_MODELS } = require('./modules/ai/speechToText')
+const { transcribeCloud, transcribeLocal, configureModelsDir, STT_CLOUD_PROVIDERS, STT_LOCAL_MODELS } = require('./modules/ai/speechToText')
 const { interpretCommand, summarizeSearchResults } = require('./modules/ai/assistantBrain')
 const { searchWeb } = require('./modules/ai/webSearch')
 const i18n = require('./modules/i18n/i18n')
@@ -248,6 +248,11 @@ async function configureOverlayServer () {
 }
 
 app.whenReady().then(async () => {
+  // Downloaded Whisper models land under userData (always writable without
+  // elevation), not @huggingface/transformers's own node_modules-relative
+  // default - see speechToText.js for why that default broke on a
+  // per-machine install.
+  configureModelsDir(app.getPath('userData'))
   await configureOverlayServer()
   createWindow()
   // Track the current VRChat world from its log; feed it to the renderer and

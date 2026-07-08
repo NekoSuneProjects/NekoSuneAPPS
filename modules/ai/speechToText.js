@@ -11,6 +11,8 @@
 // PCM needs the Web Audio API, so that conversion happens in the renderer
 // before the samples are sent over IPC.
 
+const path = require('path')
+
 const STT_CLOUD_PROVIDERS = {
   openai: { label: 'OpenAI Whisper', baseUrl: 'https://api.openai.com/v1', model: 'whisper-1' },
   groq: { label: 'Groq Whisper', baseUrl: 'https://api.groq.com/openai/v1', model: 'whisper-large-v3' }
@@ -64,11 +66,32 @@ function preferredGpuDevice () {
   return null
 }
 
+// By default @huggingface/transformers caches models under its OWN
+// node_modules folder (a path like .../node_modules/@huggingface/
+// transformers/dist/.cache/), which in a packaged, per-machine Windows
+// install lives under Program Files - not writable by a normal
+// (non-elevated) user. That mismatch is almost certainly what was behind
+// both symptoms reported against this: an "ENOTDIR" crash (a half-written
+// path from a failed write into a location the app can't actually use) and
+// models appearing to "re-download" every time (nothing ever successfully
+// persisted there to be found again next time). Models now go under
+// <userData>/models/whisper/<repo-id>/... instead - always writable
+// without elevation, and inspectable by the user. Must be set before the
+// first pipeline() call; main.js calls this once at startup with
+// app.getPath('userData').
+let modelsDir = null
+function configureModelsDir (dir) {
+  modelsDir = dir
+}
+
 // Lazily loaded so the (sizeable - medium/large/turbo can be 1-3GB) local
 // model only downloads/loads if the user actually picks "local" AND starts
-// listening (never eagerly, never on app startup) - @huggingface/transformers
-// caches downloaded model files itself, so a model that's already been
-// downloaded once loads straight from that cache with no network access.
+// listening (never eagerly, never on app startup). @huggingface/transformers's
+// own file cache only ever exposes a fully-downloaded file at its final
+// path (downloads land in a `.tmp.<pid>.<random>` file first and are only
+// renamed into place after completing) - so a model already present in the
+// cache dir is guaranteed complete, and starting listening again with the
+// same model loads straight from disk with no network access at all.
 let localPipelinePromise = null
 let localPipelineModel = null
 
@@ -76,7 +99,12 @@ async function getLocalWhisperPipeline (modelId, onProgress) {
   const useModel = STT_LOCAL_MODELS[modelId] || modelId || STT_LOCAL_MODELS.tiny
   if (localPipelinePromise && localPipelineModel === useModel) return localPipelinePromise
 
-  const { pipeline } = await import('@huggingface/transformers')
+  const { pipeline, env } = await import('@huggingface/transformers')
+  if (modelsDir) {
+    env.cacheDir = path.join(modelsDir, 'models', 'whisper')
+    env.useCustomCache = false
+    env.useFSCache = true
+  }
   const gpuDevice = preferredGpuDevice()
 
   localPipelineModel = useModel
@@ -104,4 +132,4 @@ async function transcribeLocal ({ samples, model, language, onProgress }) {
   return { text: String(text || '').trim() }
 }
 
-module.exports = { transcribeCloud, transcribeLocal, STT_CLOUD_PROVIDERS, STT_LOCAL_MODELS }
+module.exports = { transcribeCloud, transcribeLocal, configureModelsDir, STT_CLOUD_PROVIDERS, STT_LOCAL_MODELS }

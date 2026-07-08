@@ -6,6 +6,34 @@ This project follows [Semantic Versioning](https://semver.org/).
 ## Unreleased
 
 
+## [1.0.54] - 2026-07-08
+
+### Fixed
+- **Local Whisper models were downloading (or trying to) into the wrong place, causing an
+  "ENOTDIR" crash and models appearing to re-download every time.** `@huggingface/transformers`
+  caches models under its own node_modules folder by default, which on a per-machine Windows
+  install lives under Program Files - not writable by a normal user. Models now download into
+  `<userData>/models/whisper/<repo>/<model>/...` instead, which is always writable and easy to
+  find. Verified live: files land in exactly that structure, and re-running with the same model
+  loads from disk with no network access at all (the file's timestamp doesn't change).
+- **OCR screen-translate failed to start ("worker script...must be an absolute path")** — same
+  root cause as an earlier ffmpeg fix this session: tesseract.js computes its worker script path
+  via its own internal `__dirname`, which resolves to a path inside `app.asar` in a packaged
+  build, and `worker_threads` can't load a script from inside an asar archive at all (unlike
+  `require()`/`fs`, which Electron does transparently redirect). tesseract.js is unpacked from
+  the asar already; now the worker path is explicitly patched to point at that unpacked copy.
+  Verified by actually creating and tearing down a real tesseract worker with the fix applied.
+- **Auto-rejoin ("crash recovery") treated a normal VRChat close as a crash.** It only checked
+  whether VRChat.exe was still running - true for an actual crash AND for closing the game
+  normally, so it couldn't tell them apart. It now only rejoins when Windows' own crash reporter
+  (WER) has actually logged an "Application Error" event for VRChat.exe around the time it
+  disappeared - a real crash (unhandled exception, access violation, etc.) always generates one,
+  a normal quit never does. This was cross-checked against 26 real historical VRChat logs: none
+  contained an actual engine/native crash dump (the "abrupt-looking" ones were just routine,
+  non-fatal in-world Udon script exceptions), and VRChat's own clean-quit log marker only
+  appeared in fewer than half of them - confirming that "the log doesn't end cleanly" alone
+  would have kept false-positiving the way this bug report described.
+
 ## [1.0.53] - 2026-07-08
 
 ### Added
