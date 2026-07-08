@@ -4937,40 +4937,54 @@ async function translateWithSettings (text) {
 }
 
 /* ---------------- text-to-speech ---------------- */
-const TTS_ROWS = {
-  sapi: ['ttsSapiRow'],
-  elevenlabs: ['ttsElevenRow'],
-  selfhosted: ['ttsSelfHostedRow']
+// One entry per engine: its settings row element (null if it has none, e.g.
+// TikTok needs no config here) and a map of { ttsSpeak() opt name -> element
+// id }. Driven generically so adding an engine only means adding one entry
+// here (+ the matching HTML row + the ttsProviders.js function) instead of
+// touching load/save/build-options logic in four different places.
+const TTS_ENGINE_FIELDS = {
+  sapi: { row: 'ttsSapiRow', fields: { voice: 'ttsSapiVoice', rate: 'ttsSapiRate' } },
+  tiktok: { row: null, fields: {} },
+  elevenlabs: { row: 'ttsElevenRow', fields: { apiKey: 'ttsElevenKey', voiceId: 'ttsElevenVoiceId' } },
+  openai: { row: 'ttsOpenaiRow', fields: { apiKey: 'ttsOpenaiKey', model: 'ttsOpenaiModel', voice: 'ttsOpenaiVoice' } },
+  google: { row: 'ttsGoogleRow', fields: { apiKey: 'ttsGoogleKey', languageCode: 'ttsGoogleLang', voiceName: 'ttsGoogleVoice' } },
+  azure: { row: 'ttsAzureRow', fields: { apiKey: 'ttsAzureKey', region: 'ttsAzureRegion', voiceName: 'ttsAzureVoice' } },
+  polly: { row: 'ttsPollyRow', fields: { accessKeyId: 'ttsPollyAccessKey', secretAccessKey: 'ttsPollySecretKey', region: 'ttsPollyRegion', voiceId: 'ttsPollyVoiceId', engine: 'ttsPollyEngine' } },
+  ibmwatson: { row: 'ttsIbmRow', fields: { apiKey: 'ttsIbmKey', region: 'ttsIbmRegion', instanceId: 'ttsIbmInstance', voice: 'ttsIbmVoice' } },
+  deepgram: { row: 'ttsDeepgramRow', fields: { apiKey: 'ttsDeepgramKey', model: 'ttsDeepgramModel' } },
+  voiceforge: { row: 'ttsVoiceforgeRow', fields: { apiKey: 'ttsVoiceforgeKey', voice: 'ttsVoiceforgeVoice' } },
+  uberduck: { row: 'ttsUberduckRow', fields: { apiKey: 'ttsUberduckKey', apiSecret: 'ttsUberduckSecret', voiceId: 'ttsUberduckVoice' } },
+  ttsmonster: { row: 'ttsMonsterRow', fields: { apiKey: 'ttsMonsterKey', voiceId: 'ttsMonsterVoice' } },
+  glados: { row: 'ttsGladosRow', fields: { endpoint: 'ttsGladosEndpoint' } },
+  moonbase: { row: 'ttsMoonbaseRow', fields: { endpoint: 'ttsMoonbaseEndpoint', voice: 'ttsMoonbaseVoice' } },
+  selfhosted: { row: 'ttsSelfHostedRow', fields: { endpoint: 'ttsSelfHostedEndpoint' } }
 }
+const TTS_ALL_FIELD_IDS = [...new Set(Object.values(TTS_ENGINE_FIELDS).flatMap(e => Object.values(e.fields)))]
+const TTS_NUMERIC_FIELDS = new Set(['ttsSapiRate'])
+
 function updateTtsRows () {
   const engine = $('ttsEngine').value
-  const visible = new Set(TTS_ROWS[engine] || [])
-  ;['ttsSapiRow', 'ttsElevenRow', 'ttsSelfHostedRow'].forEach(id => { $(id).style.display = visible.has(id) ? '' : 'none' })
+  const activeRow = TTS_ENGINE_FIELDS[engine]?.row
+  Object.values(TTS_ENGINE_FIELDS).forEach(e => { if (e.row) $(e.row).style.display = e.row === activeRow ? '' : 'none' })
 }
 async function setupTts () {
-  const saved = await api.getSetting('tts', {
-    engine: 'sapi', sapiVoice: '', sapiRate: 0, elevenKey: '', elevenVoiceId: '', selfHostedEndpoint: '', outputDeviceId: ''
-  })
+  const saved = await api.getSetting('tts', { engine: 'sapi', outputDeviceId: '', values: {} })
   $('ttsEngine').value = saved.engine || 'sapi'
-  $('ttsSapiRate').value = saved.sapiRate || 0
-  $('ttsElevenKey').value = saved.elevenKey || ''
-  $('ttsElevenVoiceId').value = saved.elevenVoiceId || ''
-  $('ttsSelfHostedEndpoint').value = saved.selfHostedEndpoint || ''
+  TTS_ALL_FIELD_IDS.forEach(id => { if (saved.values?.[id] != null) $(id).value = saved.values[id] })
   updateTtsRows()
 
   try {
     const voices = await api.ttsSapiVoices()
     $('ttsSapiVoice').innerHTML = ''
     voices.forEach(v => $('ttsSapiVoice').appendChild(new Option(v, v)))
-    if (saved.sapiVoice) $('ttsSapiVoice').value = saved.sapiVoice
+    if (saved.values?.ttsSapiVoice) $('ttsSapiVoice').value = saved.values.ttsSapiVoice
   } catch (_) {}
 
   await refreshTtsOutputDevices()
   if (saved.outputDeviceId) $('ttsOutputDevice').value = saved.outputDeviceId
 
   $('ttsEngine').addEventListener('change', async () => { updateTtsRows(); await saveTts() })
-  ;['ttsSapiVoice', 'ttsSapiRate', 'ttsElevenKey', 'ttsElevenVoiceId', 'ttsSelfHostedEndpoint', 'ttsOutputDevice']
-    .forEach(id => $(id).addEventListener('change', saveTts))
+  ;[...TTS_ALL_FIELD_IDS, 'ttsOutputDevice'].forEach(id => $(id).addEventListener('change', saveTts))
 }
 async function refreshTtsOutputDevices () {
   try {
@@ -4983,15 +4997,9 @@ async function refreshTtsOutputDevices () {
   } catch (_) {}
 }
 async function saveTts () {
-  await api.saveSetting('tts', {
-    engine: $('ttsEngine').value,
-    sapiVoice: $('ttsSapiVoice').value,
-    sapiRate: parseInt($('ttsSapiRate').value, 10) || 0,
-    elevenKey: $('ttsElevenKey').value,
-    elevenVoiceId: $('ttsElevenVoiceId').value,
-    selfHostedEndpoint: $('ttsSelfHostedEndpoint').value,
-    outputDeviceId: $('ttsOutputDevice').value
-  })
+  const values = {}
+  TTS_ALL_FIELD_IDS.forEach(id => { values[id] = $(id).value })
+  await api.saveSetting('tts', { engine: $('ttsEngine').value, outputDeviceId: $('ttsOutputDevice').value, values })
 }
 // Speak text using the saved TTS settings. Returns quietly on failure (the
 // callers - Live Typing, the assistant, etc. - shouldn't crash if TTS isn't
@@ -5000,12 +5008,14 @@ async function speakWithSettings (text) {
   const t = await api.getSetting('tts', null)
   if (!t || !t.engine) return
   try {
-    const result = await api.ttsSpeak({
-      engine: t.engine, text,
-      voice: t.sapiVoice, rate: t.sapiRate,
-      apiKey: t.elevenKey, voiceId: t.elevenVoiceId,
-      endpoint: t.selfHostedEndpoint
+    const fieldMap = TTS_ENGINE_FIELDS[t.engine]?.fields || {}
+    const opts = { engine: t.engine, text }
+    Object.entries(fieldMap).forEach(([optKey, elId]) => {
+      const raw = t.values?.[elId]
+      opts[optKey] = TTS_NUMERIC_FIELDS.has(elId) ? (parseInt(raw, 10) || 0) : raw
     })
+
+    const result = await api.ttsSpeak(opts)
     if (result?.playedLocally) return // SAPI already played through the OS directly
     if (!result?.audio) return
     const audioEl = $('ttsEngineAudio')

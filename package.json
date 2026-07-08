@@ -1,6 +1,6 @@
 {
   "name": "nekosuneapps",
-  "version": "1.0.41",
+  "version": "1.0.42",
   "main": "main.js",
   "bin": "main.js",
   "scripts": {
@@ -30,6 +30,16 @@
       "!dist/**",
       "!build-out/**",
       "!.git/**"
+    ],
+    "asarUnpack": [
+      "node_modules/tesseract.js/**/*",
+      "node_modules/tesseract.js-core/**/*",
+      "node_modules/@huggingface/**/*",
+      "node_modules/onnxruntime-node/**/*",
+      "node_modules/onnxruntime-web/**/*",
+      "node_modules/onnxruntime-common/**/*",
+      "node_modules/sharp/**/*",
+      "node_modules/@img/**/*"
     ],
     "win": {
       "artifactName": "${productName}-Setup-${version}.${ext}",
@@ -91,6 +101,7 @@
   "description": "NekoSuneAPPS - a VRChat OSC companion: chatbox, status, social suite, component stats, heart rate, TikTok & Twitch follower counters, AudioLink and Now Playing with KAT support.",
   "dependencies": {
     "@audd/sdk": "^1.5.11",
+    "@aws-sdk/client-polly": "^3.1081.0",
     "@huggingface/transformers": "^4.2.0",
     "@nekosuneprojects/vrnotications": "^1.0.2",
     "acrcloud": "^1.4.0",

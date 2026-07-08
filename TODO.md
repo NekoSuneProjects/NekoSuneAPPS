@@ -224,22 +224,41 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
   Russian, German, French, Chinese, Korean, Arabic, Portuguese, Italian, Dutch, Polish,
   Ukrainian, Vietnamese) — Tesseract's language codes don't map 1:1 to the app's i18n codes, so
   this is a separate, smaller list.
-- [x] **TTS output**, `modules/ai/ttsProviders.js`, all 4 engines selectable in the Translation
-  tab: Windows built-in (SAPI via PowerShell `System.Speech.Synthesis`, text piped over stdin —
-  not interpolated into the command — so spoken text can't break out of the PowerShell command;
-  **verified working**, detected real installed voices and played audio in this environment),
-  TikTok TTS (reuses the existing `modules/live/tiktokTts.js`), ElevenLabs (cloud, verified
-  request shape against a mocked endpoint), and self-hosted Piper/XTTS/other via a user-supplied
-  endpoint URL (same "POST text, get audio bytes back" contract as the Translator's
-  LibreTranslate endpoint, verified request shape).
-- [x] **TTS output-device picker** — routes `<audio>`-based engines (TikTok/ElevenLabs/
-  self-hosted) to any enumerated output device via `setSinkId`. Doesn't apply to SAPI (plays
-  through the OS default device, no per-call routing without deeper audio-session work).
+- [x] **TTS output**, `modules/ai/ttsProviders.js`, **15 engines** selectable in the Translation
+  tab, ported from [TTS-Voice-Wizard](https://github.com/VRCWizard/TTS-Voice-Wizard) for feature
+  parity: Windows built-in (SAPI via PowerShell `System.Speech.Synthesis`, text piped over
+  stdin — not interpolated into the command — so spoken text can't break out of the PowerShell
+  command; **verified working**, detected real installed voices and played audio in this
+  environment), TikTok TTS, ElevenLabs, OpenAI TTS, Google Cloud TTS, Azure Cognitive Speech,
+  Amazon Polly (via `@aws-sdk/client-polly` — SigV4 request signing isn't reasonably hand-rolled
+  correctly, so this is the one new npm dependency this pass added), IBM Watson TTS, Deepgram
+  Aura, VoiceForge, UberDuck (multi-step: submit → poll → download), TTS Monster (submit →
+  download), GLaDOS TTS (self-hosted) and Moonbase Voices (self-hosted local app), plus the
+  existing self-hosted Piper/XTTS/other option. All new HTTP-based engines' request shapes were
+  verified against mocked responses matching each vendor's real documented API. **Note**: where
+  the reference project routes an engine through its own paid gateway (Google, IBM Watson,
+  Deepgram all go through a Heroku backend there), this instead calls the real vendor API
+  directly with the user's own credentials — no third-party paywall in between.
+- [x] **Fixed TikTok TTS** — was hardcoded to a single community proxy (`gesserit.co`) which had
+  gone down; now tries a short list of known-working worker proxies in order and checks all the
+  response field names different proxies use (`data`/`audio`/`audioUrl`) instead of just one.
+  Verified live — successfully generated real audio in this environment.
+- [x] **TTS output-device picker** — routes `<audio>`-based engines to any enumerated output
+  device via `setSinkId`. Doesn't apply to SAPI/local engines that play through the OS directly.
 - [ ] **Routing TTS into VRChat's mic input** — not solvable in pure software. Windows has no
   way to expose one app's audio *output* as another app's *microphone input* without some kind
   of virtual audio device (VB-Cable, Voicemeeter, etc.), which requires installing a driver —
   there's no way around that one step. If the user installs one themselves, the output-device
   picker above will route TTS into it, which VRChat can then pick up as a mic.
+- [x] **Fixed packaged-app crash**: "Could not start screen capture — worker script... must be
+  an absolute path" (OCR) and the same class of failure would've hit local Whisper too.
+  `tesseract.js`/`tesseract.js-core` load a `worker_threads` script, and
+  `@huggingface/transformers`'s dependencies (`onnxruntime-node`, `sharp`) load native `.node`
+  binaries — neither can be loaded from inside an asar archive (Node needs a real file on disk
+  for both). Added `build.asarUnpack` in `package.json` for all of these so electron-builder
+  extracts them to `app.asar.unpacked/` instead; Electron then transparently resolves paths into
+  the unpacked location. This only manifests in a **packaged** build, not `npm start` — couldn't
+  be caught by this session's dev-mode smoke tests, only surfaced once actually installed.
 
 ## 🤖 Voice assistant (built this session)
 - [x] **Wake-word assistant** — `modules/vrchat/assistant/jarvisAssistant.js` (renderer),

@@ -6,6 +6,27 @@ This project follows [Semantic Versioning](https://semver.org/).
 ## Unreleased
 
 
+## [1.0.42] - 2026-07-07
+
+### Added
+- **11 more TTS engines**, ported from [TTS-Voice-Wizard](https://github.com/VRCWizard/TTS-Voice-Wizard)
+  for feature parity: OpenAI TTS, Google Cloud TTS, Azure Cognitive Speech, Amazon Polly, IBM
+  Watson TTS, Deepgram Aura, VoiceForge, UberDuck, TTS Monster, GLaDOS TTS (self-hosted), and
+  Moonbase Voices (self-hosted local app) — 15 engines total now selectable in the Translation
+  tab. Where the reference project proxies an engine through its own paid backend (Google, IBM
+  Watson, Deepgram), this calls the real vendor API directly with your own credentials instead.
+
+### Fixed
+- **TikTok TTS was broken** (its one hardcoded community proxy had gone down). Now tries a
+  short list of known-working proxies in order and checks every response field name different
+  proxies use, instead of just one.
+- **Packaged-build crash**: "Could not start screen capture — worker script... must be an
+  absolute path" (OCR), and local Whisper would have hit the same class of failure. Added
+  `build.asarUnpack` for `tesseract.js`/`tesseract.js-core` (worker_threads script) and
+  `@huggingface/transformers`'s native-binary dependencies (`onnxruntime-node`, `sharp`) — none
+  of those can load from inside an asar archive. Only reproduces in an installed build, not
+  `npm start`.
+
 ## [1.0.41] - 2026-07-07
 
 ### Added

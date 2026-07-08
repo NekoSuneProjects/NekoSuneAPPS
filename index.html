@@ -572,6 +572,17 @@
             <option value="sapi">Windows built-in (SAPI)</option>
             <option value="tiktok">TikTok TTS</option>
             <option value="elevenlabs">ElevenLabs (cloud)</option>
+            <option value="openai">OpenAI TTS (cloud)</option>
+            <option value="google">Google Cloud TTS (cloud)</option>
+            <option value="azure">Azure Cognitive Speech (cloud)</option>
+            <option value="polly">Amazon Polly (cloud)</option>
+            <option value="ibmwatson">IBM Watson TTS (cloud)</option>
+            <option value="deepgram">Deepgram Aura (cloud)</option>
+            <option value="voiceforge">VoiceForge (cloud)</option>
+            <option value="uberduck">UberDuck (cloud)</option>
+            <option value="ttsmonster">TTS Monster (cloud)</option>
+            <option value="glados">GLaDOS TTS (self-hosted)</option>
+            <option value="moonbase">Moonbase Voices (local app)</option>
             <option value="selfhosted">Self-hosted (Piper / XTTS / other)</option>
           </select>
           <div id="ttsSapiRow" class="grid cols-2" style="margin-top:8px">
@@ -581,6 +592,75 @@
           <div id="ttsElevenRow" style="margin-top:8px">
             <label>API key</label><input type="password" id="ttsElevenKey" placeholder="key" />
             <label style="margin-top:8px">Voice ID</label><input type="text" id="ttsElevenVoiceId" placeholder="voice id" />
+          </div>
+          <div id="ttsOpenaiRow" style="margin-top:8px">
+            <label>API key</label><input type="password" id="ttsOpenaiKey" placeholder="key" />
+            <div class="grid cols-2" style="margin-top:8px">
+              <div><label>Model</label><select id="ttsOpenaiModel"><option value="gpt-4o-mini-tts">gpt-4o-mini-tts</option><option value="tts-1">tts-1</option><option value="tts-1-hd">tts-1-hd</option></select></div>
+              <div><label>Voice</label><select id="ttsOpenaiVoice"><option>alloy</option><option>echo</option><option>fable</option><option>onyx</option><option>nova</option><option>shimmer</option><option>ash</option><option>coral</option><option>sage</option></select></div>
+            </div>
+          </div>
+          <div id="ttsGoogleRow" style="margin-top:8px">
+            <label>API key</label><input type="password" id="ttsGoogleKey" placeholder="key" />
+            <div class="grid cols-2" style="margin-top:8px">
+              <div><label>Language code</label><input type="text" id="ttsGoogleLang" placeholder="en-US" /></div>
+              <div><label>Voice name</label><input type="text" id="ttsGoogleVoice" placeholder="en-US-Standard-A" /></div>
+            </div>
+          </div>
+          <div id="ttsAzureRow" style="margin-top:8px">
+            <label>Subscription key</label><input type="password" id="ttsAzureKey" placeholder="key" />
+            <div class="grid cols-2" style="margin-top:8px">
+              <div><label>Region</label><input type="text" id="ttsAzureRegion" placeholder="eastus" /></div>
+              <div><label>Voice name</label><input type="text" id="ttsAzureVoice" placeholder="en-US-AvaMultilingualNeural" /></div>
+            </div>
+          </div>
+          <div id="ttsPollyRow" style="margin-top:8px">
+            <div class="grid cols-2">
+              <div><label>Access key ID</label><input type="password" id="ttsPollyAccessKey" placeholder="AKIA..." /></div>
+              <div><label>Secret access key</label><input type="password" id="ttsPollySecretKey" placeholder="secret" /></div>
+            </div>
+            <div class="grid cols-2" style="margin-top:8px">
+              <div><label>Region</label><input type="text" id="ttsPollyRegion" placeholder="us-east-1" /></div>
+              <div><label>Voice ID</label><input type="text" id="ttsPollyVoiceId" placeholder="Joanna" /></div>
+            </div>
+            <label style="margin-top:8px">Engine</label>
+            <select id="ttsPollyEngine"><option value="neural">Neural</option><option value="standard">Standard</option></select>
+          </div>
+          <div id="ttsIbmRow" style="margin-top:8px">
+            <label>API key</label><input type="password" id="ttsIbmKey" placeholder="key" />
+            <div class="grid cols-2" style="margin-top:8px">
+              <div><label>Region</label><input type="text" id="ttsIbmRegion" placeholder="us-south" /></div>
+              <div><label>Instance ID</label><input type="text" id="ttsIbmInstance" placeholder="instance id" /></div>
+            </div>
+            <label style="margin-top:8px">Voice</label><input type="text" id="ttsIbmVoice" placeholder="en-US_AllisonV3Voice" />
+          </div>
+          <div id="ttsDeepgramRow" style="margin-top:8px">
+            <label>API key</label><input type="password" id="ttsDeepgramKey" placeholder="key" />
+            <label style="margin-top:8px">Model</label><input type="text" id="ttsDeepgramModel" placeholder="aura-asteria-en" />
+          </div>
+          <div id="ttsVoiceforgeRow" style="margin-top:8px">
+            <label>API key</label><input type="password" id="ttsVoiceforgeKey" placeholder="key" />
+            <label style="margin-top:8px">Voice</label><input type="text" id="ttsVoiceforgeVoice" placeholder="Susan" />
+          </div>
+          <div id="ttsUberduckRow" style="margin-top:8px">
+            <div class="grid cols-2">
+              <div><label>API key</label><input type="password" id="ttsUberduckKey" placeholder="key" /></div>
+              <div><label>API secret</label><input type="password" id="ttsUberduckSecret" placeholder="secret" /></div>
+            </div>
+            <label style="margin-top:8px">Voice model UUID</label><input type="text" id="ttsUberduckVoice" placeholder="voicemodel_uuid" />
+          </div>
+          <div id="ttsMonsterRow" style="margin-top:8px">
+            <label>API key</label><input type="password" id="ttsMonsterKey" placeholder="key" />
+            <label style="margin-top:8px">Voice ID</label><input type="text" id="ttsMonsterVoice" placeholder="voice_id" />
+          </div>
+          <div id="ttsGladosRow" style="margin-top:8px">
+            <label>Server address</label><input type="text" id="ttsGladosEndpoint" placeholder="http://localhost:8124" />
+          </div>
+          <div id="ttsMoonbaseRow" style="margin-top:8px">
+            <div class="grid cols-2">
+              <div><label>Server address</label><input type="text" id="ttsMoonbaseEndpoint" placeholder="http://localhost:54027" /></div>
+              <div><label>Voice</label><input type="text" id="ttsMoonbaseVoice" placeholder="Betty" /></div>
+            </div>
           </div>
           <div id="ttsSelfHostedRow" style="margin-top:8px">
             <label>Endpoint URL</label><input type="text" id="ttsSelfHostedEndpoint" placeholder="http://localhost:5000/api/tts" />
