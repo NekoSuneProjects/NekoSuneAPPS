@@ -1041,12 +1041,49 @@ function runFfmpeg (args) {
   })
 }
 
+// GPU encoders this ffmpeg build might support, checked in order (Nvidia,
+// then Intel Quick Sync, then AMD) - having the encoder compiled in doesn't
+// guarantee matching hardware/drivers actually exist on this machine, so
+// each candidate is confirmed with a throwaway 1-frame encode, not just a
+// name match against `ffmpeg -encoders`. Result is cached for the process
+// lifetime so this probe only ever runs once.
+const GPU_ENCODERS = [
+  { codec: 'h264_nvenc', args: ['-preset', 'p4', '-cq', '23'] },
+  { codec: 'h264_qsv', args: ['-global_quality', '23'] },
+  { codec: 'h264_amf', args: ['-quality', 'speed'] }
+]
+let detectedEncoderPromise = null
+
+function encodeArgsFor (encoder, outFile) {
+  if (!encoder) return ['-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23', '-c:a', 'aac', '-movflags', '+faststart', outFile]
+  return ['-c:v', encoder.codec, ...encoder.args, '-c:a', 'aac', '-movflags', '+faststart', outFile]
+}
+
+async function detectGpuEncoder () {
+  if (!detectedEncoderPromise) {
+    detectedEncoderPromise = (async () => {
+      for (const encoder of GPU_ENCODERS) {
+        try {
+          await runFfmpeg(['-y', '-f', 'lavfi', '-i', 'color=black:size=64x64:duration=0.1', '-c:v', encoder.codec, ...encoder.args, '-f', 'null', '-'])
+          return encoder
+        } catch (_) { /* not available on this machine, try the next */ }
+      }
+      return null
+    })()
+  }
+  return detectedEncoderPromise
+}
+
 // Saves an SOS instant-replay clip to ~/Videos/NekoSuneAPPS (created if
 // missing), alongside any Discord-webhook upload the assistant also does.
-// The renderer sends one or more independently-valid webm segments (see
-// jarvisAssistant.js's segment-rotation replay buffer) - ffmpeg stitches
-// them into a single real, seekable .mp4 rather than a naive byte
-// concatenation, which is what previously produced unplayable clips.
+// The renderer records segments as mp4/h264+aac when the system's Chromium
+// build exposes a hardware encoder for it (the normal case on Windows), only
+// falling back to webm/vp8 on older systems without one. Segments still need
+// stitching into one file (see jarvisAssistant.js's segment-rotation replay
+// buffer for why), but when they're already mp4 that's a plain stream-copy
+// remux - no re-encoding, negligible CPU/GPU - not a full transcode.
+// Any real transcode that IS needed (webm source, or a stream-copy that
+// failed) prefers a detected GPU encoder before falling back to CPU libx264.
 ipcMain.handle('assistant:saveClip', async (e, { segments } = {}) => {
   if (!Array.isArray(segments) || !segments.length) throw new Error('No clip data was captured')
 
@@ -1057,21 +1094,47 @@ ipcMain.handle('assistant:saveClip', async (e, { segments } = {}) => {
   fs.mkdirSync(tmpDir, { recursive: true })
 
   try {
+    const isMp4 = segments.every(seg => /mp4/i.test(seg.mime || ''))
+    const partExt = isMp4 ? 'mp4' : 'webm'
     const partFiles = segments.map((seg, i) => {
-      const p = path.join(tmpDir, `part${i}.webm`)
+      const p = path.join(tmpDir, `part${i}.${partExt}`)
       fs.writeFileSync(p, Buffer.from(seg.base64 || seg, 'base64'))
       return p
     })
 
     const outFile = path.join(dir, `sos-clip-${stamp}.mp4`)
-    const encodeArgs = ['-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23', '-c:a', 'aac', '-movflags', '+faststart', outFile]
+    const copyArgs = ['-c', 'copy', '-movflags', '+faststart', outFile]
 
-    if (partFiles.length === 1) {
-      await runFfmpeg(['-y', '-i', partFiles[0], ...encodeArgs])
+    const inputArgs = partFiles.length === 1
+      ? ['-i', partFiles[0]]
+      : (() => {
+          const listFile = path.join(tmpDir, 'concat.txt')
+          fs.writeFileSync(listFile, partFiles.map(p => `file '${p.replace(/'/g, "'\\''")}'`).join('\n'))
+          return ['-f', 'concat', '-safe', '0', '-i', listFile]
+        })()
+
+    const transcode = async () => {
+      const gpu = await detectGpuEncoder()
+      try {
+        await runFfmpeg(['-y', ...inputArgs, ...encodeArgsFor(gpu, outFile)])
+      } catch (gpuErr) {
+        if (!gpu) throw gpuErr
+        await runFfmpeg(['-y', ...inputArgs, ...encodeArgsFor(null, outFile)])
+      }
+    }
+
+    if (isMp4) {
+      try {
+        // Segments from one continuous capture stream share codec/
+        // resolution, so stream-copy normally just works - transcode is
+        // only a fallback for the rare case something about them didn't
+        // line up.
+        await runFfmpeg(['-y', ...inputArgs, ...copyArgs])
+      } catch (_) {
+        await transcode()
+      }
     } else {
-      const listFile = path.join(tmpDir, 'concat.txt')
-      fs.writeFileSync(listFile, partFiles.map(p => `file '${p.replace(/'/g, "'\\''")}'`).join('\n'))
-      await runFfmpeg(['-y', '-f', 'concat', '-safe', '0', '-i', listFile, ...encodeArgs])
+      await transcode()
     }
 
     return outFile

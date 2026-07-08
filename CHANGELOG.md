@@ -6,6 +6,24 @@ This project follows [Semantic Versioning](https://semver.org/).
 ## Unreleased
 
 
+## [1.0.49] - 2026-07-08
+
+### Changed
+- **SOS instant-replay recording is now hardware-encoded (mp4/h264) instead of software-encoded
+  (webm/vp8)**, on systems where Chromium exposes a hardware mp4 encoder (Windows via Media
+  Foundation - the normal case). This offloads the *entire* background recording, not just the
+  final export, off the CPU. Falls back to webm automatically if no hardware encoder is exposed.
+- **Saving a clip no longer re-encodes with libx264 when it doesn't need to.** Previously every
+  clip was fully re-encoded through software libx264 regardless of source codec, which is what
+  was showing multiple `ffmpeg.exe` processes at very high CPU/GPU usage. Segments that are
+  already mp4/h264+aac are now just stream-copied (remuxed) into the final file - effectively
+  free, no re-encoding.
+- **When a real transcode genuinely is needed** (older systems without a hardware mp4 recorder,
+  or the rare stream-copy that doesn't line up), it now auto-detects and prefers a GPU encoder -
+  NVENC (Nvidia), then Quick Sync (Intel), then AMF (AMD), each confirmed with a real throwaway
+  encode rather than just a name check - before falling back to CPU (libx264) only if none of
+  those are actually usable on this machine.
+
 ## [1.0.48] - 2026-07-08
 
 ### Added

@@ -412,12 +412,13 @@ class JarvisAssistant {
 
     // Always save the clip to disk (Videos/NekoSuneAPPS) regardless of
     // whether a Discord webhook is configured, so it isn't lost if the
-    // upload fails or no webhook is set. The main process stitches the
-    // segments together and transcodes to a real, playable .mp4 via ffmpeg.
+    // upload fails or no webhook is set. The main process just stitches the
+    // segments together - if they're already mp4/h264 (the normal case,
+    // hardware-encoded) that's a near-free remux, not a re-encode.
     let savedPath = null
     if (clip && this.saveClip) {
       try {
-        const segments = await Promise.all(clip.map(blob => blobToBase64(blob)))
+        const segments = await Promise.all(clip.map(async blob => ({ base64: await blobToBase64(blob), mime: blob.type })))
         savedPath = await this.saveClip({ segments })
       } catch (err) {
         clipNote = `Clip was captured but saving it failed: ${err.message}.`
@@ -480,7 +481,18 @@ class JarvisAssistant {
 
   recordReplaySegment () {
     if (!this.replayBufferActive || !this.replayStream) return
-    const preferred = ['video/webm;codecs=vp8,opus', 'video/webm'].find(t => MediaRecorder.isTypeSupported(t)) || ''
+    // Prefer mp4/h264+aac: on Windows this is hardware-encoded (Media
+    // Foundation), unlike vp8/webm which Chromium only encodes in software -
+    // that software encode was what pegged CPU for the entire time replay
+    // was live, not just at export. Falls back to webm on older systems that
+    // don't expose a hardware mp4 encoder to Chromium.
+    const preferred = [
+      'video/mp4;codecs="avc1.42E01E,mp4a.40.2"',
+      'video/mp4;codecs=avc1',
+      'video/mp4',
+      'video/webm;codecs=vp8,opus',
+      'video/webm'
+    ].find(t => MediaRecorder.isTypeSupported(t)) || ''
     const recorder = new MediaRecorder(this.replayStream, preferred ? { mimeType: preferred } : undefined)
     this.replayRecorder = recorder
     const chunks = []

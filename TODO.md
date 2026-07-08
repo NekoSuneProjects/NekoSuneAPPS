@@ -373,6 +373,23 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
   when nothing had been explicitly selected. It now auto-prefers a source whose window title
   contains "VRChat" before falling back to the full screen, so the replay buffer (and the other
   screen-capture features) target the actual game by default.
+- [x] **Fixed: saving a clip spiked CPU/GPU (multiple `ffmpeg.exe` at very high usage).** The
+  segment-rotation fix above always recorded webm/vp8 (software-encoded by Chromium) and then
+  fully re-encoded through software libx264 on every save, regardless of source codec. Now
+  records mp4/h264+aac directly when the system exposes a hardware encoder for it (Windows via
+  Media Foundation — the normal case), which offloads the *entire* background recording off the
+  CPU, not just the save step; saving then just stream-copies (remuxes) the already-correct-codec
+  segments into the final file instead of re-encoding them, which is effectively free. Falls back
+  to webm + a real transcode only on systems without a hardware mp4 encoder exposed to Chromium,
+  or if a stream-copy remux ever fails for some other reason. Verified both the hardware-codec
+  stream-copy path and the software fallback path decode cleanly end-to-end.
+- [x] **The fallback transcode (used when a stream-copy isn't possible) auto-detects and prefers
+  a GPU encoder** instead of always using CPU-only libx264: tries NVENC (Nvidia), then Quick Sync
+  (Intel), then AMF (AMD), each confirmed with an actual throwaway encode (not just checking the
+  encoder's compiled in — the hardware/drivers might still not be there), caching whichever one
+  actually works for the rest of the process's lifetime, and only falling back to libx264 if none
+  of them do. Verified live: this machine's NVENC was detected and a real webm→mp4 transcode
+  through it produced a clean, fully decodable file.
 
 ---
 
