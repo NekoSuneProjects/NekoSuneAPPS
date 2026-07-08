@@ -162,15 +162,19 @@ function createWindow () {
   // share this one handler (Electron only allows one per session), so there
   // is never an OS picker shown - we pick the source ourselves. An explicit
   // user selection (oscAppsCaptureSourceId, set via the capture-source
-  // picker in Settings) always wins; otherwise auto-prefer the actual
-  // VRChat window over the whole desktop, since this is a VRChat companion
-  // app and grabbing the full screen produced replay clips of whatever
-  // happened to be in focus rather than the game itself.
+  // picker in Settings) always wins. Otherwise capture a whole SCREEN, not
+  // the VRChat window specifically - Chromium's window-level capture on
+  // Windows uses GDI/BitBlt, which can't see hardware-accelerated
+  // DirectX/Vulkan swapchain content and returns solid black for exactly the
+  // kind of window a game renders into. Full-screen/monitor capture goes
+  // through the Desktop Duplication API instead, which composites whatever
+  // the GPU actually drew, so it's the only reliable way to capture VRChat.
+  // (If VRChat is on a second monitor, use the manual capture-source picker
+  // in Settings to choose that screen explicitly.)
   mainWindow.webContents.session.setDisplayMediaRequestHandler(async (request, callback) => {
     try {
       const sources = await desktopCapturer.getSources({ types: ['screen', 'window'] })
       const selected = sources.find(source => source.id === oscAppsCaptureSourceId) ||
-        sources.find(source => /vrchat/i.test(source.name)) ||
         sources.find(source => source.id.startsWith('screen:')) || sources[0]
       callback(selected ? { video: selected, audio: request.audioRequested ? 'loopback' : undefined } : {})
     } catch (err) {

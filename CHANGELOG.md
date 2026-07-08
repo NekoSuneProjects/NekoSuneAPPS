@@ -6,6 +6,22 @@ This project follows [Semantic Versioning](https://semver.org/).
 ## Unreleased
 
 
+## [1.0.50] - 2026-07-08
+
+### Added
+- **Voice assistant: "what time is it" / "what's the date today".** Answered directly from the
+  system clock (a language model has no real way to know the actual current time), not sent to
+  the AI provider or web search.
+
+### Fixed
+- **SOS instant-replay clips came out solid black.** The previous fix that made replay capture
+  auto-prefer the actual VRChat *window* (over the whole screen) backfired: Chromium's
+  window-level capture on Windows uses GDI/BitBlt, which can't see hardware-accelerated
+  DirectX/Vulkan swapchain content and returns solid black for exactly the kind of window a game
+  renders into. Reverted to capturing the whole screen, which goes through the Desktop
+  Duplication API and correctly captures whatever the GPU actually drew. If VRChat runs on a
+  second monitor, use the manual capture-source picker in Settings to choose that screen.
+
 ## [1.0.49] - 2026-07-08
 
 ### Changed

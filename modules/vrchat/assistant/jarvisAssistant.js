@@ -317,6 +317,7 @@ class JarvisAssistant {
       case 'set_status': return this.handleSetStatus(action.text)
       case 'sos': return this.triggerSos()
       case 'get_weather': return this.handleGetWeather()
+      case 'get_time': return this.handleGetTime()
       case 'search_web': return this.handleSearchWeb(action.query)
       default: return this.respond(action?.reply || "Sorry, I didn't catch that.")
     }
@@ -330,6 +331,17 @@ class JarvisAssistant {
     // Weather feature isn't configured with a city - fall back to a web
     // search so the question still gets answered.
     return this.handleSearchWeb('current weather')
+  }
+
+  // Answered locally from the system clock, never by the LLM - a language
+  // model has no way to actually know the current time, only to guess from
+  // whatever's in its training data or the request timestamp, either of
+  // which can be wrong.
+  async handleGetTime () {
+    const now = new Date()
+    const time = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+    const date = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })
+    return this.respond(`It's ${time} on ${date}.`)
   }
 
   async handleSearchWeb (query) {

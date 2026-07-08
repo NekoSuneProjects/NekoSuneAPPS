@@ -303,8 +303,10 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
   `location`/`worldId`/`instanceType` fields, same ones the Friends panel already renders),
   "who's online", "what's my status", "change my status to `<text>`" (sets `statusDescription`
   **only** — the assistant can never touch the bio field, enforced both in the LLM system prompt
-  and in the code path itself, verified by a unit test), and free-form conversational replies
-  for anything else. Responses are spoken aloud via the TTS engine above **only** — never posted
+  and in the code path itself, verified by a unit test), "what time/date is it" (answered from
+  the system clock directly — never guessed by the LLM, which has no real way to know the actual
+  current time), and free-form conversational replies for anything else. Responses are spoken
+  aloud via the TTS engine above **only** — never posted
   to the VRChat chatbox (a spoken reply has no reason to also be text in-world).
 - [x] **SOS — manual trigger only.** Either an explicit spoken "sos" command or the button in
   the UI; **never** auto-triggered. On trigger: invites everyone in a configured trusted-friends
@@ -367,12 +369,15 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
   what gets uploaded to a configured Discord webhook, so the webhook attachment can't hit the
   same corruption issue either. `ffmpeg-static`'s binary is unpacked from the asar (like
   `sharp`/`onnxruntime`) since it can't be executed from inside the archive.
-- [x] **Fixed: replay clips weren't actually capturing VRChat.** The shared screen-capture picker
-  (used by OSCQR/Shazam/Desktop STT/OCR/the SOS replay buffer — Electron only allows one
-  `setDisplayMediaRequestHandler` per session) fell back to grabbing the entire primary screen
-  when nothing had been explicitly selected. It now auto-prefers a source whose window title
-  contains "VRChat" before falling back to the full screen, so the replay buffer (and the other
-  screen-capture features) target the actual game by default.
+- [x] **Fixed, then partially reverted: replay clips weren't actually capturing VRChat.** First
+  attempt made the shared screen-capture picker (used by OSCQR/Shazam/Desktop STT/OCR/the SOS
+  replay buffer) auto-prefer a source whose window title contains "VRChat" over the whole screen
+  — this backfired into clips coming out **solid black**, because Chromium's window-level capture
+  on Windows uses GDI/BitBlt, which can't see hardware-accelerated DirectX/Vulkan swapchain
+  content (exactly what a game renders into). Reverted to capturing the whole screen, which goes
+  through the Desktop Duplication API and correctly composites whatever the GPU actually drew.
+  If VRChat is on a second monitor, use the manual capture-source picker in Settings to choose
+  that screen explicitly.
 - [x] **Fixed: saving a clip spiked CPU/GPU (multiple `ffmpeg.exe` at very high usage).** The
   segment-rotation fix above always recorded webm/vp8 (software-encoded by Chromium) and then
   fully re-encoded through software libx264 on every save, regardless of source codec. Now
