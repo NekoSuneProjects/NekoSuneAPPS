@@ -518,15 +518,6 @@
             <div class="row" style="margin-top:10px"><button class="btn" id="kickConnect">Connect</button><button class="btn ghost" id="kickDisconnect">Stop</button></div>
           </div>
         </div>
-        <div class="card">
-          <h3>🗣 TikTok TTS</h3>
-          <div class="row">
-            <select id="ttsVoice" style="width:auto"></select>
-            <input type="text" id="ttsText" placeholder="Text to speak..." />
-            <button class="btn" id="ttsSpeak">Speak</button>
-          </div>
-          <div class="muted" id="ttsStatus" style="margin-top:8px"></div>
-        </div>
       </section>
 
       <!-- OAUTH ACCOUNTS -->
@@ -588,6 +579,9 @@
           <div id="ttsSapiRow" class="grid cols-2" style="margin-top:8px">
             <div><label>Voice</label><select id="ttsSapiVoice"></select></div>
             <div><label>Rate</label><input type="range" id="ttsSapiRate" min="-10" max="10" step="1" value="0" /></div>
+          </div>
+          <div id="ttsTiktokRow" style="margin-top:8px">
+            <label>Voice</label><select id="ttsTiktokVoice"></select>
           </div>
           <div id="ttsElevenRow" style="margin-top:8px">
             <label>API key</label><input type="password" id="ttsElevenKey" placeholder="key" />
@@ -741,13 +735,17 @@
 
         <div class="card">
           <h3>🤖 Voice Assistant</h3>
-          <div class="muted" style="font-size:.75rem;margin-bottom:8px">Say your wake word, then a command — checks a friend's status, who's online, your own status, changes your status text (never your bio), or sends an SOS to trusted friends. Uses the Desktop STT engine/settings above.</div>
+          <div class="muted" style="font-size:.75rem;margin-bottom:8px">Say your wake word, then a command — checks a friend's status, who's online, your own status, changes your status text (never your bio), or sends an SOS to trusted friends. Listens through an actual microphone (picked below), separate from the Desktop STT card above (which listens to desktop/system audio, not your voice) — it only reuses that card's speech-to-text engine/API key settings.</div>
           <div class="grid cols-2">
+            <div><label>Microphone</label><select id="assistantMicDevice"></select></div>
             <div><label>Wake word</label><input type="text" id="assistantWakeWord" placeholder="e.g. nova" /></div>
+          </div>
+          <div class="grid cols-2" style="margin-top:8px">
             <div><label>Clip length (s)</label><input type="number" id="assistantClipSeconds" min="2" max="10" value="4" /></div>
           </div>
           <label style="margin-top:8px">Trusted friends (for SOS) <span class="muted" style="font-size:.7rem">comma-separated display names, must be on your friends list</span></label>
           <input type="text" id="assistantTrustedFriends" placeholder="name1, name2" />
+          <label class="switch" style="margin-top:8px"><input type="checkbox" id="assistantEnableReplay"> Enable instant-replay clip for SOS <span class="muted" style="font-size:.7rem">(needs a separate screen-share prompt; optional — voice commands work without it)</span></label>
           <div class="grid cols-2" style="margin-top:8px">
             <div><label>Instant-replay length</label>
               <select id="assistantReplayMinutes">

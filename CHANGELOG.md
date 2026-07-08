@@ -6,6 +6,19 @@ This project follows [Semantic Versioning](https://semver.org/).
 ## Unreleased
 
 
+## [1.0.44] - 2026-07-08
+
+### Fixed
+- **Voice assistant was listening to the wrong audio source.** It used desktop/system-audio
+  capture (`getDisplayMedia`, what's playing through your speakers) for the wake-word loop, so
+  it could never hear you speak no matter which microphone was selected elsewhere. Now listens
+  through an actual microphone with its own selectable input device. The instant-replay
+  screen-capture used for SOS clips is now a separate, opt-in checkbox instead of sharing the
+  same (wrong) stream.
+- **TikTok TTS had no voice picker** in the unified Text-to-Speech card — always used the
+  hardcoded default voice. Added a voice select (same list as before), and removed the old
+  now-redundant standalone "TikTok TTS" card.
+
 ## [1.0.43] - 2026-07-08
 
 ### Added

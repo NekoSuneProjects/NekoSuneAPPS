@@ -243,6 +243,11 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
   gone down; now tries a short list of known-working worker proxies in order and checks all the
   response field names different proxies use (`data`/`audio`/`audioUrl`) instead of just one.
   Verified live — successfully generated real audio in this environment.
+- [x] **Fixed: TikTok TTS had no voice picker.** The unified TTS card's TikTok engine option
+  had no way to choose a voice at all (always used the hardcoded default). Added a voice select
+  populated from the same list the old standalone TikTok TTS card used, then removed that old
+  standalone card entirely (it was in the Live tab, moved into the Translation tab at runtime,
+  and became fully redundant once the unified card covered the same feature).
 - [x] **TTS output-device picker** — routes `<audio>`-based engines to any enumerated output
   device via `setSinkId`. Doesn't apply to SAPI/local engines that play through the OS directly.
 - [ ] **Routing TTS into VRChat's mic input** — not solvable in pure software. Windows has no
@@ -262,10 +267,21 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
 
 ## 🤖 Voice assistant (built this session)
 - [x] **Wake-word assistant** — `modules/vrchat/assistant/jarvisAssistant.js` (renderer),
-  `modules/ai/assistantBrain.js` (main, LLM-based command interpreter). Continuously captures
-  short desktop-audio clips (reusing the Desktop STT engine/settings), checks each transcript
-  for the configured wake word (default `nova`, user-customizable — deliberately not a common
-  assistant name), and only acts on speech addressed to it.
+  `modules/ai/assistantBrain.js` (main, LLM-based command interpreter). Listens through an
+  actual **microphone** (`getUserMedia`, selectable input device — same enumerateDevices()
+  pattern as the AudioLink mic picker), checks each transcript for the configured wake word
+  (default `nova`, user-customizable — deliberately not a common assistant name), and only
+  acts on speech addressed to it. Reuses the Desktop STT card's speech-to-text engine/API-key
+  settings, but captures its own separate mic audio — it does **not** listen to desktop/system
+  audio (that's what the Desktop STT card itself is for, a different use case: translating what
+  you hear, not commands you speak).
+- [x] **Fixed: was listening to the wrong audio source entirely.** Originally used
+  `getDisplayMedia` (desktop/system audio, i.e. what's playing through your speakers) for the
+  wake-word loop, so it could never hear the user's own voice no matter what mic was selected
+  elsewhere — that's what "not detecting right mic" / "heard but no wake word" traced back to.
+  The instant-replay screen+audio capture for SOS clips is now a separate, **opt-in** capture
+  (its own checkbox, only requests a screen-share prompt if enabled) instead of being the same
+  stream the wake-word listener used.
 - [x] **Commands**: "is `<friend>` online / which world" (reuses the friends list's existing
   `location`/`worldId`/`instanceType` fields, same ones the Friends panel already renders),
   "who's online", "what's my status", "change my status to `<text>`" (sets `statusDescription`

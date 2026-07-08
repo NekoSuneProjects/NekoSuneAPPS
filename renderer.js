@@ -35,7 +35,7 @@ const $ = id => document.getElementById(id)
 ;(function moveTranslationCards () {
   const target = $('translationCards')
   if (!target) return
-  ;['ttsText', 'aiProvider', 'translatorProvider'].forEach(id => {
+  ;['aiProvider', 'translatorProvider'].forEach(id => {
     const el = $(id)
     const card = el && el.closest('.card')
     if (card) target.appendChild(card)
@@ -1032,20 +1032,6 @@ api.on('kick:update', s => {
 })
 $('kickConnect').addEventListener('click', async () => { await api.saveSetting('kickSlug', $('kickSlug').value); api.kickStart($('kickSlug').value) })
 $('kickDisconnect').addEventListener('click', () => api.kickStop())
-
-/* ---------------- TikTok TTS ---------------- */
-api.tiktokVoices().then(voices => {
-  const sel = $('ttsVoice')
-  voices.forEach(v => { const o = document.createElement('option'); o.value = v.apiName; o.text = v.label; sel.appendChild(o) })
-})
-$('ttsSpeak').addEventListener('click', async () => {
-  const text = $('ttsText').value.trim(); if (!text) return
-  setText('ttsStatus', 'Fetching audio...')
-  const b64 = await api.tiktokTts(text, $('ttsVoice').value)
-  if (!b64) { setText('ttsStatus', 'TTS failed (gesserit.co may be down)'); return }
-  const audio = new Audio('data:audio/mpeg;base64,' + b64)
-  audio.play(); setText('ttsStatus', 'Playing')
-})
 
 /* ---------------- stats / network / hr / window / vr ---------------- */
 api.on('stats:update', s => {
@@ -4944,7 +4930,7 @@ async function translateWithSettings (text) {
 // touching load/save/build-options logic in four different places.
 const TTS_ENGINE_FIELDS = {
   sapi: { row: 'ttsSapiRow', fields: { voice: 'ttsSapiVoice', rate: 'ttsSapiRate' } },
-  tiktok: { row: null, fields: {} },
+  tiktok: { row: 'ttsTiktokRow', fields: { voice: 'ttsTiktokVoice' } },
   elevenlabs: { row: 'ttsElevenRow', fields: { apiKey: 'ttsElevenKey', voiceId: 'ttsElevenVoiceId' } },
   openai: { row: 'ttsOpenaiRow', fields: { apiKey: 'ttsOpenaiKey', model: 'ttsOpenaiModel', voice: 'ttsOpenaiVoice' } },
   google: { row: 'ttsGoogleRow', fields: { apiKey: 'ttsGoogleKey', languageCode: 'ttsGoogleLang', voiceName: 'ttsGoogleVoice' } },
@@ -4978,6 +4964,13 @@ async function setupTts () {
     $('ttsSapiVoice').innerHTML = ''
     voices.forEach(v => $('ttsSapiVoice').appendChild(new Option(v, v)))
     if (saved.values?.ttsSapiVoice) $('ttsSapiVoice').value = saved.values.ttsSapiVoice
+  } catch (_) {}
+
+  try {
+    const voices = await api.tiktokVoices()
+    $('ttsTiktokVoice').innerHTML = ''
+    voices.forEach(v => $('ttsTiktokVoice').appendChild(new Option(v.label, v.apiName)))
+    if (saved.values?.ttsTiktokVoice) $('ttsTiktokVoice').value = saved.values.ttsTiktokVoice
   } catch (_) {}
 
   await refreshTtsOutputDevices()
@@ -5164,13 +5157,25 @@ function renderAssistantState (s) {
   setText('assistantHeard', s.lastHeard ? `Heard: "${s.lastHeard}"${s.lastReply ? ` → "${s.lastReply}"` : ''}` : '')
   $('assistantToggle').textContent = s.live ? 'Stop listening' : 'Start listening'
 }
+async function refreshAssistantMicDevices () {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices()
+    const sel = $('assistantMicDevice')
+    const current = sel.value
+    sel.innerHTML = '<option value="">System default</option>'
+    devices.filter(d => d.kind === 'audioinput').forEach(d => sel.appendChild(new Option(d.label || d.deviceId, d.deviceId)))
+    if ([...sel.options].some(o => o.value === current)) sel.value = current
+  } catch (_) {}
+}
 async function saveAssistantConfig () {
   const sttCfg = await api.getSetting('desktopStt', {})
   const aiCfg = await api.getSetting('ai', {})
   const cfg = {
     wakeWord: $('assistantWakeWord').value.trim() || 'nova',
+    micDeviceId: $('assistantMicDevice').value,
     clipSeconds: parseInt($('assistantClipSeconds').value, 10) || 4,
     trustedFriends: $('assistantTrustedFriends').value.split(',').map(s => s.trim()).filter(Boolean),
+    enableReplayBuffer: $('assistantEnableReplay').checked,
     replayMinutes: parseInt($('assistantReplayMinutes').value, 10) || 5,
     sosWebhook: $('assistantSosWebhook').value.trim(),
     engine: sttCfg.engine || 'cloud',
@@ -5187,14 +5192,20 @@ async function saveAssistantConfig () {
   return cfg
 }
 async function setupAssistant () {
-  const saved = await api.getSetting('assistant', { wakeWord: 'nova', clipSeconds: 4, trustedFriends: [], replayMinutes: 5, sosWebhook: '' })
+  const saved = await api.getSetting('assistant', {
+    wakeWord: 'nova', micDeviceId: '', clipSeconds: 4, trustedFriends: [],
+    enableReplayBuffer: false, replayMinutes: 5, sosWebhook: ''
+  })
   $('assistantWakeWord').value = saved.wakeWord || 'nova'
   $('assistantClipSeconds').value = saved.clipSeconds || 4
   $('assistantTrustedFriends').value = (saved.trustedFriends || []).join(', ')
+  $('assistantEnableReplay').checked = !!saved.enableReplayBuffer
   $('assistantReplayMinutes').value = String(saved.replayMinutes || 5)
   $('assistantSosWebhook').value = saved.sosWebhook || ''
+  await refreshAssistantMicDevices()
+  if (saved.micDeviceId) $('assistantMicDevice').value = saved.micDeviceId
   await saveAssistantConfig()
-  ;['assistantWakeWord', 'assistantClipSeconds', 'assistantTrustedFriends', 'assistantReplayMinutes', 'assistantSosWebhook']
+  ;['assistantWakeWord', 'assistantMicDevice', 'assistantClipSeconds', 'assistantTrustedFriends', 'assistantEnableReplay', 'assistantReplayMinutes', 'assistantSosWebhook']
     .forEach(id => $(id).addEventListener('change', saveAssistantConfig))
 }
 $('assistantToggle').addEventListener('click', async () => {

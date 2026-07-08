@@ -1,11 +1,19 @@
 'use strict'
 
-// Wake-word voice assistant. Continuously captures short clips of shared
-// desktop audio (same technique as DesktopSttController/ShazamOscController),
-// transcribes each one, and only acts on speech that starts with the
-// configured wake word - everything else is ignored except for a passive
-// lexical emotional-cue check (see emotionCues.js), which never acts on its
-// own, only prompts the user with a check-in question.
+// Wake-word voice assistant. Continuously captures short clips from an
+// actual MICROPHONE (getUserMedia, with a selectable input device - same
+// enumerateDevices()/deviceId pattern as the AudioLink mic picker), since
+// this is meant to hear the user's own spoken voice, not desktop/speaker
+// output. Transcribes each clip and only acts on speech that starts with
+// the configured wake word - everything else is ignored except for a
+// passive lexical emotional-cue check (see emotionCues.js), which never
+// acts on its own, only prompts the user with a check-in question.
+//
+// The instant-replay SOS clip is a SEPARATE, optional capture
+// (getDisplayMedia, screen+audio - same technique as
+// DesktopSttController/ShazamOscController) that only starts if the user
+// opts in, since it needs its own screen-share prompt and isn't required
+// for voice commands to work at all.
 //
 // Commands are interpreted by an LLM (assistantBrain.js, main process) into
 // one small JSON action, then executed here against the real VRChat API
@@ -16,9 +24,9 @@
 // SOS is manual-only (an explicit spoken "sos" command, matched by the LLM
 // interpreter, or a UI button) - never auto-triggered by the emotional-cue
 // check. On trigger: invites everyone in the configured trusted-friends list
-// to the user's current instance, and uploads a rolling instant-replay clip
-// (last N minutes of shared desktop video+audio) to a configured webhook so
-// those friends can see what happened before they arrive.
+// to the user's current instance, and (if instant-replay is enabled)
+// uploads the rolling replay clip to a configured webhook so those friends
+// can see what happened before they arrive.
 
 const { detectCue, CHECK_IN_MESSAGES } = require('./emotionCues')
 
@@ -38,7 +46,7 @@ class JarvisAssistant {
     transcribeCloud, transcribeLocal, interpretCommand,
     sendChatboxMessage, speakText,
     getFriends, getMyLocation, resolveWorldName, getStatus, updateStatus, invite, saveClip,
-    onUpdate = () => {}, getDisplayMedia
+    onUpdate = () => {}, getUserMedia, getDisplayMedia
   } = {}) {
     this.transcribeCloud = transcribeCloud
     this.transcribeLocal = transcribeLocal
@@ -53,19 +61,23 @@ class JarvisAssistant {
     this.invite = invite
     this.saveClip = saveClip
     this.onUpdate = onUpdate
+    this.getUserMedia = getUserMedia || (c => navigator.mediaDevices.getUserMedia(c))
     this.getDisplayMedia = getDisplayMedia || (c => navigator.mediaDevices.getDisplayMedia(c))
 
     this.config = {
       wakeWord: 'nova',
+      micDeviceId: '',
       engine: 'cloud', cloudBaseUrl: '', cloudApiKey: '', cloudModel: '', localModel: 'tiny',
       aiBaseUrl: '', aiApiKey: '', aiModel: '',
       clipSeconds: 4,
       trustedFriends: [],
+      enableReplayBuffer: false,
       sosWebhook: '',
       replayMinutes: 5
     }
 
-    this.stream = null
+    this.micStream = null
+    this.replayStream = null
     this.live = false
     this.busy = false
     this.timer = null
@@ -88,17 +100,26 @@ class JarvisAssistant {
     return this.getState()
   }
 
-  async ensureAudio () {
-    if (this.stream?.active && this.stream.getAudioTracks().length) return
-    this.status = 'Choose a screen and enable system audio…'
+  async ensureMic () {
+    if (this.micStream?.active && this.micStream.getAudioTracks().length) return
+    this.status = 'Requesting microphone access…'
     this.emit('sharing')
-    this.stream = await this.getDisplayMedia({ video: true, audio: true })
-    if (!this.stream.getAudioTracks().length) {
-      this.stream.getTracks().forEach(track => track.stop())
-      this.stream = null
-      throw new Error('No system audio was shared. Choose a screen and enable Share system audio.')
-    }
-    this.stream.getTracks().forEach(track => track.addEventListener('ended', () => this.setLive(false)))
+    const constraints = { audio: this.config.micDeviceId ? { deviceId: { exact: this.config.micDeviceId } } : true }
+    this.micStream = await this.getUserMedia(constraints)
+    this.micStream.getAudioTracks().forEach(track => track.addEventListener('ended', () => this.setLive(false)))
+  }
+
+  // Optional, separate from the mic: screen+system-audio capture used only
+  // to feed the rolling instant-replay buffer for SOS clips. A failure or
+  // cancellation here should never block wake-word listening, since it's
+  // opt-in extra functionality, not required for voice commands.
+  async ensureReplayCapture () {
+    if (this.replayStream?.active && this.replayStream.getVideoTracks().length) return
+    this.replayStream = await this.getDisplayMedia({ video: true, audio: true })
+    this.replayStream.getTracks().forEach(track => track.addEventListener('ended', () => {
+      this.stopReplayBuffer()
+      if (this.replayStream) { this.replayStream.getTracks().forEach(t => t.stop()); this.replayStream = null }
+    }))
   }
 
   // Catches the single most common cause of "the assistant never responds
@@ -120,23 +141,37 @@ class JarvisAssistant {
     if (this.live) {
       try {
         this.validateConfig()
-        await this.ensureAudio()
-        this.startReplayBuffer()
-        this.status = `Listening for the wake word "${this.config.wakeWord}"…`
-        this.scheduleListen(0)
+        await this.ensureMic()
       } catch (err) {
         this.live = false
-        this.error = err.name === 'NotAllowedError' ? 'Desktop-audio sharing was cancelled.' : err.message
+        this.error = err.name === 'NotAllowedError' ? 'Microphone access was denied.' : err.message
         this.status = 'Could not start listening'
         this.emit('error')
         return this.getState()
       }
+
+      if (this.config.enableReplayBuffer) {
+        try {
+          await this.ensureReplayCapture()
+          this.startReplayBuffer()
+        } catch (err) {
+          // Non-fatal: replay is optional extra functionality, mic-based
+          // wake-word listening still works without it.
+          this.error = `Instant-replay capture failed (voice commands still work): ${err.message}`
+          this.emit('error')
+        }
+      }
+
+      this.status = `Listening for the wake word "${this.config.wakeWord}"…`
+      this.scheduleListen(0)
     } else {
       if (this.timer) clearTimeout(this.timer)
       this.timer = null
       this.stopReplayBuffer()
-      if (this.stream) this.stream.getTracks().forEach(track => track.stop())
-      this.stream = null
+      if (this.micStream) this.micStream.getTracks().forEach(track => track.stop())
+      this.micStream = null
+      if (this.replayStream) this.replayStream.getTracks().forEach(track => track.stop())
+      this.replayStream = null
       this.status = 'Stopped'
     }
     this.emit('live-changed')
@@ -168,7 +203,7 @@ class JarvisAssistant {
   }
 
   async captureClip () {
-    const audioStream = new MediaStream(this.stream.getAudioTracks())
+    const audioStream = new MediaStream(this.micStream.getAudioTracks())
     const preferred = ['audio/webm;codecs=opus', 'audio/webm'].find(t => MediaRecorder.isTypeSupported(t)) || ''
     const recorder = new MediaRecorder(audioStream, preferred ? { mimeType: preferred } : undefined)
     const chunks = []
@@ -353,9 +388,10 @@ class JarvisAssistant {
   }
 
   startReplayBuffer () {
+    if (!this.replayStream) return
     this.replayChunks = []
     const preferred = ['video/webm;codecs=vp8,opus', 'video/webm'].find(t => MediaRecorder.isTypeSupported(t)) || ''
-    this.replayRecorder = new MediaRecorder(this.stream, preferred ? { mimeType: preferred } : undefined)
+    this.replayRecorder = new MediaRecorder(this.replayStream, preferred ? { mimeType: preferred } : undefined)
     this.replayRecorder.ondataavailable = e => {
       if (!e.data || !e.data.size) return
       this.replayChunks.push({ blob: e.data, ts: Date.now() })
