@@ -4333,18 +4333,11 @@ function showUpdate (info) {
   }
   $('updateModal').style.display = 'flex'
 }
-api.on('update:downloadProgress', ({ received, total }) => {
-  if (!$('updateProgressBar')) return
-  const pct = total ? Math.min(100, Math.round((received / total) * 100)) : 0
-  $('updateProgressBar').style.width = `${pct}%`
-  setText('updateProgressText', total ? `Downloading… ${pct}% (${(received / 1e6).toFixed(1)} / ${(total / 1e6).toFixed(1)} MB)` : `Downloading… ${(received / 1e6).toFixed(1)} MB`)
-})
 if ($('updateInstall')) $('updateInstall').addEventListener('click', async () => {
   if (!_updateInfo) return
-  // No .msi asset was published on this release (e.g. only the NSIS Setup.exe
-  // built) - fall back to the old manual-download behavior rather than
-  // failing outright.
-  if (!_updateInfo.msiUrl) {
+  // No update asset was published for this platform on this release - fall
+  // back to the manual open-in-browser behavior rather than failing outright.
+  if (!_updateInfo.updateAssetUrl) {
     api.openExternal(_updateInfo.installerUrl || _updateInfo.url)
     $('updateModal').style.display = 'none'
     return
@@ -4354,13 +4347,12 @@ if ($('updateInstall')) $('updateInstall').addEventListener('click', async () =>
   btn.disabled = true
   if (laterBtn) laterBtn.disabled = true
   if ($('updateProgressWrap')) $('updateProgressWrap').style.display = 'block'
-  setText('updateProgressText', 'Downloading…')
+  setText('updateProgressText', 'Opening the updater — NekoSuneAPPS will close, and a separate updater window will show download and install progress…')
   try {
-    const dl = await api.updateDownloadMsi({ url: _updateInfo.msiUrl, name: _updateInfo.msiName })
-    if (!dl?.ok) throw new Error(dl?.error || 'Download failed')
-    setText('updateProgressText', 'Installing — NekoSuneAPPS will close and reopen automatically…')
-    await api.updateApplyMsi({ msiPath: dl.path })
-    // The app quits itself right after this call succeeds; nothing else to do.
+    // The standalone updater window takes it from here (download progress,
+    // installing, relaunching) - this app quits itself right after this
+    // call succeeds.
+    await api.updateStart({ url: _updateInfo.updateAssetUrl, name: _updateInfo.updateAssetName, version: _updateInfo.latest })
   } catch (err) {
     setText('updateProgressText', `Update failed: ${err.message}`)
     btn.disabled = false

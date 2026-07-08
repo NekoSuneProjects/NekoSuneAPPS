@@ -112,19 +112,41 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 - [ ] **Deeper collaborator / collab-code auto-detection** — beyond GitHub contributors:
   parse `Co-Authored-By:` trailers from git history and any in-source `@author`/credit
   comment markers, and surface named collaborations on the About page.
-- [x] **In-app update installs** — `modules/integrations/maintenance/updater.js` +
-  `applyUpdate.ps1`. "Update available" no longer just opens the release page for the user to
-  handle manually: clicking "Download & install" downloads the release's `.msi` asset (into the
-  current install directory, i.e. next to the running exe, falling back to a temp folder if that
-  location needs elevation to write to — msiexec doesn't need the `.msi` file itself to sit
-  somewhere writable-without-admin, only the actual install target, which it prompts to elevate
-  for on its own), shows live download progress, then hands off to a **detached** PowerShell
-  helper and quits — the running app has its own files open, so it has to fully exit before
-  `msiexec` can replace them. The helper waits for the old process to exit, runs
-  `msiexec /passive`, then relaunches the newly-installed exe automatically. Falls back to the
-  previous open-in-browser behavior if a release has no `.msi` asset. Verified the download +
-  file-write path and the exact detached-spawn command/args with mocked HTTP/child_process, and
-  the PowerShell helper's syntax, without actually triggering a real install.
+- [x] **In-app update installs, via a standalone updater app** — went through a few iterations
+  this session (in-app Electron download → a `/passive` PowerShell+msiexec helper → the final
+  design below) before landing on a fully separate helper app, since the thing doing the
+  replacing can't live inside the files being replaced.
+  - **`updater/`** is its own small, independent Electron app (own `package.json`,
+    `main.js`/`preload.js`/`index.html`/`renderer.js`) with a custom branded, animated UI (a
+    floating/glowing logo, shimmering gradient progress bar) — not the plain default installer
+    UI. "Update available" → "Download & install" now just hands the release asset URL to this
+    helper and quits; the helper does everything else visibly: download with a real progress bar,
+    install, relaunch.
+  - **Packaged as `updater.exe`** on Windows specifically (an electron-builder `portable`
+    target — a genuine single-file standalone executable, not a `.ps1` script), built fresh by CI
+    for each platform and bundled directly into **both** the NSIS `Setup.exe` and the `.msi` via
+    `extraFiles`/`extraResources` (`.github/workflows/build.yml` builds `updater/` before the main
+    app on every OS leg and normalizes its output to a fixed path/name first, so the main build's
+    config doesn't need to know electron-builder's per-arch output folder naming).
+  - **Cross-platform**: Windows runs the `.msi` via `msiexec` (no longer silent - runs the normal
+    installer UI, not `/passive`, so it's clearly visible something is installing); Mac extracts
+    the release `.zip` and swaps it in for the existing `.app` bundle (`ditto`, ditto - macOS
+    built-in, not a bundled tool); Linux replaces an AppImage in place, or opens a `.deb` with the
+    desktop's own installer since that needs root this helper can't safely provide unattended.
+  - **Verified on Windows**: built the actual `updater.exe` via electron-builder, ran it for real
+    against a live download URL and a fake install target, confirmed it downloads a real file
+    with correct progress mechanics, correctly waits out (or skips) the parent PID, and reaches
+    the actual `msiexec` install step. Found and fixed a real bug this way: passing PID `0`
+    (a special "current process group" value to `process.kill`, not a real caller PID) could hang
+    the wait-for-exit loop forever.
+  - **Mac and Linux paths are NOT verified against real hardware** - implemented from documented,
+    standard platform behavior (this dev environment is Windows-only), flagged honestly rather
+    than claimed tested.
+  - Considered and explicitly declined (per discussion): a full Discord/Squirrel-style
+    versioned-folder install architecture (`Update.exe` + `app-X.Y.Z/` folders + a thin launcher
+    stub) — that's a genuinely different packaging pipeline (Squirrel.Windows/electron-winstaller)
+    that would replace the working MSI/NSIS build entirely; kept the existing, proven MSI/NSIS
+    install and added the standalone updater on top of it instead.
 
 ## 🥽 Requested big features (next session)
 

@@ -704,24 +704,25 @@ ipcMain.handle('update:check', () => updater.check(app.getVersion()))
 ipcMain.handle('app:version', () => app.getVersion())
 ipcMain.handle('app:contributors', () => updater.contributors())
 
-// Downloads the update .msi to the current install directory (falling back
-// to temp if that's not writable without elevation), then hands off to a
-// detached helper that waits for this process to exit, runs msiexec, and
-// relaunches the app - see updater.js/applyUpdate.ps1 for why it can't just
-// happen inline here.
-ipcMain.handle('update:downloadMsi', async (e, { url, name } = {}) => {
+// Launches the standalone updater helper (updater/ - its own little Electron
+// app with its own branded window) and quits - the helper owns the whole
+// download + install + relaunch flow from here, since it has to run outside
+// this app's own files to be able to replace them. See updater.js for how
+// it's located per platform / dev vs packaged.
+ipcMain.handle('update:startUpdate', (e, { url, name, version } = {}) => {
   if (!url) throw new Error('No update file to download')
   try {
-    const msiPath = await updater.downloadMsi(url, name, progress => push('update:downloadProgress', progress))
-    return { ok: true, path: msiPath }
+    updater.startUpdate({
+      url, name, version,
+      appRootDir: __dirname,
+      isPackaged: app.isPackaged,
+      execPath: process.execPath,
+      pid: process.pid
+    }, () => app.quit())
+    return true
   } catch (err) {
-    throw new Error(`Could not download the update: ${err.message}`)
+    throw new Error(`Could not start the update: ${err.message}`)
   }
-})
-ipcMain.handle('update:applyMsi', (e, { msiPath } = {}) => {
-  if (!msiPath || !fs.existsSync(msiPath)) throw new Error('Downloaded update file is missing')
-  updater.applyUpdate(msiPath, () => app.quit())
-  return true
 })
 
 // Achievements auto-unlock from the live WS feed; all categories are click-to-toggle.

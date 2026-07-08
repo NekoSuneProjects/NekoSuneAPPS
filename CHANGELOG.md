@@ -6,6 +6,37 @@ This project follows [Semantic Versioning](https://semver.org/).
 ## Unreleased
 
 
+## [1.0.53] - 2026-07-08
+
+### Added
+- **Standalone updater app** (`updater/`) — a small, separate Electron app with its own branded,
+  animated UI (glowing/floating logo, shimmering progress bar) that owns the whole update
+  experience: downloading the new release with a real progress bar, installing it, and
+  relaunching NekoSuneAPPS. It has to live outside the main app's own files, since it's the thing
+  replacing them — packaged as a standalone `updater.exe` on Windows (a portable single-file
+  build, no separate install step of its own), bundled inside the app on Mac/Linux. It's built
+  fresh by CI for each platform and bundled directly into **both** the NSIS `Setup.exe` and the
+  `.msi` installers, so it's always present after any install.
+- **Cross-platform update support**: Windows runs the downloaded `.msi` via `msiexec` (fully
+  verified — built, launched, and run through its real download→install-attempt flow in this
+  session); Mac extracts the release `.zip` and swaps it in for the existing `.app` bundle; Linux
+  replaces an AppImage in place, or hands a `.deb` to the desktop's own package-install UI since
+  that needs root this helper can't safely provide unattended. **The Mac and Linux paths are
+  implemented from documented platform behavior but have not been run on a real Mac or Linux
+  machine** — flagging that honestly rather than claiming untested code as verified.
+
+### Changed
+- **The installer is no longer silent.** Earlier in this version's development it ran with
+  `/passive` (a bare progress bar, easy to miss) — now the standalone updater's own window makes
+  clear that an update is actively happening from download through relaunch.
+- Reworked the whole update pipeline: the main app no longer downloads anything itself: it just
+  hands the release asset URL to the standalone updater and quits.
+
+### Fixed
+- A bug in the standalone updater's "wait for the main app to fully exit" logic that could hang
+  indefinitely if ever given PID 0 (a special value meaning "current process group" to
+  `process.kill`, not a real caller PID) — found via direct testing, not just review.
+
 ## [1.0.52] - 2026-07-08
 
 ### Added

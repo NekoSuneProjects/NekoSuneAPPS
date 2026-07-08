@@ -42,6 +42,42 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      # Builds the standalone update helper (updater/) for this OS and
+      # normalizes its output to a fixed, predictable path/name so the main
+      # app's extraFiles/extraResources config (package.json) doesn't need
+      # to know electron-builder's exact per-arch output folder naming.
+      - name: Build updater helper
+        working-directory: updater
+        run: npm install
+
+      - name: Build updater helper (Windows)
+        if: matrix.os == 'windows-latest'
+        working-directory: updater
+        run: |
+          npx electron-builder --win --publish never
+          Copy-Item "dist\updater.exe" "updater.exe" -Force
+        shell: pwsh
+
+      - name: Build updater helper (macOS)
+        if: matrix.os == 'macos-latest'
+        working-directory: updater
+        run: |
+          npx electron-builder --mac dir --publish never
+          APP_PATH=$(find dist -maxdepth 2 -iname '*.app' | head -1)
+          rm -rf "NekoSuneAPPS Updater.app"
+          cp -R "$APP_PATH" "NekoSuneAPPS Updater.app"
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Build updater helper (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        working-directory: updater
+        run: |
+          npx electron-builder --linux dir --publish never
+          BIN_DIR=$(find dist -maxdepth 1 -iname '*-unpacked' | head -1)
+          rm -rf linux-unpacked
+          cp -R "$BIN_DIR" linux-unpacked
+
       - name: Build app
         run: npx electron-builder --publish never
         env:

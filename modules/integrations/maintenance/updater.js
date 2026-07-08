@@ -1,15 +1,18 @@
 // modules/integrations/maintenance/updater.js
-// Update checker + installer for NekoSuneAPPS - asks the GitHub Releases API
-// for the latest release and compares it to the running version. The actual
-// install downloads the .msi asset, then hands off to applyUpdate.ps1 (a
-// detached helper, since this process needs to fully exit before msiexec can
-// replace its own files) which runs msiexec and relaunches the app once it's
-// done. Runs in the MAIN process.
+// Update checker + installer launcher for NekoSuneAPPS - asks the GitHub
+// Releases API for the latest release and compares it to the running
+// version. The actual update is handled by a fully separate helper app
+// (updater/ - its own little Electron app, packaged as updater.exe on
+// Windows / bundled inside the .app on Mac / alongside the binary on Linux)
+// with its own branded window: it downloads the release asset with a real
+// progress bar, installs it, and relaunches NekoSuneAPPS - all of it has to
+// live outside this app's own files, since it's the thing replacing them.
+// This module's only job is finding that helper and handing off to it.
+// Runs in the MAIN process.
 
 const axios = require('axios')
-const fs = require('fs')
-const os = require('os')
 const path = require('path')
+const fs = require('fs')
 const { spawn } = require('child_process')
 
 const REPO = 'NekoSuneProjects/NekoSuneAPPS'
@@ -27,6 +30,18 @@ function cmp (a, b) {
   return 0
 }
 
+// The asset the standalone updater actually installs, one per platform:
+// Windows runs the .msi with msiexec, Mac extracts the .zip'd .app bundle
+// in place, Linux replaces an AppImage in place (or hands a .deb to the
+// desktop's own installer UI if that's all that was published).
+function pickUpdateAsset (assets) {
+  const pick = re => assets.find(a => re.test(a.name || ''))
+  if (process.platform === 'win32') return pick(/\.msi$/i)
+  if (process.platform === 'darwin') return pick(/\.zip$/i)
+  if (process.platform === 'linux') return pick(/\.appimage$/i) || pick(/\.deb$/i)
+  return null
+}
+
 async function check (currentVersion) {
   try {
     const { data } = await axios.get(API, {
@@ -36,14 +51,11 @@ async function check (currentVersion) {
     const latest = String(data.tag_name || data.name || '').replace(/^v/i, '')
     if (!latest) return { ok: true, available: false, current: currentVersion }
     const assets = Array.isArray(data.assets) ? data.assets : []
-    // Prefer the Windows NSIS installer, then MSI, then any asset.
+    // Manual open-in-browser fallback (used if the platform's update asset
+    // wasn't published, or the standalone updater can't be found/launched).
     const pick = re => assets.find(a => re.test(a.name || ''))
-    const installer = pick(/Setup.*\.exe$/i) || pick(/\.exe$/i) || pick(/\.msi$/i)
-    // The in-app update flow specifically wants the .msi (msiexec supports a
-    // silent/passive install and a clean way to detect the app is closed),
-    // separate from installerUrl above which is only used as a manual
-    // open-in-browser fallback when no .msi asset was published.
-    const msi = pick(/\.msi$/i)
+    const installer = pick(/Setup.*\.exe$/i) || pick(/\.exe$/i) || pick(/\.msi$/i) || pick(/\.dmg$/i) || pick(/\.appimage$/i)
+    const updateAsset = pickUpdateAsset(assets)
     return {
       ok: true,
       available: cmp(latest, currentVersion) > 0,
@@ -52,62 +64,53 @@ async function check (currentVersion) {
       notes: String(data.body || '').slice(0, 4000),
       url: data.html_url || RELEASES_PAGE,
       installerUrl: installer ? installer.browser_download_url : (data.html_url || RELEASES_PAGE),
-      msiUrl: msi ? msi.browser_download_url : null,
-      msiName: msi ? msi.name : null,
-      msiSize: msi ? msi.size : null
+      updateAssetUrl: updateAsset ? updateAsset.browser_download_url : null,
+      updateAssetName: updateAsset ? updateAsset.name : null,
+      updateAssetSize: updateAsset ? updateAsset.size : null
     }
   } catch (err) {
     return { ok: false, error: err.message, current: currentVersion }
   }
 }
 
-// Downloads the .msi asset. Prefers saving it next to the running exe (the
-// current install location, per how the user wants updates handled) - that
-// directory doesn't need to be writable for msiexec to work, it's only
-// where the downloaded file itself lands, so this falls back to a temp
-// folder if the install dir isn't writable without elevation (e.g. a
-// per-machine install under Program Files).
-async function downloadMsi (url, fileName, onProgress) {
-  const res = await axios.get(url, {
-    responseType: 'stream', timeout: 60000, headers: { 'User-Agent': 'NekoSuneAPPS-Updater' }
-  })
-  const total = parseInt(res.headers['content-length'] || '0', 10)
-  let received = 0
-
-  const installDir = path.dirname(process.execPath)
-  let outDir = installDir
-  try {
-    fs.accessSync(outDir, fs.constants.W_OK)
-  } catch (_) {
-    outDir = os.tmpdir()
+// Where the standalone updater helper lives, per platform/build state. Dev
+// (unpackaged) runs use the local electron binary pointed at the updater's
+// own main.js directly, since there's no built updater.exe yet in that case.
+function resolveUpdaterLaunch (appRootDir, isPackaged) {
+  if (!isPackaged) {
+    return { cmd: process.execPath, args: [path.join(appRootDir, 'updater', 'main.js')] }
   }
-  const outPath = path.join(outDir, fileName || 'NekoSuneAPPS-Update.msi')
-
-  await new Promise((resolve, reject) => {
-    const writer = fs.createWriteStream(outPath)
-    res.data.on('data', chunk => {
-      received += chunk.length
-      if (onProgress) onProgress({ received, total })
-    })
-    res.data.on('error', reject)
-    writer.on('error', reject)
-    writer.on('finish', resolve)
-    res.data.pipe(writer)
-  })
-
-  return outPath
+  if (process.platform === 'win32') {
+    return { cmd: path.join(path.dirname(process.execPath), 'updater.exe'), args: [] }
+  }
+  if (process.platform === 'darwin') {
+    const resourcesPath = process.resourcesPath
+    return { cmd: path.join(resourcesPath, 'NekoSuneAPPS Updater.app', 'Contents', 'MacOS', 'NekoSuneAPPS Updater'), args: [] }
+  }
+  if (process.platform === 'linux') {
+    return { cmd: path.join(process.resourcesPath, 'updater', 'nekosuneapps-updater'), args: [] }
+  }
+  return null
 }
 
-// Hands off to a detached helper script (applyUpdate.ps1) and quits - this
-// process needs to fully exit before msiexec can replace the files it has
-// open, so it can't just run msiexec directly and wait. The helper waits for
-// this process to exit, installs, then relaunches the app.
-function applyUpdate (msiPath, quitApp) {
-  const scriptPath = path.join(__dirname, 'applyUpdate.ps1')
-  const child = spawn('powershell', [
-    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', scriptPath,
-    '-MsiPath', msiPath, '-ExePath', process.execPath, '-WaitProcessId', String(process.pid)
-  ], { detached: true, stdio: 'ignore', windowsHide: true })
+// Launches the standalone updater with everything it needs, then quits this
+// process - it has to, since the updater is about to replace its files.
+function startUpdate ({ url, name, version, appRootDir, isPackaged, execPath, pid }, quitApp) {
+  const launch = resolveUpdaterLaunch(appRootDir, isPackaged)
+  if (!launch) throw new Error(`No update helper available for platform "${process.platform}"`)
+  if (isPackaged && !fs.existsSync(launch.cmd)) {
+    throw new Error('Update helper is missing from this install (updater.exe not found)')
+  }
+
+  const cliArgs = [
+    ...launch.args,
+    `--url=${url}`,
+    `--exe=${execPath}`,
+    `--name=${name || 'NekoSuneAPPS-Update'}`,
+    `--version=${version || ''}`,
+    `--pid=${pid}`
+  ]
+  const child = spawn(launch.cmd, cliArgs, { detached: true, stdio: 'ignore' })
   child.unref()
   quitApp()
 }
@@ -138,4 +141,4 @@ async function contributors () {
   }
 }
 
-module.exports = { check, cmp, contributors, downloadMsi, applyUpdate, RELEASES_PAGE }
+module.exports = { check, cmp, contributors, startUpdate, resolveUpdaterLaunch, RELEASES_PAGE }

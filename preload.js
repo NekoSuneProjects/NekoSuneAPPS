@@ -95,8 +95,7 @@ window.electronAPI = {
   clipboardWrite: text => ipcRenderer.invoke('app:clipboard', text),
   openExternal: url => ipcRenderer.invoke('app:openExternal', url),
   updateCheck: () => ipcRenderer.invoke('update:check'),
-  updateDownloadMsi: opts => ipcRenderer.invoke('update:downloadMsi', opts),
-  updateApplyMsi: opts => ipcRenderer.invoke('update:applyMsi', opts),
+  updateStart: opts => ipcRenderer.invoke('update:startUpdate', opts),
   appVersion: () => ipcRenderer.invoke('app:version'),
   appContributors: () => ipcRenderer.invoke('app:contributors'),
 
