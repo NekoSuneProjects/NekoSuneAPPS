@@ -520,6 +520,7 @@ function ensureAvatarScaling () {
   avatarScaling = new AvatarScalingController({
     oscPort: getSendPort(),
     extraOscTargets: parseOscTargetsText($('extraOscTargets')?.value || ''),
+    scale: clampAvatarScale(parseFloat($('avatarScalingValue').value)),
     useSafety: $('avatarScalingSafety').checked,
     saveScaleBetweenWorlds: $('avatarScalingSaveWorlds').checked,
     smoothing: parseInt($('avatarScalingSmoothing').value, 10) || 50
@@ -529,10 +530,16 @@ function ensureAvatarScaling () {
   return avatarScaling
 }
 
+let avatarScalingSaveTimer = null
 function renderAvatarScalingState (s) {
   $('avatarScalingSlider').value = avatarScaleToSlider(s.scale)
   $('avatarScalingValue').value = formatAvatarScale(s.scale)
   setText('avatarScalingOut', s.connected ? `Avatar scaling on — ${formatAvatarScale(s.scale)}m` : 'Avatar scaling is off')
+  // Debounced: this fires on every slider-drag tick and every 50ms while a
+  // hold-to-scale hotkey is held, so save at most twice a second rather
+  // than hammering electron-store on every single tick.
+  clearTimeout(avatarScalingSaveTimer)
+  avatarScalingSaveTimer = setTimeout(() => api.saveSetting('avatarScalingScale', s.scale), 500)
 }
 
 async function startAvatarScaling () {
@@ -2366,7 +2373,7 @@ api.on('vr:update', s => {
   setPill('vrState', s.available, 'on')
   setText('vrOut', s.available ? s.devices.map(d => `${d.role}: ${Math.round(d.battery * 100)}%`).join(' · ') : 'No VR devices — needs a VR headset + SteamVR running (does not work on desktop).')
 })
-$('enableVr').addEventListener('change', e => { e.target.checked ? api.vrStart() : api.vrStop() })
+$('enableVr').addEventListener('change', e => { e.target.checked ? api.vrStart() : api.vrStop(); api.saveSetting('vrEnabled', e.target.checked) })
 
 /* ---------------- discord ---------------- */
 let discordAccessToken = ''
@@ -2781,6 +2788,17 @@ $('ruskStart').addEventListener('click', async () => {
 })
 $('ruskStop').addEventListener('click', async () => { try { renderRuskState(await api.oscAppsRuskStop()) } catch (err) { setText('ruskOut', `Error: ${err.message}`) } })
 api.on('oscApps:ruskUpdate', renderRuskState)
+// Rusk/Twitch Interactive settings previously only persisted as a side
+// effect of clicking Start - editing a field while already running (or
+// before ever starting) had no way to save. Autosave the fields directly,
+// preserving whatever "enabled" state is already stored so a field edit
+// alone can never flip the feature to auto-start on next launch.
+async function saveRuskOptionsOnly () {
+  const current = await api.getSetting('oscApps.ruskLaserdome', {})
+  await api.saveSetting('oscApps.ruskLaserdome', { ...current, ...ruskOptions(), enabled: current.enabled })
+}
+;['ruskLogDirectory', 'ruskScanExisting'].forEach(id => $(id).addEventListener('change', saveRuskOptionsOnly))
+document.querySelectorAll('[data-rusk-feature]').forEach(input => input.addEventListener('change', saveRuskOptionsOnly))
 
 $('twitchInteractiveStart').addEventListener('click', async () => {
   try {
@@ -2790,6 +2808,11 @@ $('twitchInteractiveStart').addEventListener('click', async () => {
 })
 $('twitchInteractiveStop').addEventListener('click', async () => renderTwitchInteractive(await api.oscAppsTwitchInteractiveStop()))
 api.on('oscApps:twitchInteractiveUpdate', renderTwitchInteractive)
+async function saveTwitchInteractiveOptionsOnly () {
+  const current = await api.getSetting('oscApps.twitchInteractive', {})
+  await api.saveSetting('oscApps.twitchInteractive', { ...current, ...twitchInteractiveOptions(), enabled: current.enabled })
+}
+;['twitchInteractiveParameter', 'twitchInteractivePulse', 'twitchInteractiveMappings'].forEach(id => $(id).addEventListener('change', saveTwitchInteractiveOptionsOnly))
 ;['realLeashEnable', 'realLeashStrength', 'realLeashRun', 'realLeashJumpQ'].forEach(id => $(id).addEventListener('change', () => applyRealisticLeash(true)))
 ;['oscClockEnable', 'oscClockInterval', 'oscClockLegacyDow', 'oscClockVrcosc', 'oscClock24Hour', 'oscClockDateTimeInts'].forEach(id => $(id).addEventListener('change', () => applyOscDigitalClock(true)))
 $('oscClockSync').addEventListener('click', () => oscDigitalClock.syncNow())
@@ -4598,12 +4621,15 @@ async function init () {
 
   const avatarScalingEnabled = await api.getSetting('avatarScalingEnabled', false)
   $('avatarScalingEnable').checked = avatarScalingEnabled
-  const asSafety = await api.getSetting('avatarScalingSafety', false)
+  const asSafety = await api.getSetting('avatarScalingSafety', true)
   $('avatarScalingSafety').checked = asSafety
   $('avatarScalingSaveWorlds').checked = await api.getSetting('avatarScalingSaveWorlds', false)
   const asSmoothing = await api.getSetting('avatarScalingSmoothing', 50)
   $('avatarScalingSmoothing').value = asSmoothing
   setText('avatarScalingSmoothingVal', asSmoothing)
+  const asScale = await api.getSetting('avatarScalingScale', 1)
+  $('avatarScalingSlider').value = avatarScaleToSlider(asScale)
+  $('avatarScalingValue').value = formatAvatarScale(asScale)
   const savedHotkeys = await api.getSetting('avatarScalingHotkeys', { keyUp: null, keyDown: null })
   avatarScalingHotkeys.keyUp = savedHotkeys.keyUp
   avatarScalingHotkeys.keyDown = savedHotkeys.keyDown
@@ -4624,6 +4650,7 @@ async function init () {
   if (await api.getSetting('statsEnabled', false)) { $('enableStats').checked = true; setPill('statsState', true, 'on'); api.statsStart(5000) }
   if (await api.getSetting('netEnabled', false)) { $('enableNet').checked = true; setPill('netState', true, 'on'); api.netStart({ intervalMs: 5000 }) }
   if (await api.getSetting('windowEnabled', false)) { $('enableWindow').checked = true; setPill('winState', true, 'on'); api.windowStart() }
+  if (await api.getSetting('vrEnabled', false)) { $('enableVr').checked = true; api.vrStart() }
   { const wt = await api.getSetting('windowShowTitle', false); $('winShowTitle').checked = wt; composer.setWindowShowTitle(wt) }
   if ($('tonPort')) $('tonPort').value = await api.getSetting('tonPort', 11398)
   if (await api.getSetting('tonEnabled', false)) { $('enableTon').checked = true; setPill('tonState', true, 'on'); tonStarted = true; api.tonStart({ port: tonPortVal() }) }

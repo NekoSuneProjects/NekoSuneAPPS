@@ -6,6 +6,21 @@ This project follows [Semantic Versioning](https://semver.org/).
 ## Unreleased
 
 
+## [1.0.46] - 2026-07-08
+
+### Fixed
+- **Avatar Scaling's scale reset to 1.00m on every restart** — it was never saved at all,
+  only its enable/safety/smoothing/hotkey settings were. Now saves (debounced) and restores on
+  boot. Also fixed the "Safety limits" checkbox silently defaulting to *off* on a fresh install
+  despite showing checked in the UI.
+- **Audited settings persistence across the whole app** after the above — cross-referenced all
+  249 input/select/textarea fields against what actually gets saved/restored. Found and fixed
+  two more real gaps: the VR gear battery toggle had no persistence at all (same bug pattern as
+  Avatar Scaling), and Rusk Laserdome / Twitch Interactive fields only saved when you clicked
+  Start, losing any edit made while already running. Everything else checked out as either
+  already persisting correctly through a generic save, or intentionally transient (search
+  boxes, one-off action parameters, live faders, credential fields that save on Connect).
+
 ## [1.0.45] - 2026-07-08
 
 ### Fixed

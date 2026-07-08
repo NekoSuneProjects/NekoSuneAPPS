@@ -329,6 +329,37 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
 
 ---
 
+## 💾 Settings-persistence audit (this session)
+Prompted by Avatar Scaling's scale always resetting to 1.00m on restart. Cross-referenced every
+`<input>`/`<select>`/`<textarea>` with an `id` in `index.html` (249 total) against what
+`renderer.js` actually saves/restores, then manually verified every candidate (the mechanical
+scan alone has a high false-positive rate for anything saved via a generic/indirect mechanism,
+e.g. the TTS engine fields, which already save correctly through `TTS_ALL_FIELD_IDS`).
+- [x] **Avatar Scaling scale never persisted at all** — confirmed root cause of the reported
+  bug. The slider/number input called `setScale()` but never `saveSetting`, and the controller
+  was always constructed with the default `scale: 1`. Now saved (debounced to twice/second,
+  since a held hotkey ticks every 50ms) and restored on boot.
+- [x] **Avatar Scaling "Safety limits" default was inconsistent** — the checkbox defaults to
+  checked in the HTML, but the boot-restore code's fallback default was `false`, so a fresh
+  install would silently start with safety off despite showing the box checked. Fixed to `true`.
+- [x] **`enableVr` (VR gear battery) had no persistence at all** — only called `vrStart()`/
+  `vrStop()`, never `saveSetting`, and had no boot-restore. Fixed to match the identical
+  `enableNet`/`enableWindow` pattern elsewhere in the same file.
+- [x] **Rusk Laserdome / Twitch Interactive settings only saved as a side effect of clicking
+  Start** — editing a field while the feature was already running (or before ever starting it)
+  had no way to persist. Added autosave-on-change for both, carefully preserving whichever
+  `enabled` flag is already stored so a field edit alone can never flip a feature to auto-start
+  on next launch (verified with a test for both the "never started" and "already running" cases).
+- Everything else flagged by the initial mechanical scan (~90 more elements) was verified to
+  already persist correctly through a generic/object-based save (TTS engines, AI provider,
+  autostart checkboxes, weather, Discord OSC/SpotiOSC, RealisticOscLeash, OSC Digital Clock,
+  ShazamOSC, ranks, ToN notify/manager) or is intentionally transient by design (search/query
+  boxes, one-off action parameters like which soundpad slot to trigger, live manual faders,
+  credential fields that save on an explicit Connect action like Discord/HeartRate providers,
+  and the VRChat login password specifically must never be saved at all).
+
+---
+
 ## ⚙️ Setup reminders
 - Run **`npm install`** (adds `discord.js`, `sql.js`).
 - VRChat-API features need login on the **VRChat** tab (cookies stored locally; password never stored).
