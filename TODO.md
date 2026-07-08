@@ -274,10 +274,20 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
   for anything else. Responses are sent to chatbox and spoken aloud via the TTS engine above.
 - [x] **SOS — manual trigger only.** Either an explicit spoken "sos" command or the button in
   the UI; **never** auto-triggered. On trigger: invites everyone in a configured trusted-friends
-  list (by display name, matched against your live friends list) to your current instance, and
-  uploads a rolling instant-replay clip (last 1/5/10 min of shared desktop video+audio,
-  configurable) to a configured Discord webhook so those friends can see what happened before
-  they arrive.
+  list (by display name, matched against your live friends list) to your current instance,
+  **saves** the rolling instant-replay clip (last 1/5/10 min of shared desktop video+audio,
+  configurable) to `Videos/NekoSuneAPPS/` (created automatically if missing), and additionally
+  uploads it to a configured Discord webhook if set, so those friends can see what happened
+  before they arrive. Saving locally always happens, independent of whether a webhook is
+  configured, so the clip is never lost to a failed/missing upload.
+- [x] **Fixed: assistant silently doing nothing.** The most common cause is the cloud STT engine
+  being selected with no API key ever entered (a very likely fresh-install state) — every clip
+  then failed transcription with a generic error that looked identical to "the wake word didn't
+  match" from the outside. `setLive(true)` now validates config upfront and fails immediately
+  with a clear, specific message instead of silently retrying forever. The status line also now
+  shows the actual configured wake word, and surfaces what was transcribed even when it *doesn't*
+  match the wake word, so it's obvious whether STT is hearing anything at all versus just not
+  recognizing the chosen word.
 - [x] **Soft emotional check-in — separate from SOS, and never triggers it.** Every transcribed
   clip (whether or not it's addressed to the assistant) is checked against a small lexical
   cue-list (`modules/vrchat/assistant/emotionCues.js`) for distress or tiredness language. This

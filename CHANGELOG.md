@@ -6,6 +6,21 @@ This project follows [Semantic Versioning](https://semver.org/).
 ## Unreleased
 
 
+## [1.0.43] - 2026-07-08
+
+### Added
+- **SOS clips are now saved locally** to `Videos/NekoSuneAPPS/` (folder created automatically
+  if it doesn't exist), independent of whether a Discord webhook is configured for sharing them
+  with trusted friends — the clip is never lost to a missing/failed upload.
+
+### Fixed
+- **Voice assistant silently not responding.** The most common cause: the cloud speech-to-text
+  engine was selected with no API key ever entered, so every clip failed transcription with a
+  generic error indistinguishable from "the wake word didn't match." Starting the assistant now
+  validates this upfront and fails immediately with a clear, specific message. The status line
+  also now shows the actual configured wake word, and shows what was transcribed even when it
+  doesn't match the wake word, making it obvious whether speech is being heard at all.
+
 ## [1.0.42] - 2026-07-07
 
 ### Added

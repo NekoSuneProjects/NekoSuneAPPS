@@ -37,7 +37,7 @@ class JarvisAssistant {
   constructor ({
     transcribeCloud, transcribeLocal, interpretCommand,
     sendChatboxMessage, speakText,
-    getFriends, getMyLocation, resolveWorldName, getStatus, updateStatus, invite,
+    getFriends, getMyLocation, resolveWorldName, getStatus, updateStatus, invite, saveClip,
     onUpdate = () => {}, getDisplayMedia
   } = {}) {
     this.transcribeCloud = transcribeCloud
@@ -51,6 +51,7 @@ class JarvisAssistant {
     this.getStatus = getStatus
     this.updateStatus = updateStatus
     this.invite = invite
+    this.saveClip = saveClip
     this.onUpdate = onUpdate
     this.getDisplayMedia = getDisplayMedia || (c => navigator.mediaDevices.getDisplayMedia(c))
 
@@ -100,13 +101,28 @@ class JarvisAssistant {
     this.stream.getTracks().forEach(track => track.addEventListener('ended', () => this.setLive(false)))
   }
 
+  // Catches the single most common cause of "the assistant never responds
+  // to anything" - the cloud STT engine is selected but no API key was ever
+  // entered (a very likely fresh-install state). Without this, every single
+  // clip would fail transcription with a generic 401 buried in this.error,
+  // which looks identical to "the wake word doesn't match" from the outside.
+  validateConfig () {
+    if (this.config.engine === 'cloud' && !this.config.cloudApiKey) {
+      throw new Error('No cloud speech-to-text API key is set. Add one in the Desktop Speech-to-Text card above, or switch this to the local engine.')
+    }
+    if (!this.config.wakeWord) {
+      throw new Error('Set a wake word first.')
+    }
+  }
+
   async setLive (enabled) {
     this.live = !!enabled
     if (this.live) {
       try {
+        this.validateConfig()
         await this.ensureAudio()
         this.startReplayBuffer()
-        this.status = 'Listening for the wake word…'
+        this.status = `Listening for the wake word "${this.config.wakeWord}"…`
         this.scheduleListen(0)
       } catch (err) {
         this.live = false
@@ -203,6 +219,12 @@ class JarvisAssistant {
     const idx = wake ? lower.indexOf(wake) : -1
 
     if (idx === -1) {
+      // Not addressed to the assistant, but surface what was transcribed
+      // anyway - otherwise there's no visible difference between "STT isn't
+      // hearing anything" and "STT heard you fine, it just didn't match the
+      // wake word", which is by far the most common source of confusion.
+      this.status = `Heard (no wake word): "${text.slice(0, 60)}"`
+      this.emit('overheard')
       this.maybeCheckIn(text)
       return
     }
@@ -287,6 +309,17 @@ class JarvisAssistant {
     this.emit('sos-triggered')
     const clip = await this.exportReplayClip().catch(() => null)
 
+    // Always save the clip to disk (Videos/NekoSuneAPPS) regardless of
+    // whether a Discord webhook is configured, so it isn't lost if the
+    // upload fails or no webhook is set.
+    let savedPath = null
+    if (clip && this.saveClip) {
+      try {
+        const base64 = await blobToBase64(clip)
+        savedPath = await this.saveClip({ base64, mime: clip.type })
+      } catch (_) {}
+    }
+
     let invited = 0
     const names = this.config.trustedFriends || []
     if (names.length) {
@@ -305,9 +338,11 @@ class JarvisAssistant {
 
     if (clip && this.config.sosWebhook) { await this.uploadClip(clip).catch(() => {}) }
 
-    await this.respond(invited
+    const parts = [invited
       ? `SOS sent to ${invited} friend${invited === 1 ? '' : 's'}.`
-      : "I tried to send SOS, but couldn't reach your trusted friends - check they're online and on your friends list.")
+      : "I tried to send SOS, but couldn't reach your trusted friends - check they're online and on your friends list."]
+    if (savedPath) parts.push(`Clip saved to ${savedPath}.`)
+    await this.respond(parts.join(' '))
   }
 
   async uploadClip (blob) {

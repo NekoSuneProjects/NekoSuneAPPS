@@ -1003,6 +1003,18 @@ ipcMain.handle('stt:localModels', () => STT_LOCAL_MODELS)
 /* ------------------------------------------------------------------ */
 ipcMain.handle('assistant:interpret', (e, opts) => interpretCommand(opts))
 
+// Saves an SOS instant-replay clip to ~/Videos/NekoSuneAPPS (created if
+// missing), alongside any Discord-webhook upload the assistant also does.
+ipcMain.handle('assistant:saveClip', (e, { base64, mime } = {}) => {
+  if (!base64) return null
+  const dir = path.join(app.getPath('videos'), 'NekoSuneAPPS')
+  fs.mkdirSync(dir, { recursive: true })
+  const ext = String(mime || '').includes('mp4') ? 'mp4' : 'webm'
+  const file = path.join(dir, `sos-clip-${new Date().toISOString().replace(/[:.]/g, '-')}.${ext}`)
+  fs.writeFileSync(file, Buffer.from(base64, 'base64'))
+  return file
+})
+
 /* ------------------------------------------------------------------ */
 /* Shared OAuth providers                                              */
 /* ------------------------------------------------------------------ */

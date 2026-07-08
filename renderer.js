@@ -5154,6 +5154,7 @@ function ensureJarvisAssistant () {
     getStatus: () => api.vrchatStatus(),
     updateStatus: fields => api.vrchatUpdateProfile(fields),
     invite: (id, instanceId) => api.vrchatInvite(id, instanceId),
+    saveClip: opts => api.assistantSaveClip(opts),
     onUpdate: renderAssistantState
   })
   return jarvisAssistant
