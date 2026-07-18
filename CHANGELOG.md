@@ -6,6 +6,36 @@ This project follows [Semantic Versioning](https://semver.org/).
 ## Unreleased
 
 
+## [1.0.59] - 2026-07-18
+
+### Added
+- **Home dashboard** — new default landing tab (replaces Chatbox as the startup tab): a welcome
+  hero with your avatar/display name/status, metric tiles (friends online, total VRChat players,
+  Steam/Quest split), Quick Access shortcuts to every tab, a Recently Visited Worlds list pulled
+  from the history log, and a VRChat News feed (latest 6 posts from hello.vrchat.com/blog,
+  cached per home-tab visit, click-through opens in your browser).
+- **Layout overhaul** — sidebar widened from 76px to 190px with icon + label on every nav button
+  and visible section headers (VRChat / Social / General); brand area now shows the logo plus
+  "NekoSuneAPPS"; Launch button is a full-width pill; sidebar auto-collapses to 64px icon-only
+  below 820px width; cards lift on hover (translateY -2px with an accent shadow).
+- **Custom backgrounds** (Settings → Background) — 8 built-in gradient presets (Aurora, Neon,
+  Sakura, Ocean, Forest, Gold, Void, Dusk), a custom image picker (stored as a file path, not
+  base64), a VRChat photos browser (last 48 shots from `Pictures\VRChat`), and Dim (5–85%) /
+  Blur (0–24px) sliders — all persisted across launches.
+- **Trust level ladder** shown on the friend/user profile modal's info tab.
+- **Pronouns and bio links** are now editable (load + save) in the profile editor.
+- **Favorites backup** — export/import friend and world favourites to/from JSON.
+- **Terror of Nowhere** — terror IDs now resolve to names via a cached `tonData` lookup.
+
+### Fixed
+- **Offline friends showed blank space instead of an avatar placeholder.**
+- **Auto-updater could install to the wrong directory (critical).** The updater was downloading
+  the `.msi` release asset and running it via `msiexec`, which installs to its own default path
+  instead of the user's existing NSIS install directory, then relaunched the old binary. Fixed by
+  preferring the NSIS `Setup.exe` asset and running it with `/S` for a silent in-place upgrade to
+  the same registered directory, plus a registry-lookup fallback (`findRelaunchExe()`) for cases
+  where the install path shifted between the old and new install.
+
 ## [1.0.58] - 2026-07-08
 
 ### Fixed
