@@ -207,7 +207,7 @@ jobs:
           # Release notes body, trimmed to fit under Discord's 4096-char embed description limit
           DESC=$(cat NOTES.md)
           if [ "${#DESC}" -gt 3500 ]; then
-            DESC="${DESC:0:3500}"$'\n\n…continued — see the full release notes at the link above.'
+            DESC="${DESC:0:3500}"$'\n\n…continued — [see the full release notes]('"$RELEASE_URL"').'
           fi
 
           # Build a Downloads field from whatever assets actually got attached to the
