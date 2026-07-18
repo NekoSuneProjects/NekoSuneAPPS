@@ -184,3 +184,68 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Posts a Discord announcement for the new release, with the changelog notes
+      # and direct download links for whatever installers actually got built. The
+      # webhook URL lives in the DISCORD_WEBHOOK_URL repo secret (Settings -> Secrets
+      # and variables -> Actions) so it's never hardcoded here - skips cleanly (no
+      # post at all) if that secret isn't set.
+      - name: Notify Discord
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -z "${DISCORD_WEBHOOK_URL:-}" ]; then
+            echo "No DISCORD_WEBHOOK_URL secret set - skipping Discord notification."
+            exit 0
+          fi
+
+          VERSION="${GITHUB_REF_NAME#v}"
+          RELEASE_URL="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${GITHUB_REF_NAME}"
+          ICON_URL="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/main/assets/logo.png"
+
+          # Release notes body, trimmed to fit under Discord's 4096-char embed description limit
+          DESC=$(cat NOTES.md)
+          if [ "${#DESC}" -gt 3500 ]; then
+            DESC="${DESC:0:3500}"$'\n\n…continued — see the full release notes at the link above.'
+          fi
+
+          # Build a Downloads field from whatever assets actually got attached to the
+          # release (so a partial build - e.g. one OS leg failed - doesn't dead-link)
+          DOWNLOADS=""
+          while IFS=$'\t' read -r name url; do
+            case "$name" in
+              *.exe)      label="🪟 Windows Installer (.exe)" ;;
+              *.msi)      label="🪟 Windows Installer (.msi)" ;;
+              *.AppImage) label="🐧 Linux (.AppImage)" ;;
+              *.deb)      label="🐧 Linux (.deb)" ;;
+              *)          continue ;;
+            esac
+            DOWNLOADS="${DOWNLOADS}[${label}](${url})"$'\n'
+          done < <(gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[] | [.name, .url] | @tsv')
+
+          if [ -z "$DOWNLOADS" ]; then DOWNLOADS="_No build assets were attached to this release._"; fi
+
+          PAYLOAD=$(jq -n \
+            --arg username "NekoSuneAPPS Release" \
+            --arg avatar "$ICON_URL" \
+            --arg title "NekoSuneAPPS v${VERSION}" \
+            --arg url "$RELEASE_URL" \
+            --arg desc "$DESC" \
+            --arg downloads "$DOWNLOADS" \
+            --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{
+              username: $username,
+              avatar_url: $avatar,
+              embeds: [{
+                title: $title,
+                url: $url,
+                description: $desc,
+                color: 9055202,
+                fields: [{ name: "📦 Downloads", value: $downloads, inline: false }],
+                footer: { text: "NekoSuneAPPS", icon_url: $avatar },
+                timestamp: $ts
+              }]
+            }')
+
+          curl -sS -H "Content-Type: application/json" -X POST -d "$PAYLOAD" "$DISCORD_WEBHOOK_URL"

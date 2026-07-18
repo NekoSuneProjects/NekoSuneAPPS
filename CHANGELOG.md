@@ -5,6 +5,11 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ## Unreleased
 
+### Added
+- **Discord release announcements.** The release CI job now posts a Discord embed (username
+  "NekoSuneAPPS Release", app icon, changelog notes, and direct download links for whatever
+  installers actually built) whenever a version tag is released. Opt-in via a
+  `DISCORD_WEBHOOK_URL` repo secret — skips cleanly with no post if that secret isn't set.
 
 ## [1.0.59] - 2026-07-18
 
