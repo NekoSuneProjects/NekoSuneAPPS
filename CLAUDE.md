@@ -48,6 +48,19 @@ it for malware/backdoors/supply-chain risk first:
   understanding what they do first.
 - If anything looks suspicious, stop and flag it to the user instead of adding it.
 
+## Git workflow
+
+- **Always `git pull` first** before starting work in a session, so changes are based on the
+  latest `main` (FumikoEcho and NekoSuneVR both push to this repo — don't work from a stale copy).
+- **Always test the code before pushing anything to GitHub** — run/launch the app and exercise the
+  affected feature(s), and check for obvious errors, not just that it compiles. Don't push
+  untested changes.
+- **Never create git tags.**
+- **Always open a Pull Request** to [NekoSuneProjects/NekoSuneAPPS](https://github.com/NekoSuneProjects/NekoSuneAPPS)
+  for the changes, rather than just committing/pushing straight to `main` with nothing to review.
+  Every PR must have a real description of what changed and why — **never leave the PR description
+  blank**.
+
 ## Why this file exists
 
 FumikoEcho and NekoSuneVR both work on this repo through Claude Code. Instead of re-explaining
