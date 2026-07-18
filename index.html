@@ -1720,6 +1720,17 @@
         </div>
 
         <div class="card">
+          <h3>🏷️ Screenshot Metadata <span class="muted" style="font-size:.72rem">(VRCX-style world/instance/players)</span></h3>
+          <div class="muted" style="font-size:.78rem">
+            Embeds the world, instance, and the players who were with you into every new
+            VRChat screenshot (same format VRCX uses), so tools that read VRCX metadata can
+            read these too. The image itself is unaffected - only invisible metadata is added.
+          </div>
+          <label class="switch" style="margin-top:8px"><input type="checkbox" id="screenshotMetaEnable"> Add metadata to new screenshots</label>
+          <div class="muted" id="screenshotMetaOut" style="margin-top:6px;font-size:.78rem"></div>
+        </div>
+
+        <div class="card">
           <h3>🔊 Soundpad <span class="pill off" id="soundpadState">—</span></h3>
           <div class="muted" style="font-size:.75rem;margin-bottom:8px">Controls Leppsoft Soundpad via its Remote Control pipe. Soundpad must be running.</div>
           <div class="row">

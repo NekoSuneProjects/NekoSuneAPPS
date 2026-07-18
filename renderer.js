@@ -2900,6 +2900,16 @@ api.on('photoRelay:event', s => {
   else if (s.watching) setText('photoRelayOut', 'Watching for new VRChat photos…')
 })
 
+/* ---------------- tools: Screenshot Metadata (VRCX-style) ---------------- */
+if ($('screenshotMetaEnable')) {
+  $('screenshotMetaEnable').addEventListener('change', async e => {
+    const enabled = e.target.checked
+    api.saveSetting('screenshotMetadata', enabled)
+    await api.screenshotMetadataSet(enabled)
+    setText('screenshotMetaOut', enabled ? 'Watching for new VRChat photos…' : 'Off')
+  })
+}
+
 /* ---------------- tools: auto-afk ---------------- */
 function afkCfg () {
   return {
@@ -4860,6 +4870,14 @@ async function init () {
   $('photoWebhook').value = pr.webhook || ''
   $('photoRelayEnable').checked = !!pr.enabled
   if (pr.enabled && pr.webhook) api.photoRelaySet(pr)
+
+  // Screenshot Metadata restore (main process already started the watcher at
+  // launch if this was enabled - just reflect the checkbox state here)
+  const smEnabled = await api.getSetting('screenshotMetadata', false)
+  if ($('screenshotMetaEnable')) {
+    $('screenshotMetaEnable').checked = !!smEnabled
+    if (smEnabled) setText('screenshotMetaOut', 'Watching for new VRChat photos…')
+  }
 
   // Configured Start + presets + server status
   $('startApps').value = await api.getSetting('startApps', '')

@@ -56,6 +56,7 @@ const { pressMediaKey } = require('./modules/vrchat/osc/mediaKeys')
 const keyHookPs = require('./modules/vrchat/osc/keyHookPs')
 const { vkName } = require('./modules/vrchat/osc/vkCodes')
 const vrcTools = require('./modules/vrchat/tools/vrcTools')
+const screenshotMetadata = require('./modules/vrchat/tools/screenshotMetadata')
 const pawprints = require('./modules/vrchat/tools/pawprints')
 const gamelog = require('./modules/history/gamelog')
 const photoRelay = require('./modules/integrations/media/photoRelay')
@@ -279,6 +280,7 @@ app.whenReady().then(async () => {
   if (savedRusk.enabled) ruskLaserdome.start({ ...savedRusk, oscPort: settings.get('oscPort', 9000) }, state => push('oscApps:ruskUpdate', state))
   // Auto-launch ToNSaveManager in the background on app start (downloads it first if missing).
   if (settings.get('tonAutoManager', false)) tonManager.ensureRunning().then(r => { if (r && r.ok) push('tonmgr:status', { installed: true, running: true }) }).catch(() => {})
+  if (settings.get('screenshotMetadata', false)) screenshotMetadata.start()
   startVrcWorld(w => {
     push('vrc:world', w)
     setVrcContext({ worldName: w.inWorld ? w.worldName : '', joinUrl: w.joinUrl, worldUrl: w.worldUrl, profileUrl: w.profileUrl })
@@ -313,7 +315,7 @@ app.on('before-quit', () => {
   if (blePairingCallback) { const callback = blePairingCallback; blePairingCallback = null; callback({ confirmed: false }) }
   stopComponentStats(); stopNetworkStats(); stopPulsoid(); stopHyperate(); stopDeviceBridge(); stopWindowActivity(); stopTon()
   disconnectTikTok(); stopTwitch(); twitchInteractive.stop(false); stopKick(); stopDiscord(); stopVrBattery(); stopVrcWorld(); stopAfk()
-  stopWeather(); stopVrcStatusPoll(); stopBot(); pawprints.tickCommit(); stopFriendDiff(); stopGreeter(); gamelog.close(); photoRelay.stop(); stopGroupAlerts(); stopNotifPoll(); crashGuard.stop(); vrcTools.stopVideoCacher(); stopTonLog(); ranks.close()
+  stopWeather(); stopVrcStatusPoll(); stopBot(); pawprints.tickCommit(); stopFriendDiff(); stopGreeter(); gamelog.close(); photoRelay.stop(); stopGroupAlerts(); stopNotifPoll(); crashGuard.stop(); vrcTools.stopVideoCacher(); stopTonLog(); ranks.close(); screenshotMetadata.stop()
   ruskLaserdome.stop(false)
   if (unsubHotkeyHold) { unsubHotkeyHold(); unsubHotkeyHold = null }
   stopHotkeyTick()
@@ -1598,6 +1600,13 @@ ipcMain.handle('media:key', (e, action) => pressMediaKey(action).then(() => ({ o
 
 // Photo Relay (VRChat screenshots -> Discord webhook)
 ipcMain.handle('photoRelay:set', (e, cfg) => { photoRelay.start(cfg || {}, s => push('photoRelay:event', s)); return true })
+
+// Screenshot metadata (VRCX-compatible world/instance/players embedded into new screenshots)
+ipcMain.handle('screenshotMetadata:set', (e, enabled) => {
+  settings.set('screenshotMetadata', !!enabled)
+  if (enabled) screenshotMetadata.start(); else screenshotMetadata.stop()
+  return true
+})
 
 /* ------------------------------------------------------------------ */
 /* VRChat maintenance tools (external/file-based — no game injection)  */

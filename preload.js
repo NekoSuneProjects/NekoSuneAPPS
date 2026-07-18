@@ -265,6 +265,7 @@ window.electronAPI = {
 
   // photo relay
   photoRelaySet: cfg => ipcRenderer.invoke('photoRelay:set', cfg),
+  screenshotMetadataSet: enabled => ipcRenderer.invoke('screenshotMetadata:set', enabled),
   launchVRChat: () => ipcRenderer.invoke('app:launchVRChat'),
   mediaPhotos: () => ipcRenderer.invoke('media:photos'),
   mediaOpen: p => ipcRenderer.invoke('media:open', p),

@@ -59,7 +59,10 @@ it for malware/backdoors/supply-chain risk first:
 - **Always test the code before pushing anything to GitHub** — run/launch the app and exercise the
   affected feature(s), and check for obvious errors, not just that it compiles. Don't push
   untested changes.
-- **Never create git tags.**
+- **Only tag for an actual version release, never otherwise.** `.github/workflows/build.yml`
+  triggers the whole build/publish/Discord-announce pipeline off `v*` tags, so a version
+  release genuinely needs one (`vX.Y.Z`, pushed with the version-bump commit). Don't create
+  tags for anything else (docs commits, mid-session fixes, etc.).
 - **Always open a Pull Request** to [NekoSuneProjects/NekoSuneAPPS](https://github.com/NekoSuneProjects/NekoSuneAPPS)
   for the changes, rather than just committing/pushing straight to `main` with nothing to review.
   Every PR must have a real description of what changed and why — **never leave the PR description

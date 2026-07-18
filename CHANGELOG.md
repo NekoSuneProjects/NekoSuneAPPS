@@ -5,11 +5,20 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ## Unreleased
 
+
+## [1.0.60] - 2026-07-18
+
 ### Added
 - **Discord release announcements.** The release CI job now posts a Discord embed (username
   "NekoSuneAPPS Release", app icon, changelog notes, and direct download links for whatever
   installers actually built) whenever a version tag is released. Opt-in via a
   `DISCORD_WEBHOOK_URL` repo secret — skips cleanly with no post if that secret isn't set.
+- **Screenshot Metadata (Settings → Photo Relay page)** — VRCX-compatible metadata toggle.
+  When on, every new VRChat screenshot gets the current world, instance, and the players who
+  were with you embedded as a `Description` PNG chunk, in the exact same iTXt chunk format and
+  JSON shape [VRCX](https://github.com/vrcx-team/VRCX) itself writes (verified against VRCX's
+  own source), so tools built to read VRCX's metadata can read files this app writes too. The
+  image pixels are untouched — only invisible metadata is added. Off by default.
 
 ### Fixed
 - **VRChat photos folder was always assumed to be `Pictures\VRChat`**, even when VRChat's own

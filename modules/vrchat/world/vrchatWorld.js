@@ -27,18 +27,33 @@ const state = {
   instanceId: '',
   worldName: '',
   userId: '',
+  userDisplayName: '',
   joinUrl: '', // launch straight into this instance
   worldUrl: '', // the world's public page
   profileUrl: '', // your VRChat profile
   players: [], // RADAR: display names currently in your instance (from the log)
+  playersDetailed: [], // same players, as {id, displayName} - for screenshot metadata
   lastVideo: '', // last video URL played in the instance (from the log)
   lastPortal: '', // who dropped the last portal
   portalSeq: 0 // increments each portal drop (so repeats are logged)
 }
 
-// Radar player set, kept in sync with state.players.
+// Radar player set, kept in sync with state.players. playerMap additionally
+// tracks each player's usr_ id (when the log line includes one) for the
+// screenshot metadata feature - VRCX embeds player IDs, not just names.
 const playerSet = new Set()
-function syncPlayers () { state.players = Array.from(playerSet) }
+const playerMap = new Map() // displayName -> usr_id
+function syncPlayers () {
+  state.players = Array.from(playerSet)
+  state.playersDetailed = state.players.map(displayName => ({ id: playerMap.get(displayName) || '', displayName }))
+}
+
+// "OnPlayerJoined DisplayName (usr_xxxx-...)" - splits the trailing id off,
+// falling back to no id if a line doesn't carry one.
+function splitNameAndId (raw) {
+  const m = raw.match(/^(.*?)\s*\((usr_[^)]+)\)\s*$/)
+  return m ? { displayName: m[1].trim(), id: m[2] } : { displayName: raw.trim(), id: '' }
+}
 
 function buildUrls () {
   state.worldUrl = state.worldId ? `https://vrchat.com/home/world/${state.worldId}` : ''
@@ -62,20 +77,24 @@ function processLine (line) {
     state.worldId = m[1]
     state.instanceId = m[2]
     state.inWorld = true
-    playerSet.clear(); syncPlayers() // new instance — radar resets
+    playerSet.clear(); playerMap.clear(); syncPlayers() // new instance — radar resets
     return true
   }
   // RADAR: "[Behaviour] OnPlayerJoined <DisplayName> (usr_...)"
   m = line.match(/OnPlayerJoined\s+(.+)$/)
   if (m && !/OnPlayerJoinComplete/.test(line)) {
-    playerSet.add(m[1].replace(/\s*\(usr_[^)]+\)\s*$/, '').trim())
+    const { displayName, id } = splitNameAndId(m[1])
+    playerSet.add(displayName)
+    if (id) playerMap.set(displayName, id)
     syncPlayers()
     return true
   }
   // "[Behaviour] OnPlayerLeft <DisplayName> (usr_...)"
   m = line.match(/OnPlayerLeft\s+(.+)$/)
   if (m) {
-    playerSet.delete(m[1].replace(/\s*\(usr_[^)]+\)\s*$/, '').trim())
+    const { displayName } = splitNameAndId(m[1])
+    playerSet.delete(displayName)
+    playerMap.delete(displayName)
     syncPlayers()
     return true
   }
@@ -92,7 +111,7 @@ function processLine (line) {
     state.worldId = ''
     state.instanceId = ''
     state.worldName = ''
-    playerSet.clear(); syncPlayers()
+    playerSet.clear(); playerMap.clear(); syncPlayers()
     return true
   }
   // Video player URLs (for media-link history).
@@ -105,9 +124,10 @@ function processLine (line) {
     return true
   }
   // "User Authenticated: DisplayName (usr_xxxx-...)"
-  m = line.match(/User Authenticated:.*\((usr_[^)]+)\)/)
+  m = line.match(/User Authenticated:\s*(.+?)\s*\((usr_[^)]+)\)/)
   if (m) {
-    state.userId = m[1]
+    state.userDisplayName = m[1]
+    state.userId = m[2]
     return true
   }
   return false
