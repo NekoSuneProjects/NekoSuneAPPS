@@ -4,14 +4,18 @@
 // - it has to, since it's the thing replacing them. Spawned by the main app
 // right before it quits (see modules/integrations/maintenance/updater.js),
 // waits for that process to fully exit, downloads the new release asset
-// with visible progress in its own window, installs it (msiexec on
-// Windows, an .app bundle swap on Mac, an in-place file replace for a
-// Linux AppImage), then relaunches the app.
+// with visible progress in its own window, installs it (NSIS /S on Windows,
+// an .app bundle swap on Mac, an in-place file replace for a Linux AppImage),
+// then relaunches the app.
 //
-// Only the Windows path (msiexec) has been run against a real install in
-// this project's dev environment. The Mac/Linux paths are implemented from
-// documented, standard platform behavior but have NOT been verified against
-// a real machine of either OS - flagged honestly rather than claimed tested.
+// Windows uses the NSIS Setup .exe with /S (silent). This installs to the
+// same directory the user originally chose (NSIS reads it from the registry)
+// so the relaunch path stays valid. msiexec was previously used but installs
+// to its own default location, leaving the NSIS copy untouched and causing
+// the relaunch to open the old binary.
+//
+// The Mac/Linux paths are implemented from documented standard platform
+// behaviour but have NOT been verified against a real machine of either OS.
 
 const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
@@ -31,7 +35,7 @@ function parseArgs (argv) {
 
 // electron's own argv[0] is the exe path when packaged; --foo=bar args follow.
 const args = parseArgs(process.argv.slice(app.isPackaged ? 1 : 2))
-const { url, exe: exePath, name: fileName = 'NekoSuneAPPS-Update.msi', version = '', pid } = args
+const { url, exe: exePath, name: fileName = 'NekoSuneAPPS-Update.exe', version = '', pid } = args
 
 let mainWindow = null
 
@@ -91,6 +95,34 @@ function runFile (cmd, cmdArgs) {
   })
 }
 
+// After a Windows NSIS install the exe should still be at the original path.
+// This is a safety fallback: if for any reason the path changed (e.g. the
+// first install was an MSI and the NSIS update moved it), ask the registry
+// where NekoSuneAPPS is now installed.
+async function findRelaunchExe (originalExePath) {
+  if (originalExePath && fs.existsSync(originalExePath)) return originalExePath
+  if (process.platform !== 'win32') return null
+  // PowerShell query across both HKLM and HKCU uninstall hives.
+  try {
+    const { stdout } = await new Promise((resolve, reject) =>
+      execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
+        "@('HKLM','HKCU') | ForEach-Object {" +
+        "  Get-ItemProperty \"$_:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*\"," +
+        "  \"$_:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*\"" +
+        "  -ErrorAction SilentlyContinue" +
+        "} | Where-Object { $_.DisplayName -like '*NekoSuneAPPS*' }" +
+        " | Select-Object -ExpandProperty InstallLocation -First 1"
+      ], (e, out) => e ? reject(e) : resolve({ stdout: out }))
+    )
+    const dir = stdout.trim()
+    if (dir) {
+      const candidate = path.join(dir, 'NekoSuneAPPS.exe')
+      if (fs.existsSync(candidate)) return candidate
+    }
+  } catch (_) {}
+  return null
+}
+
 // Walks up from a Mac executable path (.../NekoSuneAPPS.app/Contents/MacOS/
 // NekoSuneAPPS) to find the enclosing .app bundle directory.
 function findAppBundle (fromPath) {
@@ -104,11 +136,13 @@ function findAppBundle (fromPath) {
 
 // Installs the downloaded release asset in place, per platform, and
 // reports back whether it's safe to auto-relaunch the app afterward.
-// Windows is the only path exercised against a real install so far (see
-// file header).
 async function applyInstaller (downloadedPath, targetExePath) {
   if (process.platform === 'win32') {
-    await runFile('msiexec.exe', ['/i', downloadedPath, '/passive', '/norestart'])
+    // Run the NSIS installer silently. /S = silent mode; NSIS reads the
+    // previously registered install directory from the Windows registry and
+    // installs there, replacing files in-place. UAC will prompt if the
+    // install directory requires elevation (e.g. Program Files).
+    await runFile(downloadedPath, ['/S'])
     return { relaunch: true }
   }
 
@@ -179,8 +213,9 @@ async function run () {
     send('status', { phase: 'done', version, message: result.message })
     await new Promise(resolve => setTimeout(resolve, result.relaunch ? 1200 : 4000))
 
-    if (result.relaunch && fs.existsSync(exePath)) {
-      spawn(exePath, [], { detached: true, stdio: 'ignore' }).unref()
+    if (result.relaunch) {
+      const launchExe = await findRelaunchExe(exePath)
+      if (launchExe) spawn(launchExe, [], { detached: true, stdio: 'ignore' }).unref()
     }
     app.quit()
   } catch (err) {

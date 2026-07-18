@@ -20,6 +20,7 @@
 const fs = require('fs')
 const os = require('os')
 const path = require('path')
+const tonData = require('./tonData')
 
 const LOG_DIR = path.join(os.homedir(), 'AppData', 'LocalLow', 'VRChat', 'VRChat')
 const POLL_MS = 3000
@@ -117,7 +118,8 @@ function processLine (raw) {
   if (m) {
     const ids = m[1].trim().split(/\s+/).map(Number).filter(n => n > 0)
     state.terrorIds = ids
-    state.terror = ids.length ? ids.map(i => `Terror #${i}`).join(' & ') : ''
+    const roster = tonData.get().terrors
+    state.terror = ids.length ? ids.map(i => (roster[i - 1] && roster[i - 1].name) || `Terror #${i}`).join(' & ') : ''
     if (curRound) curRound.terror = state.terror
     return true
   }

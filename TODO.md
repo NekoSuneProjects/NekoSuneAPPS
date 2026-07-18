@@ -10,7 +10,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
   - [x] Virtualise long lists — rail sections now capped at 150 rows (+N more note); paged tabs
   - [x] Throttle/debounce re-renders; avoid full innerHTML rebuilds on every update
   - [x] Audit all `setInterval` pollers — staggered on launch (friendDiff 8s/notif 14s/groups 22s) + 429 backoff guard on every poller
-  - [ ] Lazy-load tab content only when visible; pause canvas (spectrum/OSC graph) off-tab
+  - [~] Lazy-load tab content only when visible; pause canvas (spectrum/OSC graph) off-tab — canvas has `offsetParent` guards; full tab lazy-load still todo
   - [x] Reuse the API cache everywhere; add request backoff on 429 (interceptor + isRateLimited + stale-cache fallback)
   - [ ] Profile with DevTools; check GPU/CPU (hardware accel already off)
 - [~] **Full friends scan** — paginated online+active+offline; verify none missing
@@ -67,12 +67,12 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 - [x] **Social status presets** — save/apply status + statusDescription combos (Profile Editor)
 - [x] **Last-seen / time-together** — shown on the profile Info tab (from History)
 - [x] **Block / mute** — toggle on profiles + a Blocked/Muted list (Settings) with Remove
-- [ ] **Trust/feedback view** beyond the trust chip
+- [x] **Trust/feedback view** — visual trust ladder (Visitor → New User → User → Known User → Trusted User) with current level highlighted, shown in the profile modal info tab
 
 ### Search & data
 - [x] **Local quick-search** — instant offline friend search on the Search page
 - [x] **Avatar search** — via the Avatars page (provider-based)
-- [ ] **Favorites backup** — export/restore favorite worlds/avatars/friends groups
+- [x] **Favorites backup** — export favorite worlds + friends to JSON; import re-adds them via the API (avatar favs not yet included — no dedicated API endpoint)
 - [x] **Data export/import** — settings + history to JSON
 
 ### Media
@@ -106,7 +106,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
   `HKCR\vrchat\shell\open\command` exists and points at VRChat's own `launch.exe`. Falls back to
   the web link automatically if that registration isn't present. Verified both branches with the
   real (unmocked) registry check plus mocked process/event state for the crash-detection side.
-- [ ] **Custom themes** (optional — currently fixed green + seasonal by design)
+- [x] **Custom themes** — `themeSelect` dropdown + `uiTheme` setting; 30-min recheck; `blackgreen` default; seasonal events always win
 - [ ] **Registry tools** — VRChat registry backup/restore (Windows registry under VRChat)
 - [ ] **Multiple dashboards / customizable widgets** (VRCX-style configurable panels)
 
@@ -128,9 +128,9 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
   on the board (so achievements stay current without ToNSaveManager).
 - [x] ToN UI: connect card relabelled — ToNSaveManager is **optional**; the log reader is
   the default.
-- [ ] **Terror names from killer IDs** — the log gives killer IDs (`Killers have been set
-  - 31 0 0`), shown as `Terror #31`. Map IDs → names (ToN's terror index is fetched at
-  runtime, not static; cross-reference our cached terror data or fetch the index).
+- [x] **Terror names from killer IDs** — `tonLogReader.js` now looks up each ID in
+  `tonData.get().terrors` (the roster fetched from terror.moe, ordered by internal ID);
+  falls back to `Terror #N` if the cache is empty or the index is out of range.
 - [ ] **Lifetime stats from the log** — the log only has the *current session*, so
   all-time rounds/deaths/etc. still need ToNSaveManager or a decoded save code. Session
   counters work from the log; consider deriving lifetime totals from a decoded save.
@@ -301,7 +301,7 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
 
 ## 🟣 VRCNext-specific (next session)
 Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gaps not already listed above.
-- [~] **Profile editor (your own)** — status/status-text/bio + **bio prefabs** (load/edit/save/delete reusable bios) done; pronouns, bio links, pfp & banner todo
+- [~] **Profile editor (your own)** — status/status-text/bio/pronouns/bio-links done; pfp &amp; banner upload todo
 - [x] **Messenger / message-slot editor** — edit invite & response message slots (Messenger tab)
 - [x] **Multi-Invite** — friend-picker multi-select invite to instance/group
 - [x] **Inventory** — icons / emoji / stickers / prints (with image proxy for auth-gated images)
@@ -315,7 +315,7 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
   (note: we intentionally ship fixed green + seasonal; make this opt-in)
 - [x] **Fast-Fetch cache** — TTL cache + in-flight dedupe for user/world/group/friends
 - [x] **Right panel: Favorites section** — favorited friends shown at top of the rail
-- [ ] **Crash detect + auto-rejoin** (also a VRCX feature) — relaunch VRChat into last instance
+- [x] **Crash detect + auto-rejoin** — see System section above (WER Event ID 1000 + `vrchat://` relaunch)
 
 ## Our pending clusters (from the build plan)
 
@@ -329,9 +329,9 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
 ---
 
 ## 🧹 Polish / known limitations
-- [ ] Discord RP **buttons** can't show over IPC (GameSDK only) — text only; revisit if Discord changes.
+- [x] Discord RP **buttons** — implemented ("Join World" + "VRChat Profile"); buttons work over local IPC RPC. Note: you can't see your **own** buttons in Discord, only other people viewing your profile can — this is a Discord client limitation, not a code issue.
 - [ ] **Favorites page** (dedicated sidebar) listing worlds/avatars/friends with inline remove (currently add/remove via modals + Favs tab).
-- [ ] Friends panel: avatars for **offline** friends, group-by-favorite, online count badge.
+- [~] Friends panel: avatars for **offline** friends now show with logo.png fallback; group-by-favorite and online count badge todo.
 - [x] Rate-limit guard — 429 backoff interceptor + isRateLimited(); every poller skips while rate-limited; stale-cache fallback.
 - [x] Cache profile/world/group lookups (VRCX "Fast Fetch") to cut API calls.
 - [ ] Verify all VRChat write-actions live (favorite tags, requestInvite slots, invite instanceId format).

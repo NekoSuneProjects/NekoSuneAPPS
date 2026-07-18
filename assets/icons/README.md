@@ -25,6 +25,7 @@ matching icon files.
 
 | File (`assets/icons/…`) | Tab | Subject prompt to append |
 |---|---|---|
+| `home.svg` | Home | a house silhouette with a door cutout |
 | `chatbox.png` | Chatbox | a speech/chat bubble |
 | `nowplaying.png` | Now Playing | a music note with a small play triangle |
 | `audio.png` | AudioLink | an audio equalizer / sound waveform bars |

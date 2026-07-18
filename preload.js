@@ -269,6 +269,7 @@ window.electronAPI = {
   mediaPhotos: () => ipcRenderer.invoke('media:photos'),
   mediaOpen: p => ipcRenderer.invoke('media:open', p),
   vrchatOnline: () => ipcRenderer.invoke('vrchat:online'),
+  vrchatNews: () => ipcRenderer.invoke('vrchat:news'),
   appsLaunch: (paths, withVrchat) => ipcRenderer.invoke('apps:launch', { paths, withVrchat }),
   dataExport: () => ipcRenderer.invoke('data:export'),
   dataImport: () => ipcRenderer.invoke('data:import'),

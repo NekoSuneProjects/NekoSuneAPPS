@@ -155,6 +155,8 @@ document.querySelectorAll('.navbtn').forEach(btn => {
     const lbl = btn.querySelector('.lbl')
     const text = lbl ? lbl.textContent.trim() : ''
     if (!text) return
+    // Don't show tooltip when the label is already visible in the sidebar
+    if (lbl && getComputedStyle(lbl).display !== 'none') return
     const r = btn.getBoundingClientRect()
     tip.textContent = text
     tip.style.left = (r.right + 8) + 'px'
@@ -3972,7 +3974,7 @@ function rbFriendRow (f) {
   // fmtLocation returns safe HTML (the .wn world-name span, with its own escaping) —
   // do NOT re-escape it or the span shows up as literal text.
   const loc = st === 'active' ? '🌐 On the website' : (st === 'offline' ? '⚫ Offline' : fmtLocation(f.location))
-  const ava = f.image ? `<img class="ava" src="${f.image}" referrerpolicy="no-referrer" loading="lazy" decoding="async" />` : '<div class="ava"></div>'
+  const ava = `<img class="ava" src="${f.image || 'assets/logo.png'}" referrerpolicy="no-referrer" loading="lazy" decoding="async" onerror="this.src='assets/logo.png'" />`
   return `<div class="rb-friend" data-id="${f.id}">${ava}<span class="dot" style="background:${color}"></span><div class="meta grow"><div class="nm">${name} ${langBadges(f.languages)} ${rankPill(f.communityRank, { minTier: 5 })}</div><div class="lo">${loc}</div></div></div>`
 }
 function rbSection (key, title, friends) {
@@ -4138,6 +4140,21 @@ async function renderMTab (tab) {
     if (u.last_login) { try { rows.push(['Last login', new Date(u.last_login).toLocaleDateString()]) } catch (_) {} }
     rows.push(['Age verified', u.ageVerified ? 'Yes' : 'No'])
     rows.push(['Avatar cloning', u.allowAvatarCopying ? 'On' : 'Off'])
+    const trustLadder = (() => {
+      const LEVELS = [
+        { tag: null, label: 'Visitor', color: '#9ca3af' },
+        { tag: 'system_trust_basic', label: 'New User', color: '#3b82f6' },
+        { tag: 'system_trust_known', label: 'User', color: '#22c55e' },
+        { tag: 'system_trust_trusted', label: 'Known User', color: '#f59e0b' },
+        { tag: 'system_trust_veteran', label: 'Trusted User', color: '#8b5cf6' },
+      ]
+      const tags = u.tags || []; let cur = 0
+      LEVELS.forEach((l, i) => { if (l.tag && tags.includes(l.tag)) cur = i })
+      const steps = LEVELS.map((l, i) =>
+        `<span style="padding:3px 9px;border-radius:20px;font-size:.72rem;font-weight:${i===cur?700:400};border:1.5px solid ${i===cur?l.color:'var(--border)'};color:${i===cur?l.color:'var(--muted)'};background:${i===cur?l.color+'22':'transparent'}">${i===cur?'●':'○'} ${l.label}</span>`
+      ).join('<span class="muted" style="font-size:.7rem">›</span>')
+      return `<div class="um-sec">Trust Level</div><div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin-bottom:8px">${steps}</div>`
+    })()
     const noteBlock = (u.id !== myUserId)
       ? `<div class="um-sec">Your note</div><textarea id="umNote" rows="2" placeholder="Private note about this user">${esc(u.note || '')}</textarea><div class="row" style="margin-top:6px"><button class="btn ghost" id="umNoteSave" style="padding:4px 10px;font-size:.75rem">Save note</button><span class="muted" id="umNoteOut" style="font-size:.74rem"></span></div>`
       : ''
@@ -4149,6 +4166,7 @@ async function renderMTab (tab) {
       (links ? `<div class="row" style="flex-wrap:wrap;gap:8px">${links}</div>` : '') +
       (badges ? `<div class="um-sec">Badges</div><div class="badge-grid">${badges}</div>` : '') +
       pastBlock +
+      trustLadder +
       `<div class="um-sec">Info</div><div class="um-info">${rows.map(r => `<div><span>${esc(r[0])}</span><b>${esc(r[1])}</b></div>`).join('')}</div>` +
       noteBlock
     resolveWorldNames(body) // fill in the world name for a joinable instance
@@ -4478,6 +4496,8 @@ async function loadProfileEditor () {
   $('peStatus').value = me.user.status || 'active'
   $('peStatusDesc').value = me.user.statusDescription || ''
   if (me.user.bio != null) { $('peBio').value = me.user.bio; _bioLoaded = true }
+  if (me.user.pronouns != null) $('pePronouns').value = me.user.pronouns
+  if (me.user.bioLinks && me.user.bioLinks.length) $('peBioLinks').value = me.user.bioLinks.join('\n')
   setText('peOut', '')
 }
 $('peLoad').addEventListener('click', loadProfileEditor)
@@ -4488,7 +4508,8 @@ $('peSave').addEventListener('click', async () => {
     return
   }
   setText('peOut', 'Saving…')
-  const r = await api.vrchatUpdateProfile({ status: $('peStatus').value, statusDescription: $('peStatusDesc').value, bio: $('peBio').value })
+  const bioLinks = $('peBioLinks').value.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 3)
+  const r = await api.vrchatUpdateProfile({ status: $('peStatus').value, statusDescription: $('peStatusDesc').value, bio: $('peBio').value, pronouns: $('pePronouns').value, bioLinks })
   setText('peOut', r.ok ? '✅ Profile updated' : 'Error: ' + (r.error || 'failed'))
 })
 
@@ -4593,6 +4614,37 @@ $('modRefresh').addEventListener('click', loadModerations)
 /* ---------------- data export / import ---------------- */
 $('dataExport').addEventListener('click', async () => { const r = await api.dataExport(); setText('dataOut', r.ok ? '✅ Saved to ' + r.path : (r.error === 'cancelled' ? 'Cancelled' : 'Error: ' + r.error)) })
 $('dataImport').addEventListener('click', async () => { const r = await api.dataImport(); setText('dataOut', r.ok ? '✅ Imported — restart to apply.' : (r.error === 'cancelled' ? 'Cancelled' : 'Error: ' + r.error)) })
+
+$('favExport').addEventListener('click', async () => {
+  setText('favOut', 'Fetching favorites…')
+  const [friends, worlds] = await Promise.all([api.vrchatFavFriendIds(), api.vrchatFavWorlds()])
+  if (!friends.ok && !worlds.ok) { setText('favOut', 'Log in on the VRChat tab first.'); return }
+  const data = { exported: new Date().toISOString(), friends: friends.ok ? { ids: friends.ids, groups: friends.groups } : null, worlds: worlds.ok ? worlds.worlds : null }
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a'); a.href = url; a.download = 'nekosune-favorites.json'; a.click()
+  URL.revokeObjectURL(url)
+  setText('favOut', `✅ Exported ${friends.ok ? friends.ids.length : 0} friend favs + ${worlds.ok ? worlds.worlds.length : 0} world favs.`)
+})
+
+$('favImport').addEventListener('click', () => {
+  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json'
+  inp.onchange = async () => {
+    const file = inp.files[0]; if (!file) return
+    setText('favOut', 'Importing…')
+    let data; try { data = JSON.parse(await file.text()) } catch (_) { setText('favOut', 'Invalid file.'); return }
+    let added = 0, skipped = 0
+    const delay = ms => new Promise(r => setTimeout(r, ms))
+    if (data.worlds && Array.isArray(data.worlds)) {
+      for (const w of data.worlds) { const r = await api.vrchatAddFav('world', w.id); r.ok ? added++ : skipped++; await delay(350) }
+    }
+    if (data.friends && Array.isArray(data.friends.ids)) {
+      for (const id of data.friends.ids) { const r = await api.vrchatAddFav('friend', id); r.ok ? added++ : skipped++; await delay(350) }
+    }
+    setText('favOut', `✅ Imported ${added}${skipped ? ` (${skipped} skipped — already favorited or not found)` : ''}.`)
+  }
+  inp.click()
+})
 
 /* ---------------- toasts + group alerts ---------------- */
 function toast (html, ms = 6000) {
@@ -5353,4 +5405,291 @@ init()
 setupTts()
 setupDesktopStt()
 setupOcrTranslate()
+
+// ── FumikoEcho easter egg ─────────────────────────────────────────────────────
+;(function () {
+  console.log(
+    '%c  🦊 NekoSuneAPPS  ',
+    'background:#1a0033;color:#c084fc;font-size:16px;font-weight:bold;padding:6px 14px;border-radius:8px;border:2px solid #7c3aed'
+  )
+  console.log(
+    '%cBuilt by NekoSuneVR · Contributions by FumikoEcho (contact@fumikoecho.ca)',
+    'color:#9b59b6;font-size:11px'
+  )
+  console.log(
+    '%c↑↑↓↓←→←→BA for a secret 🐾',
+    'color:#6b7280;font-size:10px'
+  )
+
+  const KONAMI = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a']
+  let kIdx = 0
+  document.addEventListener('keydown', e => {
+    if (e.key === KONAMI[kIdx]) {
+      kIdx++
+      if (kIdx === KONAMI.length) {
+        kIdx = 0
+        $('fumikoModal').style.display = 'flex'
+      }
+    } else {
+      kIdx = e.key === KONAMI[0] ? 1 : 0
+    }
+  })
+  $('fumikoClose').addEventListener('click', () => { $('fumikoModal').style.display = 'none' })
+  $('fumikoModal').addEventListener('click', e => { if (e.target === $('fumikoModal')) $('fumikoModal').style.display = 'none' })
+})()
 setupAssistant()
+
+// ─── Home dashboard ───────────────────────────────────────────────────────────
+async function loadHome () {
+  // Welcome hero
+  try {
+    const me = await api.vrchatStatus()
+    if (me && me.ok && me.user) {
+      const u = me.user
+      setText('homeName', u.displayName || 'NekoSuneAPPS')
+      const st = [u.status, u.statusDescription].filter(Boolean).join(' · ')
+      setText('homeStatusLine', st || 'Online in VRChat')
+      const ava = $('homeAvatar')
+      if (ava && (u.userIcon || u.currentAvatarThumbnailImageUrl)) {
+        ava.src = u.userIcon || u.currentAvatarThumbnailImageUrl
+      }
+    }
+  } catch (_) {}
+
+  // VRChat online count
+  try {
+    const oc = await api.vrchatOnline()
+    if (oc && oc.ok) {
+      if (oc.total) setText('homeVrcOnline', Number(oc.total).toLocaleString())
+      if (oc.steam != null && oc.quest != null) {
+        setText('homeVrcPlatforms', `${Number(oc.steam).toLocaleString()} · ${Number(oc.quest).toLocaleString()}`)
+      }
+    }
+  } catch (_) {}
+
+  // Friends online count from cache (populated after rightbar loads)
+  if (Array.isArray(rbFriendsCache.online) && rbFriendsCache.online.length) {
+    setText('homeFriendsOnline', String(rbFriendsCache.online.length))
+  }
+
+  // Recent worlds from history
+  try {
+    const hist = await api.historyList({ type: 'world', limit: 200 })
+    const el = $('homeRecentWorlds')
+    if (el && Array.isArray(hist) && hist.length) {
+      const seen = new Set()
+      const worlds = hist.filter(h => h.name && !seen.has(h.name) && seen.add(h.name)).slice(0, 8)
+      el.className = ''
+      el.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px'
+      el.innerHTML = worlds.map(w =>
+        `<span style="background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:.8rem;font-weight:600">${esc(w.name)}</span>`
+      ).join('')
+    }
+  } catch (_) {}
+
+  // VRChat news
+  try {
+    const el = $('homeNews')
+    if (el) {
+      const nr = await api.vrchatNews()
+      if (nr.ok && nr.news.length) {
+        el.className = ''
+        el.innerHTML = nr.news.map(n => {
+          const dateStr = n.date ? new Date(n.date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ''
+          return `<div class="news-item" data-url="${esc(n.link)}">
+            <div style="min-width:0">
+              <div class="news-title">${esc(n.title)}</div>
+              ${n.description ? `<div class="news-desc">${esc(n.description)}</div>` : ''}
+              <div class="news-date">${dateStr}</div>
+            </div>
+          </div>`
+        }).join('')
+        el.querySelectorAll('.news-item[data-url]').forEach(item => {
+          item.addEventListener('click', () => { if (item.dataset.url) api.openExternal(item.dataset.url) })
+        })
+      } else {
+        setText('homeNews', nr.error ? 'Could not load news.' : 'No news items found.')
+      }
+    }
+  } catch (_) { setText('homeNews', 'Could not load news.') }
+
+  // "More news" link
+  const newsMore = $('homeNewsMore')
+  if (newsMore) newsMore.addEventListener('click', () => api.openExternal('https://hello.vrchat.com/blog'), { once: true })
+}
+
+document.querySelectorAll('.home-quickbtn[data-goto]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = document.querySelector(`[data-tab="${btn.dataset.goto}"]`)
+    if (tab) tab.click()
+  })
+})
+
+document.querySelector('[data-tab="home"]').addEventListener('click', loadHome)
+setTimeout(loadHome, 600)
+
+// ─── Background system ────────────────────────────────────────────────────────
+const BG_PRESETS = [
+  { key: 'aurora',  label: 'Aurora',   css: 'linear-gradient(135deg,#040d1a 0%,#061e3a 30%,#093038 60%,#04081a 100%)' },
+  { key: 'neon',    label: 'Neon',     css: 'linear-gradient(135deg,#0a0014 0%,#1a003a 40%,#3a0060 70%,#0a0014 100%)' },
+  { key: 'sakura',  label: 'Sakura',   css: 'linear-gradient(135deg,#14010a 0%,#2d0520 45%,#18002a 75%,#0a0014 100%)' },
+  { key: 'ocean',   label: 'Ocean',    css: 'linear-gradient(160deg,#010810 0%,#011428 40%,#001a38 70%,#010810 100%)' },
+  { key: 'forest',  label: 'Forest',   css: 'linear-gradient(135deg,#010a03 0%,#021a08 35%,#012010 65%,#010a03 100%)' },
+  { key: 'gold',    label: 'Gold',     css: 'linear-gradient(135deg,#0c0a01 0%,#251c04 40%,#1c1402 70%,#0c0a01 100%)' },
+  { key: 'void',    label: 'Void',     css: 'radial-gradient(ellipse at 20% 20%,#0f0520 0%,#020108 60%,#000 100%)' },
+  { key: 'dusk',    label: 'Dusk',     css: 'linear-gradient(160deg,#0a0014 0%,#180828 30%,#0a1830 60%,#030612 100%)' },
+]
+
+let _bgCfg = { type: 'none' }
+
+function applyBackground (cfg) {
+  const layer = $('bgLayer')
+  if (!layer) return
+  _bgCfg = cfg || { type: 'none' }
+  if (_bgCfg.type === 'none') {
+    layer.style.backgroundImage = 'none'
+    document.body.classList.remove('has-custom-bg')
+    return
+  }
+  document.body.classList.add('has-custom-bg')
+  const opacity = ((_bgCfg.opacity ?? 35) / 100).toFixed(2)
+  const blur = `${_bgCfg.blur ?? 8}px`
+  if (_bgCfg.type === 'preset') {
+    const p = BG_PRESETS.find(x => x.key === _bgCfg.value)
+    layer.style.backgroundImage = p ? p.css : 'none'
+  } else {
+    layer.style.backgroundImage = `url("file:///${_bgCfg.value.replace(/\\/g, '/')}")`
+  }
+  layer.style.opacity = opacity
+  layer.style.filter = `blur(${blur})`
+}
+
+function saveBgConfig (cfg) {
+  api.saveSetting('bgConfig', cfg)
+  applyBackground(cfg)
+}
+
+function showBgPanel (src) {
+  ;['bgPresetPanel', 'bgCustomPanel', 'bgPhotoPanel'].forEach(id => { if ($(id)) $(id).style.display = 'none' })
+  const map = { preset: 'bgPresetPanel', custom: 'bgCustomPanel', photo: 'bgPhotoPanel' }
+  if (map[src] && $(map[src])) $(map[src]).style.display = 'block'
+  const sliders = $('bgSliders')
+  if (sliders) sliders.style.display = src !== 'none' ? 'block' : 'none'
+}
+
+// Load saved background on startup
+api.getSetting('bgConfig', null).then(cfg => {
+  if (cfg && cfg.type) {
+    applyBackground(cfg)
+    // Restore UI state
+    document.querySelectorAll('.bg-type-btn').forEach(b => b.classList.toggle('active', b.dataset.src === cfg.type))
+    showBgPanel(cfg.type)
+    if (cfg.type !== 'none') {
+      const opEl = $('bgOpacity'), blEl = $('bgBlur')
+      if (opEl && cfg.opacity != null) { opEl.value = cfg.opacity; setText('bgOpacityVal', cfg.opacity + '%') }
+      if (blEl && cfg.blur != null) { blEl.value = cfg.blur; setText('bgBlurVal', cfg.blur + 'px') }
+    }
+    if (cfg.type === 'preset') {
+      document.querySelectorAll('.bg-preset').forEach(b => b.classList.toggle('active', b.dataset.key === cfg.value))
+    }
+    if (cfg.type === 'custom' && cfg.value) {
+      setText('bgCustomName', cfg.value.split(/[\\/]/).pop())
+    }
+  }
+})
+
+// Build preset grid
+;(function () {
+  const grid = $('bgPresetGrid')
+  if (!grid) return
+  BG_PRESETS.forEach(p => {
+    const btn = document.createElement('div')
+    btn.className = 'bg-preset'
+    btn.dataset.key = p.key
+    btn.title = p.label
+    btn.style.background = p.css
+    btn.innerHTML = `<span>${p.label}</span>`
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.bg-preset').forEach(b => b.classList.remove('active'))
+      btn.classList.add('active')
+      saveBgConfig({ type: 'preset', value: p.key, opacity: parseInt($('bgOpacity').value, 10), blur: parseInt($('bgBlur').value, 10) })
+    })
+    grid.appendChild(btn)
+  })
+})()
+
+// Source type buttons
+document.querySelectorAll('.bg-type-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.bg-type-btn').forEach(b => b.classList.remove('active'))
+    btn.classList.add('active')
+    const src = btn.dataset.src
+    showBgPanel(src)
+    if (src === 'none') saveBgConfig({ type: 'none' })
+  })
+})
+
+// Custom file picker
+if ($('bgPickFile')) {
+  $('bgPickFile').addEventListener('click', () => {
+    const inp = document.createElement('input')
+    inp.type = 'file'
+    inp.accept = 'image/*'
+    inp.onchange = () => {
+      const file = inp.files[0]
+      if (!file || !file.path) return
+      setText('bgCustomName', file.name)
+      saveBgConfig({ type: 'custom', value: file.path, opacity: parseInt($('bgOpacity').value, 10), blur: parseInt($('bgBlur').value, 10) })
+    }
+    inp.click()
+  })
+}
+
+// VRChat photos
+if ($('bgLoadPhotos')) {
+  $('bgLoadPhotos').addEventListener('click', async () => {
+    setText('bgLoadPhotos', 'Loading…')
+    const r = await api.mediaPhotos()
+    setText('bgLoadPhotos', 'Load VRChat photos')
+    const grid = $('bgPhotoGrid')
+    if (!r || !r.ok || !r.photos || !r.photos.length) {
+      grid.innerHTML = '<span class="muted" style="font-size:.8rem;grid-column:1/-1">No photos found in Pictures\\VRChat.</span>'
+      return
+    }
+    grid.innerHTML = r.photos.slice(0, 48).map(p =>
+      `<div class="bg-photo" data-path="${esc(p.path)}" title="${esc(p.name)}"><img src="file:///${esc(p.path.replace(/\\/g, '/'))}" referrerpolicy="no-referrer" loading="lazy" decoding="async" /></div>`
+    ).join('')
+    grid.querySelectorAll('.bg-photo').forEach(el => {
+      el.addEventListener('click', () => {
+        grid.querySelectorAll('.bg-photo').forEach(b => b.classList.remove('active'))
+        el.classList.add('active')
+        saveBgConfig({ type: 'photo', value: el.dataset.path, opacity: parseInt($('bgOpacity').value, 10), blur: parseInt($('bgBlur').value, 10) })
+      })
+    })
+  })
+}
+
+// Opacity + blur sliders
+if ($('bgOpacity')) {
+  $('bgOpacity').addEventListener('input', e => {
+    const v = parseInt(e.target.value, 10)
+    setText('bgOpacityVal', v + '%')
+    if (_bgCfg.type !== 'none') saveBgConfig({ ..._bgCfg, opacity: v })
+  })
+}
+if ($('bgBlur')) {
+  $('bgBlur').addEventListener('input', e => {
+    const v = parseInt(e.target.value, 10)
+    setText('bgBlurVal', v + 'px')
+    if (_bgCfg.type !== 'none') saveBgConfig({ ..._bgCfg, blur: v })
+  })
+}
+
+// Clear button
+if ($('bgClear')) {
+  $('bgClear').addEventListener('click', () => {
+    document.querySelectorAll('.bg-type-btn').forEach(b => b.classList.toggle('active', b.dataset.src === 'none'))
+    showBgPanel('none')
+    saveBgConfig({ type: 'none' })
+  })
+}

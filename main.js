@@ -1428,6 +1428,23 @@ ipcMain.handle('media:open', (e, p) => { shell.openPath(p); return true })
 
 ipcMain.handle('vrchat:online', () => vrchatApi.getOnlineCount())
 
+ipcMain.handle('vrchat:news', async () => {
+  try {
+    const { DOMParser } = require('@xmldom/xmldom')
+    const { data } = await axios.get('https://hello.vrchat.com/blog?format=rss', { timeout: 10000, responseType: 'text', headers: { 'User-Agent': 'NekoSuneAPPS/1.0' } })
+    const doc = new DOMParser().parseFromString(data, 'text/xml')
+    const items = Array.from(doc.getElementsByTagName('item')).slice(0, 6)
+    const news = items.map(item => {
+      const get = tag => { const el = item.getElementsByTagName(tag)[0]; return el ? el.textContent.trim() : '' }
+      const raw = get('description').replace(/<!\[CDATA\[|\]\]>/g, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+      return { title: get('title'), link: get('link'), description: raw.slice(0, 200), date: get('pubDate') }
+    })
+    return { ok: true, news }
+  } catch (e) {
+    return { ok: false, error: e.message, news: [] }
+  }
+})
+
 // Configured Start — launch companion apps (and optionally VRChat).
 ipcMain.handle('apps:launch', (e, { paths, withVrchat } = {}) => {
   let launched = 0
