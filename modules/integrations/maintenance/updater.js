@@ -30,13 +30,15 @@ function cmp (a, b) {
   return 0
 }
 
-// The asset the standalone updater actually installs, one per platform:
-// Windows runs the .msi with msiexec, Mac extracts the .zip'd .app bundle
-// in place, Linux replaces an AppImage in place (or hands a .deb to the
-// desktop's own installer UI if that's all that was published).
+// The asset the standalone updater actually installs, one per platform.
+// Windows: prefer the NSIS .exe Setup installer (runs with /S for a silent
+// in-place upgrade to the same directory the user originally chose).
+// MSI is intentionally avoided here — msiexec installs to its own default
+// path and won't update an existing NSIS install, so the relaunch would
+// re-open the old binary instead of the new one.
 function pickUpdateAsset (assets) {
   const pick = re => assets.find(a => re.test(a.name || ''))
-  if (process.platform === 'win32') return pick(/\.msi$/i)
+  if (process.platform === 'win32') return pick(/Setup.*\.exe$/i) || pick(/\.exe$/i) || pick(/\.msi$/i)
   if (process.platform === 'darwin') return pick(/\.zip$/i)
   if (process.platform === 'linux') return pick(/\.appimage$/i) || pick(/\.deb$/i)
   return null

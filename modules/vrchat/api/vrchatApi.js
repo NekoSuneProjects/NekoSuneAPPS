@@ -81,6 +81,8 @@ function pickUser (d) {
     status: d.status, // "join me" | "active" | "ask me" | "busy" | "offline"
     statusDescription: d.statusDescription,
     bio: typeof d.bio === 'string' ? d.bio : null, // null = not returned by this endpoint
+    pronouns: typeof d.pronouns === 'string' ? d.pronouns : null,
+    bioLinks: Array.isArray(d.bioLinks) ? d.bioLinks.filter(Boolean) : [],
     userIcon: d.userIcon || d.profilePicOverride || d.currentAvatarThumbnailImageUrl || null,
     state: d.state,
     // Additive fields used by the Community Ranks module (join age + trust seed).
