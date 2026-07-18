@@ -52,6 +52,10 @@ it for malware/backdoors/supply-chain risk first:
 
 - **Always `git pull` first** before starting work in a session, so changes are based on the
   latest `main` (FumikoEcho and NekoSuneVR both push to this repo — don't work from a stale copy).
+- **Always `git fetch` from [NekoSuneProjects/NekoSuneAPPS](https://github.com/NekoSuneProjects/NekoSuneAPPS)
+  for whatever branch you're currently on**, not just `main` — if working on a feature/fix branch,
+  fetch and sync that branch with its remote counterpart too before continuing, so you're never
+  working against stale state on any branch.
 - **Always test the code before pushing anything to GitHub** — run/launch the app and exercise the
   affected feature(s), and check for obvious errors, not just that it compiles. Don't push
   untested changes.
