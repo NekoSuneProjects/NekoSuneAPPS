@@ -116,18 +116,29 @@ function isScreenshot (fileName) {
   return /^VRChat_.*\.png$/i.test(fileName)
 }
 
+// Embeds metadata into a single file right now and returns what was written
+// (or null on failure) - used by our own watcher below, and callable directly
+// by Photo Relay so it can embed-then-upload in one sequence instead of racing
+// two independent watchers on the same file.
+async function embedForFile (filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return null
+    const metadata = buildMetadata()
+    writeDescriptionChunk(filePath, JSON.stringify(metadata))
+    return metadata
+  } catch (err) {
+    console.warn('screenshotMetadata write:', err.message)
+    return null
+  }
+}
+
 function processFile (filePath) {
   if (pending.has(filePath)) return
   pending.add(filePath)
   // Give VRChat time to finish writing the file before we touch it.
   setTimeout(() => {
     pending.delete(filePath)
-    try {
-      if (!fs.existsSync(filePath)) return
-      writeDescriptionChunk(filePath, JSON.stringify(buildMetadata()))
-    } catch (err) {
-      console.warn('screenshotMetadata write:', err.message)
-    }
+    embedForFile(filePath)
   }, 2500)
 }
 
@@ -153,4 +164,4 @@ function stop () {
 
 function isEnabled () { return enabled }
 
-module.exports = { start, stop, isEnabled, buildMetadata, writeDescriptionChunk }
+module.exports = { start, stop, isEnabled, buildMetadata, writeDescriptionChunk, embedForFile }

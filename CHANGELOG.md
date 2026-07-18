@@ -5,6 +5,14 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ## Unreleased
 
+### Changed
+- **Photo Relay now posts a rich Discord embed instead of a bare file upload**, when Screenshot
+  Metadata is also turned on. Matches the format of the old relay-server setup: title "VRChat
+  Photo Log Entry", world name linking to its VRChat page, every player linking to their VRChat
+  profile (chunked across multiple fields if the player list is long), and the screenshot itself
+  rendered inside the embed card (not a separate raw attachment below it). Metadata is embedded
+  into the file first, then read back, so Photo Relay and Screenshot Metadata no longer race each
+  other on the same new file. If Screenshot Metadata is off, Photo Relay uploads plain as before.
 
 ## [1.0.60] - 2026-07-18
 
