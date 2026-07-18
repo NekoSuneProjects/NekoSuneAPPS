@@ -5,6 +5,9 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ## Unreleased
 
+
+## [1.0.61] - 2026-07-18
+
 ### Changed
 - **Photo Relay now posts a rich Discord embed instead of a bare file upload**, when Screenshot
   Metadata is also turned on. Matches the format of the old relay-server setup: title "VRChat
