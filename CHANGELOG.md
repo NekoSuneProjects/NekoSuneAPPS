@@ -11,6 +11,15 @@ This project follows [Semantic Versioning](https://semver.org/).
   installers actually built) whenever a version tag is released. Opt-in via a
   `DISCORD_WEBHOOK_URL` repo secret — skips cleanly with no post if that secret isn't set.
 
+### Fixed
+- **VRChat photos folder was always assumed to be `Pictures\VRChat`**, even when VRChat's own
+  `config.json` (`AppData\LocalLow\VRChat\VRChat\config.json`) redirects screenshots to a custom
+  `picture_output_folder` (e.g. a different drive). The Media Library, the background picker's
+  "Load VRChat photos" browser, the folder-shortcut button, and Photo Relay (auto-upload to
+  Discord) now all resolve the real folder from that config value live (re-read each time, no
+  restart needed), falling back to the default `Pictures\VRChat` only when `config.json` is
+  missing or doesn't set that key.
+
 ## [1.0.59] - 2026-07-18
 
 ### Added

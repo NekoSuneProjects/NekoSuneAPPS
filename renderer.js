@@ -5653,7 +5653,7 @@ if ($('bgLoadPhotos')) {
     setText('bgLoadPhotos', 'Load VRChat photos')
     const grid = $('bgPhotoGrid')
     if (!r || !r.ok || !r.photos || !r.photos.length) {
-      grid.innerHTML = '<span class="muted" style="font-size:.8rem;grid-column:1/-1">No photos found in Pictures\\VRChat.</span>'
+      grid.innerHTML = '<span class="muted" style="font-size:.8rem;grid-column:1/-1">No photos found in your VRChat photos folder.</span>'
       return
     }
     grid.innerHTML = r.photos.slice(0, 48).map(p =>

@@ -16,9 +16,22 @@ const { spawn } = require('child_process')
 const VRCHAT_DIR = path.join(os.homedir(), 'AppData', 'LocalLow', 'VRChat', 'VRChat')
 const TOOLS_DIR = path.join(VRCHAT_DIR, 'Tools')
 const CACHE_DIR = path.join(VRCHAT_DIR, 'Cache-WindowsPlayer')
-const PHOTOS_DIR = path.join(os.homedir(), 'Pictures', 'VRChat')
+const CONFIG_PATH = path.join(VRCHAT_DIR, 'config.json')
+const DEFAULT_PHOTOS_DIR = path.join(os.homedir(), 'Pictures', 'VRChat')
 
 const YTDLP_URL = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe'
+
+// VRChat's own config.json can redirect screenshots to a custom folder (e.g. a
+// different drive) via "picture_output_folder" - read it live (not cached at
+// startup) so a change in VRChat's settings doesn't need an app restart.
+function resolvePhotosDir () {
+  try {
+    const cfg = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'))
+    const dir = cfg && cfg.picture_output_folder
+    if (typeof dir === 'string' && dir.trim()) return dir
+  } catch (_) {}
+  return DEFAULT_PHOTOS_DIR
+}
 
 // Download the latest yt-dlp.exe into VRChat's Tools folder (the YouTube fix).
 async function updateYtDlp () {
@@ -70,7 +83,7 @@ function folderPath (which) {
     case 'data': return VRCHAT_DIR
     case 'tools': return TOOLS_DIR
     case 'cache': return CACHE_DIR
-    case 'photos': return PHOTOS_DIR
+    case 'photos': return resolvePhotosDir()
     default: return ''
   }
 }
@@ -87,7 +100,7 @@ function listPhotos (limit = 200) {
       else if (/\.(png|jpg|jpeg)$/i.test(e.name)) { try { out.push({ path: p, name: e.name, mtime: fs.statSync(p).mtimeMs }) } catch (_) {} }
     }
   }
-  walk(PHOTOS_DIR)
+  walk(resolvePhotosDir())
   out.sort((a, b) => b.mtime - a.mtime)
   return out.slice(0, limit)
 }
@@ -141,7 +154,7 @@ function videoCacherStatus () {
 }
 
 module.exports = {
-  updateYtDlp, cacheSize, clearCache, folderPath, listPhotos,
+  updateYtDlp, cacheSize, clearCache, folderPath, listPhotos, resolvePhotosDir,
   installVideoCacher, startVideoCacher, stopVideoCacher, videoCacherStatus,
-  VRCHAT_DIR, TOOLS_DIR, CACHE_DIR, PHOTOS_DIR
+  VRCHAT_DIR, TOOLS_DIR, CACHE_DIR
 }

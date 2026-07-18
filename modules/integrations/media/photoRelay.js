@@ -3,11 +3,9 @@
 // channel via webhook. Local-only; nothing else leaves your PC. Runs in MAIN.
 
 const fs = require('fs')
-const os = require('os')
 const path = require('path')
 const axios = require('axios')
-
-const PHOTOS_DIR = path.join(os.homedir(), 'Pictures', 'VRChat')
+const { resolvePhotosDir } = require('../../vrchat/tools/vrcTools')
 
 let watcher = null
 let cfg = { enabled: false, webhook: '' }
@@ -19,10 +17,11 @@ function start (opts = {}, listener) {
   cfg = { enabled: !!opts.enabled, webhook: String(opts.webhook || '').trim() }
   stop()
   if (!cfg.enabled || !cfg.webhook) return
-  if (!fs.existsSync(PHOTOS_DIR)) { if (onEvent) onEvent({ error: 'VRChat photos folder not found' }); return }
+  const photosDir = resolvePhotosDir()
+  if (!fs.existsSync(photosDir)) { if (onEvent) onEvent({ error: 'VRChat photos folder not found' }); return }
   try {
-    watcher = fs.watch(PHOTOS_DIR, { recursive: true }, (evt, fname) => {
-      if (fname && /\.png$/i.test(fname)) queue(path.join(PHOTOS_DIR, String(fname)))
+    watcher = fs.watch(photosDir, { recursive: true }, (evt, fname) => {
+      if (fname && /\.png$/i.test(fname)) queue(path.join(photosDir, String(fname)))
     })
     if (onEvent) onEvent({ watching: true })
   } catch (e) { console.warn('photoRelay watch:', e.message); if (onEvent) onEvent({ error: e.message }) }
