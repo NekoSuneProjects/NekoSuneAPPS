@@ -8,34 +8,67 @@ This project follows [Semantic Versioning](https://semver.org/).
 ## [1.0.62] - 2026-07-19
 
 ### Added
-- **VRChat Quick Launch tab** — launch multiple simultaneous VRChat game clients, each signed
-  into a different account. Each "profile" uses VRChat's own `--profile=N` launch flag to get
-  an independent local login/settings state, so several accounts can be online in VR/desktop at
-  once. Per-profile options: VR/desktop, Debug GUI, SDK log levels, UDON debug logging, max FPS,
-  and free-text custom launch parameters. Instance info supports Create (makes one fresh
-  instance via the existing world-instance API, shared by every profile launched together),
-  Join (paste an existing instance location), Local, or None. The VRChat executable is
-  auto-detected from the `vrchat://` protocol handler VRChat's own installer registers
-  (`start_protected_game.exe` next to it), with a manual Browse override. Launches the game exe
-  directly rather than through Steam, so Steam doesn't need to be running and args are never
-  swallowed by the `steam://` protocol. "Launch selected" stages launches 2s apart to avoid
-  several simultaneous cold starts thrashing disk/GPU init.
+- **VRChat Quick Launch tab** (`modules/vrchat/launcher/quickLaunch.js`, new `#quicklaunch`
+  sidebar tab) — launch multiple simultaneous VRChat game clients, each signed into a different
+  account. Design researched from [VRCNext](https://github.com/shinyflvre/VRCNext)
+  (`RelayController.cs`'s launch-and-join flow) and a community VRC Quick Launcher's UI, adapted
+  to this app's own launch mechanism:
+  - Each **profile** is passed VRChat's own `--profile=N` launch flag (real, undocumented, the
+    same flag VRCNext uses) — every index gets a fully independent local settings/login state, so
+    N processes can each be signed into a different account at once, not just N windows of the
+    same account.
+  - Per-profile launch options map to real VRChat CLI flags: VR/desktop toggle (omits/adds
+    `--no-vr`), Debug GUI (`--enable-debug-gui`), SDK log levels (`--enable-sdk-log-levels`),
+    UDON debug logging (`--enable-udon-debug-logging`), max FPS (`--fps=N`), plus a free-text
+    custom-parameters field appended as discrete argv entries (never shell-concatenated, so it
+    can't be used for command injection).
+  - **Instance info** has four modes: Create (calls the existing `vrchatApi.createInstance` /
+    `vrchat:createInstance` IPC handler once per Launch-all batch, so every selected profile joins
+    the *same* fresh instance together, not each their own), Join (paste an existing instance
+    location string), Local, and None — Create/Join build a `vrchat://launch?ref=vrchat.com&id=…`
+    URI appended to the launch args.
+  - The VRChat executable is **auto-detected** by reading the `HKCR\vrchat\shell\open\command`
+    registry key VRChat's own installer registers for the `vrchat://` URI handler (the same key
+    `modules/vrchat/tools/crashGuard.js` already reads the other direction for crash-rejoin),
+    resolving to `start_protected_game.exe` next to it — this finds the real install path
+    regardless of which drive/Steam library it's on, with a manual Browse override stored in
+    settings for anyone it doesn't find. Launches the game exe **directly** (`spawn`, not through
+    `steam://`/`-applaunch`), so Steam doesn't need to be running and custom args are never
+    stripped the way the `steam://` protocol strips them.
+  - "Launch selected" stages launches ~2s apart rather than all at once, so several simultaneous
+    game-client cold starts don't thrash disk/GPU init.
+  - Deferred to a follow-up (tracked in `TODO.md`): per-instance OSC port remap, MIDI device
+    selection, and automatic window-tiling ("Auto-layout") — not built this round.
 
 ### Fixed
 - **Auto-updater could fail with an opaque "Command failed: ...Setup-x.x.x.exe /S"** and no way
-  to recover short of hunting down the downloaded installer manually. Root cause: the updater
-  only waited for the old app's PID to disappear, then a flat 500ms delay, before running the
-  silent NSIS install once with no retry — any lingering file lock (a subprocess not fully torn
-  down, AV scanning the fresh download, etc.) turned into a dead end. Now: waits for the install
-  target to actually be unlockable (not just "the pid is gone"), retries the silent install up
-  to 3 times with backoff, surfaces the real exit code/stderr instead of the generic message, and
-  the updater window itself now shows **Retry** and **Open download folder** buttons on failure
-  instead of a static error. The updater helper also has its own single-instance lock so a
-  previous stuck attempt can't block a new one.
-- **VRChat News card could show "Could not load news." with no way to tell why** and no fallback
-  even if news had loaded fine moments earlier. The fetch now retries once on failure, logs the
-  real error to the console instead of swallowing it, and falls back to the last successfully
-  loaded news (marked "(cached)") instead of blanking the card out.
+  to recover short of hunting down the downloaded installer manually (`updater/main.js`). Root
+  cause: the updater only waited for the old app's PID to disappear (`waitForPidExit`), then a
+  flat 500ms grace period, before running the silent NSIS install (`/S`) exactly once via
+  `execFile`, with no retry and no captured stdout/stderr/exit code — so any lingering file lock
+  (a subprocess not fully torn down, Windows Defender/AV scanning the fresh download, etc.) turned
+  into an unrecoverable, unexplained dead end. Now:
+  - `waitUntilFileUnlocked()` polls (up to 12× / 300ms apart) whether the install target can
+    actually be renamed-to-itself — a real "is it free yet" check — instead of trusting a flat
+    delay after "the pid is gone".
+  - The silent install itself retries up to 3× with a 1.5s backoff before giving up.
+  - Failures now surface the real exit code / captured stderr instead of Node's generic
+    `execFile` message.
+  - The updater window (`updater/index.html` / `updater/renderer.js`) shows **Retry** (re-runs
+    just the install step against the already-downloaded file, no re-download needed) and
+    **Open download folder** buttons on failure instead of a static, dead-end error message.
+  - The updater helper now has its own `requestSingleInstanceLock()` (mirroring the main app's),
+    so a previously stuck/crashed updater window can't block a fresh update attempt.
+- **VRChat News card could show "Could not load news." with no way to tell why** (`main.js`'s
+  `vrchat:news` handler), with no fallback even if news had loaded fine moments earlier. Direct
+  testing against the live `hello.vrchat.com` RSS feed found no reproducible fetch/parse bug in
+  the code itself, so this is a resilience hardening rather than a specific root-cause fix:
+  - One retry (800ms delay) on fetch/parse failure before giving up.
+  - The XML parser now passes an `onError` callback (current `@xmldom/xmldom` API) so a feed
+    parsing hiccup is logged via `console.error` instead of silently vanishing.
+  - The last successfully fetched news list is cached (`settings` → `vrchatNewsCache`) and served
+    — marked with a small "(cached)" note in the UI — instead of blanking the whole card to an
+    error string when a fetch genuinely fails.
 
 ## [1.0.61] - 2026-07-18
 
