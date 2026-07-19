@@ -215,6 +215,17 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo · ⚠️ technical blocker.
   temp if `fs.accessSync(dir, W_OK)` said that wasn't writable — but that check isn't a reliable
   predictor of real write access on Windows, confirmed by an actual `EPERM` in the wild despite it
   passing. Now always downloads to temp, regardless.
+- [x] **Fixed: updater could fail with an opaque, unrecoverable "Command failed: ...Setup-x.x.x.exe
+  /S"** in the wild ("already running" style failure) — it only waited for the old app's PID to
+  disappear plus a flat 500ms delay before running the silent NSIS install once, with no retry
+  and no captured stderr/exit code. Now polls whether the install target file is actually
+  unlockable (not just "the pid is gone"), retries the silent install up to 3× with backoff,
+  surfaces the real exit code/stderr, and the updater window shows **Retry** /
+  **Open download folder** buttons on failure instead of a dead-end static error. The updater
+  helper also has its own single-instance lock so a previously stuck attempt can't block a new one.
+  (Note: the block above documenting "Windows runs the .msi via msiexec" is stale — 1.0.61
+  switched Windows installs to the NSIS `Setup.exe` via `/S`, msiexec/`.msi` is no longer what's
+  actually run; flagging here rather than silently rewriting that history entry.)
 
 ## 🥽 VR Overlay (experimental — this session)
 - [x] **Mirrors the app into a floating VR panel via SteamVR** — `modules/vr/overlay/`
@@ -335,15 +346,38 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
 - [x] Rate-limit guard — 429 backoff interceptor + isRateLimited(); every poller skips while rate-limited; stale-cache fallback.
 - [x] Cache profile/world/group lookups (VRCX "Fast Fetch") to cut API calls.
 - [ ] Verify all VRChat write-actions live (favorite tags, requestInvite slots, invite instanceId format).
+- [x] **Fixed: Home tab's VRChat News card could show "Could not load news." with no way to tell
+  why**, and no fallback even if news had loaded fine moments earlier. Direct testing against
+  the live `hello.vrchat.com` RSS feed this session found no reproducible parse/fetch bug — most
+  likely a transient network blip on affected machines — so hardened rather than "fixed" a
+  specific root cause: one retry on failure, real errors logged to console instead of swallowed,
+  and falls back to the last successfully loaded news (marked "(cached)") instead of blanking
+  the card.
 
 ---
 
 ## 🎨 Full layout overhaul (feature request)
-- [ ] Rebuild the app's overall layout/theme/navigation to match the look and feel of
+- [x] Rebuild the app's overall layout/theme/navigation to match the look and feel of
   [VRCNext](https://github.com/shinyflvre/VRCNext) — same *layout style*, not the same
-  internal structure/feature set (ours stays different under the hood). VRChat news as the
-  homepage/landing view instead of the current default Chatbox tab. Large effort, not started —
-  future session.
+  internal structure/feature set (ours stays different under the hood). Shipped in 1.0.61: wider
+  sidebar with icon+label nav and section headers, Home tab as the default landing page (replaces
+  Chatbox), VRChat news feed pulled from hello.vrchat.com as the homepage news card, welcome hero,
+  metric tiles, Quick Access shortcuts, Recently Visited Worlds.
+- [x] **VRChat Quick Launch tab** (MVP) — multi-profile simultaneous VRChat launching via
+  VRChat's `--profile=N` flag, matching the multi-account launcher tooling VRCX/VRCNext-adjacent
+  community tools provide. See `modules/vrchat/launcher/quickLaunch.js` + the `#quicklaunch` tab.
+  Covers: profiles (add/remove/VR toggle/description), Debug GUI / SDK log / UDON log / max FPS /
+  free-text custom params, Instance info (Create/Join/Local/None, Create shares one instance
+  across every profile launched together), Launch / Launch-all (2s stagger). Auto-detects the
+  VRChat exe via the registered `vrchat://` protocol handler, with a manual Browse override.
+  - [ ] **Follow-up: per-instance OSC port remap** (like some community Quick Launcher tools'
+    `9002:localhost:9003`-style remapping) — needs a small local proxy to rewrite in/out OSC
+    ports per launched instance so multiple simultaneous clients don't collide on the same OSC
+    port. Deferred, not started.
+  - [ ] **Follow-up: MIDI device selection** per profile. Deferred, not started.
+  - [ ] **Follow-up: "Auto-layout"** — automatically tile the launched VRChat windows on screen.
+    Would need raw Win32 window enumeration/positioning (via `koffi`, already a dependency).
+    Deferred, not started.
 
 ## 🌍 Localization
 - [x] **i18n foundation** — `modules/i18n/i18n.js` (main) + IPC (`i18n:languages`/`i18n:strings`)

@@ -8,9 +8,13 @@ Legend: `[x]` done · `[~]` partial · `[ ]` todo
 ## Sidebar icons (assets/icons/)
 
 All sidebar tabs currently listed in [assets/icons/README.md](assets/icons/README.md) have a
-matching icon file. Nothing outstanding as of 2026-07-18.
+matching icon file, except the new one below (added 2026-07-19).
 
 - [x] Full sidebar icon set generated and matches the table in `assets/icons/README.md`
+- [x] **`quicklaunch.png`** — new "Quick Launch" tab (VRChat multi-profile launcher). Subject
+  prompt: *a rocket ship launching upward with a curved motion trail*. Row already added to
+  `assets/icons/README.md`'s table; tab currently falls back to the 🚀 emoji until this file
+  exists.
 
 ## Backlog
 

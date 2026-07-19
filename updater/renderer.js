@@ -13,11 +13,19 @@ window.updaterAPI.onProgress(({ received, total }) => {
   $('detail').textContent = total ? `${mb(received)} MB / ${mb(total)} MB` : `${mb(received)} MB`
 })
 
-window.updaterAPI.onStatus(({ phase, version, message: statusMessage }) => {
+let lastDownloadPath = null
+
+window.updaterAPI.onStatus(({ phase, version, message: statusMessage, canRetry, downloadPath }) => {
   const bar = $('bar')
   const sub = $('subtitle')
   const status = $('status')
   const logo = $('logo')
+  const actions = $('errorActions')
+
+  if (phase !== 'error') {
+    actions.classList.remove('show')
+    status.classList.remove('error')
+  }
 
   if (phase === 'starting') {
     sub.textContent = version ? `Getting ready to update to v${version}…` : 'Getting ready to update…'
@@ -44,5 +52,20 @@ window.updaterAPI.onStatus(({ phase, version, message: statusMessage }) => {
     status.classList.add('error')
     bar.classList.remove('indeterminate')
     logo.classList.remove('spin')
+    lastDownloadPath = downloadPath || null
+    $('retryBtn').style.display = canRetry ? '' : 'none'
+    $('openFolderBtn').style.display = lastDownloadPath ? '' : 'none'
+    if (canRetry || lastDownloadPath) actions.classList.add('show')
   }
+})
+
+$('retryBtn').addEventListener('click', () => {
+  $('errorActions').classList.remove('show')
+  $('status').classList.remove('error')
+  $('status').textContent = 'Retrying…'
+  window.updaterAPI.retryInstall()
+})
+
+$('openFolderBtn').addEventListener('click', () => {
+  if (lastDownloadPath) window.updaterAPI.openDownloadFolder(lastDownloadPath)
 })

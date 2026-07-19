@@ -4,5 +4,7 @@ const { contextBridge, ipcRenderer } = require('electron')
 contextBridge.exposeInMainWorld('updaterAPI', {
   onStatus: cb => ipcRenderer.on('status', (_e, data) => cb(data)),
   onProgress: cb => ipcRenderer.on('progress', (_e, data) => cb(data)),
-  quit: () => ipcRenderer.invoke('updater:retryQuit')
+  quit: () => ipcRenderer.invoke('updater:retryQuit'),
+  retryInstall: () => ipcRenderer.invoke('updater:retryInstall'),
+  openDownloadFolder: p => ipcRenderer.invoke('updater:openDownloadFolder', p)
 })

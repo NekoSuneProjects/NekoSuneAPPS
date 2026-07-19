@@ -17,12 +17,18 @@
 // The Mac/Linux paths are implemented from documented standard platform
 // behaviour but have NOT been verified against a real machine of either OS.
 
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain, shell } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const os = require('os')
 const https = require('https')
 const { spawn, execFile } = require('child_process')
+
+// Only one updater window at a time — a previous attempt that got stuck (or
+// crashed without cleaning up) must never be able to block a fresh one.
+if (!app.requestSingleInstanceLock()) {
+  app.quit()
+}
 
 function parseArgs (argv) {
   const out = {}
@@ -62,6 +68,30 @@ function waitForPidExit (targetPid, timeoutMs = 30000) {
   })
 }
 
+// Even after the tracked PID is gone, Windows can hold the exe/asar open for
+// a brief moment longer (final handle teardown, an AV real-time scan of the
+// file we just closed, etc.) - that's the "already running" install failure
+// in practice. Renaming a file to itself fails with EBUSY/EPERM while
+// anything still has it open, so poll that as a real "is it free yet" check
+// instead of trusting a flat delay.
+function waitUntilFileUnlocked (targetPath, attempts = 12, intervalMs = 300) {
+  return new Promise(resolve => {
+    if (!targetPath || !fs.existsSync(targetPath)) return resolve()
+    let tries = 0
+    const check = () => {
+      try {
+        fs.renameSync(targetPath, targetPath)
+        resolve()
+      } catch (_) {
+        tries++
+        if (tries >= attempts) return resolve() // best-effort — proceed anyway
+        setTimeout(check, intervalMs)
+      }
+    }
+    check()
+  })
+}
+
 function download (fromUrl, toPath, onProgress) {
   return new Promise((resolve, reject) => {
     const request = (u, redirectsLeft) => {
@@ -91,7 +121,15 @@ function download (fromUrl, toPath, onProgress) {
 
 function runFile (cmd, cmdArgs) {
   return new Promise((resolve, reject) => {
-    execFile(cmd, cmdArgs, err => { if (err) reject(err); else resolve() })
+    execFile(cmd, cmdArgs, (err, stdout, stderr) => {
+      if (err) {
+        // execFile's own message is just "Command failed: <cmd> <args>" with
+        // no indication of *why* - attach exit code + stderr so a real
+        // failure (vs. a transient lock) is actually diagnosable.
+        err.stderrText = String(stderr || '').trim()
+        reject(err)
+      } else resolve()
+    })
   })
 }
 
@@ -142,8 +180,25 @@ async function applyInstaller (downloadedPath, targetExePath) {
     // previously registered install directory from the Windows registry and
     // installs there, replacing files in-place. UAC will prompt if the
     // install directory requires elevation (e.g. Program Files).
-    await runFile(downloadedPath, ['/S'])
-    return { relaunch: true }
+    //
+    // A transient file lock (real-time AV scanning the fresh download, or
+    // the last handle from the app we just replaced not quite released yet
+    // despite waitUntilFileUnlocked) is a known transient failure mode here
+    // - retry a few times with backoff instead of surfacing a one-shot,
+    // unrecoverable "Command failed".
+    const attempts = 3
+    let lastErr = null
+    for (let i = 1; i <= attempts; i++) {
+      try {
+        await runFile(downloadedPath, ['/S'])
+        return { relaunch: true }
+      } catch (err) {
+        lastErr = err
+        if (i < attempts) await new Promise(resolve => setTimeout(resolve, 1500))
+      }
+    }
+    const detail = lastErr.stderrText ? `: ${lastErr.stderrText}` : (lastErr.code !== undefined ? ` (exit code ${lastErr.code})` : '')
+    throw new Error(`Installer failed after ${attempts} attempts${detail}`)
   }
 
   if (process.platform === 'darwin') {
@@ -181,6 +236,27 @@ async function applyInstaller (downloadedPath, targetExePath) {
   throw new Error(`Unsupported platform: ${process.platform}`)
 }
 
+// Tracked so a Retry click (after an install failure) can re-run just the
+// install step against the file already on disk, instead of re-downloading.
+let lastDownloadPath = null
+
+async function performInstall (downloadPath) {
+  send('status', { phase: 'installing', version })
+  const result = await applyInstaller(downloadPath, exePath)
+
+  try { fs.unlinkSync(downloadPath) } catch (_) {}
+  lastDownloadPath = null
+
+  send('status', { phase: 'done', version, message: result.message })
+  await new Promise(resolve => setTimeout(resolve, result.relaunch ? 1200 : 4000))
+
+  if (result.relaunch) {
+    const launchExe = await findRelaunchExe(exePath)
+    if (launchExe) spawn(launchExe, [], { detached: true, stdio: 'ignore' }).unref()
+  }
+  app.quit()
+}
+
 async function run () {
   if (!url || !exePath) {
     send('status', { phase: 'error', message: 'Missing required update parameters.' })
@@ -189,8 +265,9 @@ async function run () {
   }
 
   await waitForPidExit(pid)
-  // Small grace period for file handles to fully release even after exit.
-  await new Promise(resolve => setTimeout(resolve, 500))
+  // Verify the install target is actually free (not just "the pid is gone")
+  // before touching it — see waitUntilFileUnlocked's comment above.
+  await waitUntilFileUnlocked(exePath)
 
   // The download's own destination just needs to be SOME writable folder -
   // it doesn't need to be inside the install location (unlike the actual
@@ -200,28 +277,48 @@ async function run () {
   // - confirmed by a real EPERM failure despite that check passing.
   const destDir = app.getPath('temp')
   const downloadPath = path.join(destDir, fileName)
+  lastDownloadPath = downloadPath
 
   try {
     send('status', { phase: 'downloading', version })
     await download(url, downloadPath, progress => send('progress', progress))
-
-    send('status', { phase: 'installing', version })
-    const result = await applyInstaller(downloadPath, exePath)
-
-    try { fs.unlinkSync(downloadPath) } catch (_) {}
-
-    send('status', { phase: 'done', version, message: result.message })
-    await new Promise(resolve => setTimeout(resolve, result.relaunch ? 1200 : 4000))
-
-    if (result.relaunch) {
-      const launchExe = await findRelaunchExe(exePath)
-      if (launchExe) spawn(launchExe, [], { detached: true, stdio: 'ignore' }).unref()
-    }
-    app.quit()
   } catch (err) {
-    send('status', { phase: 'error', message: err.message })
+    // A failed/partial download can't be retried as-is — clear it and force
+    // a full re-download next time (a fresh "check for updates" from the
+    // main app, since this window has no way to re-fetch the release info).
+    try { fs.unlinkSync(downloadPath) } catch (_) {}
+    lastDownloadPath = null
+    send('status', { phase: 'error', message: err.message, canRetry: false })
+    return
+  }
+
+  try {
+    await performInstall(downloadPath)
+  } catch (err) {
+    send('status', { phase: 'error', message: err.message, canRetry: true, downloadPath })
   }
 }
+
+// Re-runs just the install step against the already-downloaded file — used
+// by the "Retry" button so a transient lock/AV failure doesn't force a full
+// re-download.
+ipcMain.handle('updater:retryInstall', async () => {
+  if (!lastDownloadPath || !fs.existsSync(lastDownloadPath)) {
+    send('status', { phase: 'error', message: 'Nothing to retry — the downloaded installer is gone. Close this window and check for updates again.' })
+    return
+  }
+  const downloadPath = lastDownloadPath
+  try {
+    await waitUntilFileUnlocked(exePath)
+    await performInstall(downloadPath)
+  } catch (err) {
+    send('status', { phase: 'error', message: err.message, canRetry: fs.existsSync(downloadPath), downloadPath })
+  }
+})
+
+ipcMain.handle('updater:openDownloadFolder', (e, targetPath) => {
+  if (targetPath && fs.existsSync(targetPath)) shell.showItemInFolder(targetPath)
+})
 
 app.whenReady().then(() => {
   mainWindow = new BrowserWindow({

@@ -64,6 +64,13 @@
   .detail { position: relative; z-index: 1; margin-top: 4px; font-size: .7rem; color: #8888a0; }
   .error { color: #ff8080 !important; }
   .done .logo { animation: none; filter: drop-shadow(0 0 16px rgba(124,255,180,.75)); }
+  .actions { position: relative; z-index: 1; display: none; gap: 10px; margin-top: 16px; -webkit-app-region: no-drag; }
+  .actions.show { display: flex; }
+  .actions button {
+    font: inherit; font-size: .78rem; font-weight: 600; color: #eee; cursor: pointer;
+    background: #1a1a26; border: 1px solid rgba(255,255,255,.1); border-radius: 6px; padding: 7px 14px;
+  }
+  .actions button:hover { background: #24243a; border-color: var(--accent, #7c5cff); }
 </style>
 </head>
 <body>
@@ -74,6 +81,10 @@
   <div class="bar-wrap"><div class="bar" id="bar"></div></div>
   <div class="status" id="status">Starting…</div>
   <div class="detail" id="detail"></div>
+  <div class="actions" id="errorActions">
+    <button id="retryBtn" type="button">Retry</button>
+    <button id="openFolderBtn" type="button">Open download folder</button>
+  </div>
   <script src="renderer.js"></script>
 </body>
 </html>

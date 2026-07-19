@@ -5512,7 +5512,7 @@ async function loadHome () {
       const nr = await api.vrchatNews()
       if (nr.ok && nr.news.length) {
         el.className = ''
-        el.innerHTML = nr.news.map(n => {
+        el.innerHTML = (nr.cached ? '<div class="news-cached-note">Showing cached news — couldn\'t reach hello.vrchat.com just now.</div>' : '') + nr.news.map(n => {
           const dateStr = n.date ? new Date(n.date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ''
           return `<div class="news-item" data-url="${esc(n.link)}">
             <div style="min-width:0">
@@ -5709,5 +5709,154 @@ if ($('bgClear')) {
     document.querySelectorAll('.bg-type-btn').forEach(b => b.classList.toggle('active', b.dataset.src === 'none'))
     showBgPanel('none')
     saveBgConfig({ type: 'none' })
+  })
+}
+
+/* ------------------------------------------------------------------ */
+/* VRChat Quick Launch — multi-profile simultaneous VRChat launching   */
+/* ------------------------------------------------------------------ */
+let qlProfiles = []
+
+function qlSaveProfiles () { api.saveSetting('quickLaunchProfiles', qlProfiles) }
+
+function qlProfileRowHtml (p) {
+  return `<div class="ql-profile-row" data-id="${esc(p.id)}">
+    <div class="row" style="flex-wrap:wrap;gap:8px;align-items:center">
+      <input type="checkbox" class="ql-sel" ${p.selected ? 'checked' : ''} title="Include in Launch selected">
+      <input type="number" class="ql-id" value="${esc(p.id)}" min="0" max="50" title="Profile number (--profile=N)">
+      <input type="text" class="ql-desc" value="${esc(p.desc || '')}" placeholder="Description" style="flex:1;min-width:120px">
+      <label class="ql-flag"><input type="checkbox" class="ql-vr" ${p.vr ? 'checked' : ''}> VR</label>
+      <button class="btn" style="padding:6px 10px" data-action="launch">Launch</button>
+      <button class="btn danger" style="padding:6px 10px" data-action="remove">✖</button>
+    </div>
+    <div class="row" style="flex-wrap:wrap;gap:12px;margin-top:8px">
+      <label class="ql-flag"><input type="checkbox" class="ql-debuggui" ${p.debugGui ? 'checked' : ''}> Debug GUI</label>
+      <label class="ql-flag"><input type="checkbox" class="ql-sdklog" ${p.sdkLog ? 'checked' : ''}> SDK log</label>
+      <label class="ql-flag"><input type="checkbox" class="ql-udonlog" ${p.udonLog ? 'checked' : ''}> UDON log</label>
+      <label class="ql-flag">Max FPS <input type="number" class="ql-fps" value="${esc(p.maxFps || '')}" min="0"></label>
+      <input type="text" class="ql-custom" value="${esc(p.customArgs || '')}" placeholder="Custom parameters" style="flex:1;min-width:150px">
+    </div>
+    <div class="muted ql-row-out" style="margin-top:6px;font-size:.76rem"></div>
+  </div>`
+}
+
+function qlRenderProfiles () {
+  const el = $('qlProfiles')
+  if (!el) return
+  el.innerHTML = qlProfiles.length ? qlProfiles.map(qlProfileRowHtml).join('') : '<div class="muted" style="font-size:.8rem">No profiles yet — add one below.</div>'
+}
+
+// Pulls a row's current field values back into its backing profile object
+// (identified by the row's stable data-id, not the editable profile-number
+// input) so Launch/Launch-all/Remove always act on what's on screen.
+function qlReadRow (rowEl) {
+  const backingId = rowEl.dataset.id
+  const p = qlProfiles.find(x => String(x.id) === String(backingId))
+  if (!p) return null
+  p.selected = rowEl.querySelector('.ql-sel').checked
+  const newId = parseInt(rowEl.querySelector('.ql-id').value, 10)
+  if (Number.isFinite(newId)) p.id = newId
+  p.desc = rowEl.querySelector('.ql-desc').value
+  p.vr = rowEl.querySelector('.ql-vr').checked
+  p.debugGui = rowEl.querySelector('.ql-debuggui').checked
+  p.sdkLog = rowEl.querySelector('.ql-sdklog').checked
+  p.udonLog = rowEl.querySelector('.ql-udonlog').checked
+  p.maxFps = rowEl.querySelector('.ql-fps').value
+  p.customArgs = rowEl.querySelector('.ql-custom').value
+  return p
+}
+
+function qlReadInstanceInfo () {
+  return {
+    mode: $('qlInstMode').value,
+    worldId: $('qlInstWorldId').value.trim(),
+    location: $('qlInstLocation').value.trim(),
+    access: $('qlInstAccess').value
+  }
+}
+
+function qlUpdateInstFieldsVisibility () {
+  const mode = $('qlInstMode').value
+  $('qlInstWorldId').style.display = mode === 'create' ? '' : 'none'
+  $('qlInstLocation').style.display = mode === 'join' ? '' : 'none'
+  $('qlInstAccess').style.display = mode === 'create' ? '' : 'none'
+}
+
+function qlRefreshExePath (r) {
+  if (r && r.ok) {
+    $('qlExePath').value = r.path
+    setText('qlExeOut', r.isOverride ? 'Using manually selected path.' : "Auto-detected from VRChat's registered launch handler.")
+  } else {
+    $('qlExePath').value = ''
+    setText('qlExeOut', 'Not found — VRChat may not be installed, or use Browse to set the path manually.')
+  }
+}
+
+if ($('qlProfiles')) {
+  api.getSetting('quickLaunchProfiles', []).then(saved => {
+    qlProfiles = Array.isArray(saved) ? saved : []
+    qlRenderProfiles()
+  })
+  api.quickLaunchResolveExe().then(qlRefreshExePath)
+  qlUpdateInstFieldsVisibility()
+
+  $('qlInstMode').addEventListener('change', qlUpdateInstFieldsVisibility)
+
+  $('qlAutoDetect').addEventListener('click', async () => {
+    setText('qlExeOut', 'Detecting…')
+    qlRefreshExePath(await api.quickLaunchResolveExe())
+  })
+
+  $('qlBrowseExe').addEventListener('click', async () => {
+    const r = await api.quickLaunchBrowseExe()
+    if (r.ok) qlRefreshExePath({ ok: true, path: r.path, isOverride: true })
+  })
+
+  $('qlAddProfile').addEventListener('click', () => {
+    const usedIds = new Set(qlProfiles.map(p => p.id))
+    let nextId = 0
+    while (usedIds.has(nextId)) nextId++
+    qlProfiles.push({ id: nextId, desc: '', vr: false, debugGui: false, sdkLog: false, udonLog: false, maxFps: '', customArgs: '', selected: true })
+    qlSaveProfiles()
+    qlRenderProfiles()
+  })
+
+  $('qlLaunchAll').addEventListener('click', async () => {
+    document.querySelectorAll('#qlProfiles .ql-profile-row').forEach(qlReadRow)
+    qlSaveProfiles()
+    const selected = qlProfiles.filter(p => p.selected)
+    if (!selected.length) { setText('qlLaunchOut', 'No profiles selected.'); return }
+    setText('qlLaunchOut', `Launching ${selected.length} profile(s)…`)
+    const r = await api.quickLaunchLaunchAll(selected, qlReadInstanceInfo())
+    if (!r.ok) { setText('qlLaunchOut', '✗ ' + (r.error || 'failed')); return }
+    const okCount = r.results.filter(x => x.ok).length
+    const failMsgs = r.results.filter(x => !x.ok).map(x => `profile ${x.id}: ${x.error}`)
+    setText('qlLaunchOut', `✅ Launched ${okCount}/${selected.length}` + (failMsgs.length ? ` — ${failMsgs.join('; ')}` : ''))
+  })
+
+  $('qlProfiles').addEventListener('change', e => {
+    const row = e.target.closest('.ql-profile-row')
+    if (row) { qlReadRow(row); qlSaveProfiles() }
+  })
+
+  $('qlProfiles').addEventListener('click', async e => {
+    const btn = e.target.closest('button[data-action]')
+    if (!btn) return
+    const row = btn.closest('.ql-profile-row')
+    const p = qlReadRow(row)
+    if (!p) return
+    if (btn.dataset.action === 'remove') {
+      qlProfiles = qlProfiles.filter(x => x !== p)
+      qlSaveProfiles()
+      qlRenderProfiles()
+      return
+    }
+    if (btn.dataset.action === 'launch') {
+      const out = row.querySelector('.ql-row-out')
+      out.textContent = 'Launching…'
+      qlSaveProfiles()
+      const r = await api.quickLaunchLaunch(p, qlReadInstanceInfo())
+      out.textContent = r.ok ? `✅ Launched (pid ${r.pid})` : `✗ ${r.error || 'failed'}`
+    }
   })
 }

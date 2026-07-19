@@ -272,6 +272,10 @@ window.electronAPI = {
   vrchatOnline: () => ipcRenderer.invoke('vrchat:online'),
   vrchatNews: () => ipcRenderer.invoke('vrchat:news'),
   appsLaunch: (paths, withVrchat) => ipcRenderer.invoke('apps:launch', { paths, withVrchat }),
+  quickLaunchResolveExe: () => ipcRenderer.invoke('quickLaunch:resolveExe'),
+  quickLaunchBrowseExe: () => ipcRenderer.invoke('quickLaunch:browseExe'),
+  quickLaunchLaunch: (profile, instanceInfo) => ipcRenderer.invoke('quickLaunch:launch', { profile, instanceInfo }),
+  quickLaunchLaunchAll: (profiles, instanceInfo) => ipcRenderer.invoke('quickLaunch:launchAll', { profiles, instanceInfo }),
   dataExport: () => ipcRenderer.invoke('data:export'),
   dataImport: () => ipcRenderer.invoke('data:import'),
 

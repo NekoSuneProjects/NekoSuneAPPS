@@ -238,7 +238,12 @@
     .news-title { font-size:.88rem; font-weight:700; margin-bottom:3px; transition:color .15s; }
     .news-desc { color:var(--muted); font-size:.77rem; line-height:1.45; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
     .news-date { color:var(--muted); font-size:.7rem; margin-top:3px; }
+    .news-cached-note { color:var(--muted); font-size:.72rem; font-style:italic; padding-bottom:8px; margin-bottom:6px; border-bottom:1px solid var(--border); }
     .card:hover { box-shadow:0 14px 40px -18px var(--accent); }
+    .ql-profile-row { border:1px solid var(--border); border-radius:10px; padding:10px; margin-bottom:8px; background:var(--panel2); }
+    .ql-profile-row .ql-flag { display:flex; align-items:center; gap:4px; font-size:.78rem; color:var(--muted); }
+    .ql-profile-row input[type="number"] { width:64px; }
+    .ql-profile-row .ql-id { width:56px; }
 
     [data-theme="rainbow"] .brand .dot,
     [data-theme="rainbow"] .navbtn.active,
@@ -262,6 +267,7 @@
       <button class="navbtn" data-tab="audio"><span class="ico">🔊</span><span class="lbl">AudioLink</span></button>
       <button class="navbtn" data-tab="heartrate"><span class="ico">❤️</span><span class="lbl">Heart Rate</span></button>
       <button class="navbtn" data-tab="vrchat"><span class="ico">🦊</span><span class="lbl">VRChat</span></button>
+      <button class="navbtn" data-tab="quicklaunch"><span class="ico">🚀</span><span class="lbl">Quick Launch</span></button>
       <button class="navbtn" data-tab="radar"><span class="ico">🛰</span><span class="lbl">Radar</span></button>
       <button class="navbtn" data-tab="friendden"><span class="ico">🫂</span><span class="lbl">Friend Den</span></button>
       <button class="navbtn" data-tab="ranks"><span class="ico">🏅</span><span class="lbl">Community Ranks</span></button>
@@ -1262,6 +1268,54 @@
           <label style="margin-top:10px">Status presets</label>
           <div class="row"><select id="pePreset" style="flex:1"><option value="">— saved presets —</option></select><button class="btn ghost" id="pePresetApply">Apply</button><button class="btn ghost" id="pePresetSave">Save current</button><button class="btn ghost danger" id="pePresetDel">×</button></div>
           <div class="muted" id="peOut" style="margin-top:6px;font-size:.78rem"></div>
+        </div>
+      </section>
+
+      <!-- QUICK LAUNCH -->
+      <section id="quicklaunch" class="tabpanel">
+        <div class="card">
+          <h3>🚀 VRChat Quick Launch</h3>
+          <div class="muted" style="font-size:.75rem;margin-bottom:8px">Launch multiple simultaneous VRChat instances. Each profile below gets its own local login/settings via VRChat's <code>--profile</code> flag, so different accounts can be signed in at once. Launches the game exe directly — Steam doesn't need to be running.</div>
+          <label>VRChat executable</label>
+          <div class="row" style="flex-wrap:wrap;gap:8px">
+            <input type="text" id="qlExePath" readonly placeholder="Not detected — click Auto-detect or Browse" style="flex:1;min-width:220px">
+            <button class="btn ghost" id="qlAutoDetect">Auto-detect</button>
+            <button class="btn ghost" id="qlBrowseExe">Browse…</button>
+          </div>
+          <div class="muted" id="qlExeOut" style="margin-top:6px;font-size:.78rem">—</div>
+        </div>
+
+        <div class="card">
+          <h3>🎯 Instance info</h3>
+          <div class="row" style="flex-wrap:wrap;gap:8px">
+            <select id="qlInstMode" style="max-width:150px">
+              <option value="none">None</option>
+              <option value="local">Local</option>
+              <option value="join">Join existing</option>
+              <option value="create">Create new</option>
+            </select>
+            <input type="text" id="qlInstWorldId" placeholder="World ID (for Create)" style="flex:1;min-width:180px">
+            <input type="text" id="qlInstLocation" placeholder="Instance location (for Join)" style="flex:1;min-width:180px">
+            <select id="qlInstAccess" style="max-width:130px">
+              <option value="public">Public</option>
+              <option value="friends+">Friends+</option>
+              <option value="friends">Friends</option>
+              <option value="invite+">Invite+</option>
+              <option value="invite">Invite</option>
+            </select>
+          </div>
+          <div class="muted" style="font-size:.72rem;margin-top:6px">"Create" makes one fresh instance and every launched profile below joins it together. "Join" uses the location you paste in. "Local"/"None" just start VRChat normally.</div>
+        </div>
+
+        <div class="card">
+          <h3>👤 Profiles</h3>
+          <div class="muted" style="font-size:.75rem;margin-bottom:8px">Add a row per account to launch simultaneously. Profile numbers must be unique — VRChat keeps each one's login/settings separate.</div>
+          <div id="qlProfiles"></div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn ghost" id="qlAddProfile">+ Add profile</button>
+            <button class="btn" id="qlLaunchAll">🚀 Launch selected</button>
+          </div>
+          <div class="muted" id="qlLaunchOut" style="margin-top:6px;font-size:.78rem"></div>
         </div>
       </section>
 

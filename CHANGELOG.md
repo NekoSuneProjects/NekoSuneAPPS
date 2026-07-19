@@ -5,6 +5,37 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ## Unreleased
 
+## [1.0.62] - 2026-07-19
+
+### Added
+- **VRChat Quick Launch tab** — launch multiple simultaneous VRChat game clients, each signed
+  into a different account. Each "profile" uses VRChat's own `--profile=N` launch flag to get
+  an independent local login/settings state, so several accounts can be online in VR/desktop at
+  once. Per-profile options: VR/desktop, Debug GUI, SDK log levels, UDON debug logging, max FPS,
+  and free-text custom launch parameters. Instance info supports Create (makes one fresh
+  instance via the existing world-instance API, shared by every profile launched together),
+  Join (paste an existing instance location), Local, or None. The VRChat executable is
+  auto-detected from the `vrchat://` protocol handler VRChat's own installer registers
+  (`start_protected_game.exe` next to it), with a manual Browse override. Launches the game exe
+  directly rather than through Steam, so Steam doesn't need to be running and args are never
+  swallowed by the `steam://` protocol. "Launch selected" stages launches 2s apart to avoid
+  several simultaneous cold starts thrashing disk/GPU init.
+
+### Fixed
+- **Auto-updater could fail with an opaque "Command failed: ...Setup-x.x.x.exe /S"** and no way
+  to recover short of hunting down the downloaded installer manually. Root cause: the updater
+  only waited for the old app's PID to disappear, then a flat 500ms delay, before running the
+  silent NSIS install once with no retry — any lingering file lock (a subprocess not fully torn
+  down, AV scanning the fresh download, etc.) turned into a dead end. Now: waits for the install
+  target to actually be unlockable (not just "the pid is gone"), retries the silent install up
+  to 3 times with backoff, surfaces the real exit code/stderr instead of the generic message, and
+  the updater window itself now shows **Retry** and **Open download folder** buttons on failure
+  instead of a static error. The updater helper also has its own single-instance lock so a
+  previous stuck attempt can't block a new one.
+- **VRChat News card could show "Could not load news." with no way to tell why** and no fallback
+  even if news had loaded fine moments earlier. The fetch now retries once on failure, logs the
+  real error to the console instead of swallowing it, and falls back to the last successfully
+  loaded news (marked "(cached)") instead of blanking the card out.
 
 ## [1.0.61] - 2026-07-18
 

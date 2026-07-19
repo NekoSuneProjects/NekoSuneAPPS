@@ -62,6 +62,7 @@ const gamelog = require('./modules/history/gamelog')
 const photoRelay = require('./modules/integrations/media/photoRelay')
 const avatarDb = require('./modules/vrchat/avatars/avatarDb')
 const crashGuard = require('./modules/vrchat/tools/crashGuard')
+const quickLaunch = require('./modules/vrchat/launcher/quickLaunch')
 const vrOverlay = require('./modules/vr/overlay/vrOverlayController')
 const { startTon, stopTon, getTonState, getTonRaw } = require('./modules/integrations/ton/tonModule')
 const tonOsc = require('./modules/integrations/ton/tonOsc')
@@ -1423,6 +1424,77 @@ ipcMain.handle('greeter:set', (e, cfg = {}) => {
 ipcMain.handle('app:launchVRChat', () => { shell.openExternal('steam://rungameid/438100'); return true })
 
 /* ------------------------------------------------------------------ */
+/* VRChat Quick Launch — multi-profile simultaneous VRChat launching   */
+/* ------------------------------------------------------------------ */
+// A manually-set path (via Browse) always wins; otherwise auto-detect via
+// the registered "vrchat" protocol handler (see quickLaunch.js) each time,
+// since the user could move/reinstall VRChat between sessions.
+async function resolveQuickLaunchExe () {
+  const override = settings.get('quickLaunchExePath', '')
+  if (override && fs.existsSync(override)) return override
+  return quickLaunch.detectExePath()
+}
+
+// Builds the vrchat:// launch URI for a Quick Launch profile's chosen
+// instance mode - Create makes one fresh instance via the existing VRChat
+// API wrapper (shared by every profile in the same launch-all batch so they
+// all land together), Join reuses a pasted location string, Local/None pass
+// no instance arg at all.
+async function buildQuickLaunchInstanceUri (instanceInfo) {
+  if (!instanceInfo || instanceInfo.mode === 'none' || instanceInfo.mode === 'local') return null
+  let location = instanceInfo.location || ''
+  if (instanceInfo.mode === 'create') {
+    if (!instanceInfo.worldId) throw new Error('No world ID set for instance creation')
+    const r = await vrchatApi.createInstance(instanceInfo.worldId, instanceInfo.access, instanceInfo.region)
+    if (!r.ok) throw new Error(r.error || 'Failed to create instance')
+    location = r.location
+  }
+  return location ? `vrchat://launch?ref=vrchat.com&id=${encodeURIComponent(location)}` : null
+}
+
+ipcMain.handle('quickLaunch:resolveExe', async () => {
+  const p = await resolveQuickLaunchExe()
+  return { ok: !!p, path: p || '', isOverride: !!settings.get('quickLaunchExePath', '') }
+})
+
+ipcMain.handle('quickLaunch:browseExe', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Select VRChat executable (start_protected_game.exe)',
+    filters: [{ name: 'Executable', extensions: ['exe'] }],
+    properties: ['openFile']
+  })
+  if (result.canceled || !result.filePaths[0]) return { ok: false }
+  settings.set('quickLaunchExePath', result.filePaths[0])
+  return { ok: true, path: result.filePaths[0] }
+})
+
+ipcMain.handle('quickLaunch:launch', async (e, { profile, instanceInfo } = {}) => {
+  try {
+    const exePath = await resolveQuickLaunchExe()
+    if (!exePath) throw new Error('VRChat executable not found — set the path in Quick Launch first.')
+    const uri = await buildQuickLaunchInstanceUri(instanceInfo)
+    const result = quickLaunch.launch(exePath, profile, uri)
+    return { ok: true, ...result }
+  } catch (err) {
+    return { ok: false, error: err.message }
+  }
+})
+
+ipcMain.handle('quickLaunch:launchAll', async (e, { profiles, instanceInfo } = {}) => {
+  try {
+    const exePath = await resolveQuickLaunchExe()
+    if (!exePath) throw new Error('VRChat executable not found — set the path in Quick Launch first.')
+    // Resolved once so every selected profile in this batch joins the same
+    // instance, rather than each spawning its own fresh Create-mode instance.
+    const uri = await buildQuickLaunchInstanceUri(instanceInfo)
+    const results = await quickLaunch.launchAll(exePath, profiles || [], () => uri)
+    return { ok: true, results }
+  } catch (err) {
+    return { ok: false, error: err.message }
+  }
+})
+
+/* ------------------------------------------------------------------ */
 /* Media library / server status / configured start / data + alerts    */
 /* ------------------------------------------------------------------ */
 ipcMain.handle('media:photos', () => { try { return { ok: true, photos: vrcTools.listPhotos(300) } } catch (e) { return { ok: false, error: e.message } } })
@@ -1430,19 +1502,46 @@ ipcMain.handle('media:open', (e, p) => { shell.openPath(p); return true })
 
 ipcMain.handle('vrchat:online', () => vrchatApi.getOnlineCount())
 
+// Fetches and parses the VRChat blog RSS feed once. Split out so the handler
+// below can retry it on transient failure before falling back to cache.
+async function fetchVrchatNewsOnce () {
+  const { DOMParser } = require('@xmldom/xmldom')
+  const { data } = await axios.get('https://hello.vrchat.com/blog?format=rss', {
+    timeout: 10000,
+    responseType: 'text',
+    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) NekoSuneAPPS/1.0' }
+  })
+  // Custom error handler: xmldom's default one just console.warns and keeps
+  // going, which is fine, but we want a record of it in the main-process log
+  // if this feed ever starts breaking again rather than it failing silently.
+  const doc = new DOMParser({
+    onError: (level, msg) => console.warn(`[vrchat:news] xml ${level}:`, msg)
+  }).parseFromString(data, 'text/xml')
+  const items = Array.from(doc.getElementsByTagName('item')).slice(0, 6)
+  return items.map(item => {
+    const get = tag => { const el = item.getElementsByTagName(tag)[0]; return el ? el.textContent.trim() : '' }
+    const raw = get('description').replace(/<!\[CDATA\[|\]\]>/g, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+    return { title: get('title'), link: get('link'), description: raw.slice(0, 200), date: get('pubDate') }
+  })
+}
+
 ipcMain.handle('vrchat:news', async () => {
   try {
-    const { DOMParser } = require('@xmldom/xmldom')
-    const { data } = await axios.get('https://hello.vrchat.com/blog?format=rss', { timeout: 10000, responseType: 'text', headers: { 'User-Agent': 'NekoSuneAPPS/1.0' } })
-    const doc = new DOMParser().parseFromString(data, 'text/xml')
-    const items = Array.from(doc.getElementsByTagName('item')).slice(0, 6)
-    const news = items.map(item => {
-      const get = tag => { const el = item.getElementsByTagName(tag)[0]; return el ? el.textContent.trim() : '' }
-      const raw = get('description').replace(/<!\[CDATA\[|\]\]>/g, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
-      return { title: get('title'), link: get('link'), description: raw.slice(0, 200), date: get('pubDate') }
-    })
+    let news
+    try {
+      news = await fetchVrchatNewsOnce()
+    } catch (firstErr) {
+      // One retry after a short delay — most failures here are a transient
+      // network blip, not a real parse/format problem.
+      await new Promise(resolve => setTimeout(resolve, 800))
+      news = await fetchVrchatNewsOnce()
+    }
+    if (news.length) settings.set('vrchatNewsCache', news)
     return { ok: true, news }
   } catch (e) {
+    console.error('[vrchat:news] failed after retry:', e.message)
+    const cached = settings.get('vrchatNewsCache', [])
+    if (cached.length) return { ok: true, news: cached, cached: true }
     return { ok: false, error: e.message, news: [] }
   }
 })

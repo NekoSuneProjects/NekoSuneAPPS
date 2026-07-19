@@ -31,6 +31,7 @@ matching icon files.
 | `audio.png` | AudioLink | an audio equalizer / sound waveform bars |
 | `heartrate.png` | Heart Rate | a heart with a pulse/heartbeat line through it |
 | `vrchat.png` | VRChat | a VR headset (HMD) front view |
+| `quicklaunch.png` | Quick Launch | a rocket ship launching upward with a curved motion trail |
 | `radar.png` | Radar | a radar screen with a sweep line and a blip |
 | `friendden.png` | Friend Den | two friendly person silhouettes close together |
 | `ranks.png` | Community Ranks | an award medal hanging from a ribbon |
