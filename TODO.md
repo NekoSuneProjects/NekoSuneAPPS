@@ -370,10 +370,15 @@ Confirmed from the [VRCNext](https://github.com/shinyflvre/VRCNext) repo — gap
   free-text custom params, Instance info (Create/Join/Local/None, Create shares one instance
   across every profile launched together), Launch / Launch-all (2s stagger). Auto-detects the
   VRChat exe via the registered `vrchat://` protocol handler, with a manual Browse override.
-  - [ ] **Follow-up: per-instance OSC port remap** (like some community Quick Launcher tools'
-    `9002:localhost:9003`-style remapping) — needs a small local proxy to rewrite in/out OSC
-    ports per launched instance so multiple simultaneous clients don't collide on the same OSC
-    port. Deferred, not started.
+  - [x] **Per-instance OSC ports** — turned out not to need a proxy at all: VRChat has a real,
+    documented launch flag `--osc=<inPort>:<outIP>:<outPort>` (confirmed against
+    docs.vrchat.com), so each profile N just gets passed `--osc=9000+2N:127.0.0.1:9001+2N`
+    directly (profile 0 = VRChat's own defaults, 9000/9001). `renderer.js`'s `qlSyncOscPorts()`
+    then automatically mirrors every non-default profile's ports into Settings → OSC's existing
+    "extra targets"/"extra receivers" lists (tracked via a `quickLaunchOscManaged` settings key
+    so it only touches entries it added itself, never the user's own manual OSC config) — so
+    Chatbox/AudioLink/avatar-param OSC reaches every launched profile automatically, with no
+    manual port entry needed.
   - [ ] **Follow-up: MIDI device selection** per profile. Deferred, not started.
   - [ ] **Follow-up: "Auto-layout"** — automatically tile the launched VRChat windows on screen.
     Would need raw Win32 window enumeration/positioning (via `koffi`, already a dependency).

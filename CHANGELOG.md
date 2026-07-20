@@ -5,6 +5,18 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ## Unreleased
 
+### Added
+- **VRChat Quick Launch profiles now get automatic, non-colliding OSC ports.** Profile 0 keeps
+  VRChat's own defaults (send 9000 / receive 9001); every other profile N is launched with
+  `--osc=9000+2N:127.0.0.1:9001+2N` (VRChat's real, documented `--osc=<inPort>:<outIP>:<outPort>`
+  launch flag — no proxy needed). Each profile row shows its computed ports. Non-default
+  profiles' ports are automatically mirrored into Settings → OSC's existing "extra targets"/
+  "extra receivers" lists as soon as a profile is added/edited/removed, so Chatbox/AudioLink/
+  avatar-param OSC reaches every simultaneously-launched VRChat instance without manually typing
+  ports into Settings. Only entries Quick Launch itself added are ever touched (tracked via a
+  `quickLaunchOscManaged` settings key), so any OSC targets/receivers you configured by hand are
+  left alone.
+
 ## [1.0.62] - 2026-07-19
 
 ### Added

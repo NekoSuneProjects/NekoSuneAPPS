@@ -1309,7 +1309,7 @@
 
         <div class="card">
           <h3>👤 Profiles</h3>
-          <div class="muted" style="font-size:.75rem;margin-bottom:8px">Add a row per account to launch simultaneously. Profile numbers must be unique — VRChat keeps each one's login/settings separate.</div>
+          <div class="muted" style="font-size:.75rem;margin-bottom:8px">Add a row per account to launch simultaneously. Profile numbers must be unique — VRChat keeps each one's login/settings separate. Each profile also gets its own OSC ports (profile 0 = VRChat's default 9000/9001, profile N = 9000+2N/9001+2N) — profiles other than 0 are automatically mirrored into Settings → OSC's extra targets/receivers, so Chatbox/AudioLink/etc. reach every launched profile, not just the default one.</div>
           <div id="qlProfiles"></div>
           <div class="row" style="margin-top:10px">
             <button class="btn ghost" id="qlAddProfile">+ Add profile</button>

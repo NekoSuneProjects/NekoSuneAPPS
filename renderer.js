@@ -7,6 +7,7 @@ const {
 const { KatOscText } = require('./modules/vrchat/osc/katOscText')
 const { AvatarScalingController } = require('./modules/vrchat/osc/avatarScaling')
 const { vkName } = require('./modules/vrchat/osc/vkCodes')
+const { oscPortsForProfileId } = require('./modules/vrchat/launcher/quickLaunch')
 const { LANGUAGES } = require('./modules/ai/languageList')
 const { ChatboxComposer } = require('./modules/vrchat/chatbox/chatboxComposer')
 const { LiveTypingSender } = require('./modules/vrchat/chatbox/liveTyping')
@@ -5717,15 +5718,20 @@ if ($('bgClear')) {
 /* ------------------------------------------------------------------ */
 let qlProfiles = []
 
-function qlSaveProfiles () { api.saveSetting('quickLaunchProfiles', qlProfiles) }
+function qlSaveProfiles () {
+  api.saveSetting('quickLaunchProfiles', qlProfiles)
+  qlSyncOscPorts().catch(err => console.warn('[quickLaunch] OSC port sync failed:', err.message))
+}
 
 function qlProfileRowHtml (p) {
+  const { inPort, outPort } = oscPortsForProfileId(p.id)
   return `<div class="ql-profile-row" data-id="${esc(p.id)}">
     <div class="row" style="flex-wrap:wrap;gap:8px;align-items:center">
       <input type="checkbox" class="ql-sel" ${p.selected ? 'checked' : ''} title="Include in Launch selected">
       <input type="number" class="ql-id" value="${esc(p.id)}" min="0" max="50" title="Profile number (--profile=N)">
       <input type="text" class="ql-desc" value="${esc(p.desc || '')}" placeholder="Description" style="flex:1;min-width:120px">
       <label class="ql-flag"><input type="checkbox" class="ql-vr" ${p.vr ? 'checked' : ''}> VR</label>
+      <span class="ql-flag" title="OSC ports for this profile — VRChat receives on the first, sends on the second">OSC ${inPort}→${outPort}</span>
       <button class="btn" style="padding:6px 10px" data-action="launch">Launch</button>
       <button class="btn danger" style="padding:6px 10px" data-action="remove">✖</button>
     </div>
@@ -5775,6 +5781,47 @@ function qlReadInstanceInfo () {
   }
 }
 
+// Mirrors every non-default profile's OSC ports (see oscPortsForProfileId —
+// profile 0 always matches this app's own primary send/receive ports, so
+// only profiles 1+ need mirroring) into the Settings → OSC "extra targets"/
+// "extra receivers" lists, so chatbox/AudioLink/avatar-param OSC reaches
+// every simultaneously-launched VRChat instance, not just the default one.
+// Tracks exactly what it last added (quickLaunchOscManaged) so it can
+// cleanly add/remove its own entries as profiles change without touching
+// anything the user configured by hand on the OSC settings page.
+async function qlSyncOscPorts () {
+  const derivedTargets = []
+  const derivedReceivers = []
+  for (const p of qlProfiles) {
+    if ((Number(p.id) || 0) === 0) continue
+    const { inPort, outPort } = oscPortsForProfileId(p.id)
+    derivedTargets.push({ host: '127.0.0.1', port: inPort })
+    derivedReceivers.push(outPort)
+  }
+
+  const prevManaged = await api.getSetting('quickLaunchOscManaged', { targets: [], receivers: [] })
+  const savedTargets = await api.getSetting('extraOscTargets', [])
+  const savedReceivers = await api.getSetting('extraOscReceivers', [])
+
+  const keepTargets = savedTargets.filter(t => !prevManaged.targets.some(m => m.host === t.host && m.port === t.port))
+  const keepReceivers = savedReceivers.filter(port => !prevManaged.receivers.includes(port))
+
+  const mergedTargets = [...keepTargets, ...derivedTargets.filter(dt => !keepTargets.some(kt => kt.host === dt.host && kt.port === dt.port))]
+  const mergedReceivers = [...new Set([...keepReceivers, ...derivedReceivers])]
+
+  await applyExtraOscTargets(mergedTargets)
+  await api.saveSetting('extraOscTargets', mergedTargets)
+  if ($('extraOscTargets')) $('extraOscTargets').value = oscTargetsToText(mergedTargets)
+  setText('extraOscTargetsOut', mergedTargets.length ? `Mirroring OSC to ${mergedTargets.length} extra target(s).` : 'Only the primary OSC send port is used.')
+
+  setExtraOscReceiverPorts(mergedReceivers)
+  await api.saveSetting('extraOscReceivers', mergedReceivers)
+  if ($('extraOscReceivers')) $('extraOscReceivers').value = oscPortsToText(mergedReceivers)
+  setText('extraOscReceiversOut', mergedReceivers.length ? `Listening on ${mergedReceivers.length} extra receive port(s).` : 'Only the primary receive port is used.')
+
+  await api.saveSetting('quickLaunchOscManaged', { targets: derivedTargets, receivers: derivedReceivers })
+}
+
 function qlUpdateInstFieldsVisibility () {
   const mode = $('qlInstMode').value
   $('qlInstWorldId').style.display = mode === 'create' ? '' : 'none'
@@ -5796,6 +5843,7 @@ if ($('qlProfiles')) {
   api.getSetting('quickLaunchProfiles', []).then(saved => {
     qlProfiles = Array.isArray(saved) ? saved : []
     qlRenderProfiles()
+    qlSyncOscPorts().catch(err => console.warn('[quickLaunch] OSC port sync failed:', err.message))
   })
   api.quickLaunchResolveExe().then(qlRefreshExePath)
   qlUpdateInstFieldsVisibility()

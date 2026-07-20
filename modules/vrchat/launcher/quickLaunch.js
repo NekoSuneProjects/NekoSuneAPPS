@@ -52,6 +52,22 @@ async function detectExePath () {
 // Builds the argv for one profile's launch. Everything here is pushed as a
 // discrete array entry (never shell-concatenated) so spawn (shell:false by
 // default) can never interpret free-text custom params as shell syntax.
+//
+// OSC ports are derived from the profile number, not independently
+// editable: profile N gets inPort 9000+2N / outPort 9001+2N, so profile 0
+// always lands on VRChat's own defaults (9000/9001) and every other profile
+// gets a non-colliding pair - matches VRChat's real, documented launch flag
+// `--osc=<inPort>:<outIP>:<outPort>` (confirmed against docs.vrchat.com; the
+// default single-instance behavior is exactly `--osc=9000:127.0.0.1:9001`).
+// renderer.js's qlSyncOscPorts() mirrors these same ports into this app's
+// own "extra OSC targets/receivers" so chatbox/AudioLink/etc. reach every
+// launched profile, not just the default one - keep the formula identical
+// in both places.
+function oscPortsForProfileId (id) {
+  const n = Number(id) || 0
+  return { inPort: 9000 + n * 2, outPort: 9001 + n * 2 }
+}
+
 function buildArgs (profile, instanceUri) {
   const args = [`--profile=${Number(profile.id) || 0}`]
   if (!profile.vr) args.push('--no-vr')
@@ -60,6 +76,8 @@ function buildArgs (profile, instanceUri) {
   if (profile.udonLog) args.push('--enable-udon-debug-logging')
   const fps = parseInt(profile.maxFps, 10)
   if (Number.isFinite(fps) && fps > 0) args.push(`--fps=${fps}`)
+  const { inPort, outPort } = oscPortsForProfileId(profile.id)
+  args.push(`--osc=${inPort}:127.0.0.1:${outPort}`)
   if (profile.customArgs) {
     String(profile.customArgs).split(/\s+/).filter(Boolean).forEach(tok => args.push(tok))
   }
@@ -97,4 +115,4 @@ async function launchAll (exePath, profiles, resolveInstanceUri) {
   return results
 }
 
-module.exports = { detectExePath, buildArgs, launch, launchAll }
+module.exports = { detectExePath, buildArgs, launch, launchAll, oscPortsForProfileId }
