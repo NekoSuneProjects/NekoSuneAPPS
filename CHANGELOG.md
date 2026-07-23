@@ -5,6 +5,22 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ## Unreleased
 
+### Fixed
+- **Auto-updater now actually installs the new version instead of silently claiming success.**
+  Root cause: Node's `execFile` calls `CreateProcess` and waits for the NSIS stub process, which
+  exits immediately when UAC elevation is involved — the actual elevated installer runs in a
+  separate process that `execFile` never waits for. Fixed by driving NSIS installs through
+  PowerShell `Start-Process -Wait`, which correctly blocks until the elevated process finishes.
+- **Updater now performs a clean uninstall before installing the new version.** Before downloading,
+  it reads the current install directory and uninstall path from the Windows registry. After
+  download, it runs the existing uninstaller `/S` first (removing stale files), then runs the new
+  installer `/S /D=<originalDir>` so the new version lands in exactly the same place the user
+  originally chose. Registry info is captured before uninstalling since the uninstaller removes
+  those keys.
+- **Updater window now shows a real-time step list** (Waiting → Downloading → Removing old version
+  → Installing → Relaunching) with animated spinner on the active step and a green checkmark on
+  each completed step, replacing the single indeterminate spinner during the install phase.
+
 ### Added
 - **VRChat Quick Launch profiles now get automatic, non-colliding OSC ports.** Profile 0 keeps
   VRChat's own defaults (send 9000 / receive 9001); every other profile N is launched with

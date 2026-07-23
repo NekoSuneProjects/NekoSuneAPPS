@@ -29,24 +29,24 @@
     50% { opacity: .95; transform: translateX(-50%) scale(1.12); }
   }
 
-  .logo-wrap { position: relative; z-index: 1; margin-bottom: 10px; }
+  .logo-wrap { position: relative; z-index: 1; margin-bottom: 8px; }
   .logo {
-    width: 56px; height: 56px; object-fit: contain;
+    width: 48px; height: 48px; object-fit: contain;
     filter: drop-shadow(0 0 10px rgba(124,92,255,.55));
     animation: float 2.6s ease-in-out infinite;
   }
   @keyframes float {
     0%, 100% { transform: translateY(0) rotate(0deg); }
-    50% { transform: translateY(-6px) rotate(4deg); }
+    50% { transform: translateY(-5px) rotate(4deg); }
   }
   .logo.spin { animation: spin 1.4s linear infinite; }
   @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-  h1 { position: relative; z-index: 1; font-size: 1.05rem; margin: 0 0 4px; font-weight: 700; letter-spacing: .2px; }
-  .sub { position: relative; z-index: 1; font-size: .8rem; color: #b4b4c8; margin: 0 0 20px; text-align: center; min-height: 1.1em; }
+  h1 { position: relative; z-index: 1; font-size: 1rem; margin: 0 0 3px; font-weight: 700; letter-spacing: .2px; }
+  .sub { position: relative; z-index: 1; font-size: .78rem; color: #b4b4c8; margin: 0 0 14px; text-align: center; min-height: 1.1em; }
 
   .bar-wrap {
-    position: relative; z-index: 1; width: 320px; height: 10px; border-radius: 5px;
+    position: relative; z-index: 1; width: 320px; height: 8px; border-radius: 4px;
     background: #1a1a26; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
   }
   .bar {
@@ -60,11 +60,52 @@
   .bar.indeterminate { width: 35% !important; animation: shimmer 1.8s linear infinite, slide 1.1s ease-in-out infinite; }
   @keyframes slide { 0% { margin-left: -35%; } 100% { margin-left: 100%; } }
 
-  .status { position: relative; z-index: 1; margin-top: 14px; font-size: .8rem; color: #d8d8ea; text-align: center; }
-  .detail { position: relative; z-index: 1; margin-top: 4px; font-size: .7rem; color: #8888a0; }
-  .error { color: #ff8080 !important; }
+  /* ── Step list ── */
+  .steps {
+    position: relative; z-index: 1;
+    width: 320px; margin-top: 14px;
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  .step {
+    display: flex; align-items: center; gap: 9px;
+    font-size: .75rem; color: #55556a;
+    transition: color .3s;
+  }
+  .step[data-state="active"]  { color: #d8d8ea; }
+  .step[data-state="done"]    { color: #72e8a0; }
+  .step[data-state="error"]   { color: #ff8080; }
+
+  .step-dot {
+    flex-shrink: 0;
+    width: 11px; height: 11px; border-radius: 50%;
+    background: #2a2a3a;
+    transition: background .3s, border-color .3s;
+  }
+  .step[data-state="active"] .step-dot {
+    background: transparent;
+    border: 2px solid #7c5cff;
+    animation: step-spin .8s linear infinite;
+  }
+  @keyframes step-spin { to { transform: rotate(360deg); } }
+  .step[data-state="done"] .step-dot  { background: #72e8a0; }
+  .step[data-state="error"] .step-dot { background: #ff8080; }
+
+  /* checkmark inside done dot */
+  .step[data-state="done"] .step-dot::after {
+    content: '';
+    display: block;
+    width: 5px; height: 3px;
+    border-left: 1.5px solid #0b0b14;
+    border-bottom: 1.5px solid #0b0b14;
+    transform: rotate(-45deg);
+    margin: 2px 0 0 2px;
+  }
+
+  .status { position: relative; z-index: 1; margin-top: 10px; font-size: .75rem; color: #d8d8ea; text-align: center; }
+  .detail { position: relative; z-index: 1; margin-top: 3px; font-size: .7rem; color: #8888a0; }
+  .error-txt { color: #ff8080 !important; }
   .done .logo { animation: none; filter: drop-shadow(0 0 16px rgba(124,255,180,.75)); }
-  .actions { position: relative; z-index: 1; display: none; gap: 10px; margin-top: 16px; -webkit-app-region: no-drag; }
+  .actions { position: relative; z-index: 1; display: none; gap: 10px; margin-top: 14px; -webkit-app-region: no-drag; }
   .actions.show { display: flex; }
   .actions button {
     font: inherit; font-size: .78rem; font-weight: 600; color: #eee; cursor: pointer;
@@ -79,10 +120,20 @@
   <h1 id="title">NekoSuneAPPS Updater</h1>
   <div class="sub" id="subtitle">Preparing update…</div>
   <div class="bar-wrap"><div class="bar" id="bar"></div></div>
-  <div class="status" id="status">Starting…</div>
+
+  <!-- Real-time step list -->
+  <div class="steps" id="steps">
+    <div class="step" id="step-wait"      data-state="pending"><span class="step-dot"></span><span class="step-lbl">Waiting for app to close</span></div>
+    <div class="step" id="step-download"  data-state="pending"><span class="step-dot"></span><span class="step-lbl">Downloading update</span></div>
+    <div class="step" id="step-uninstall" data-state="pending"><span class="step-dot"></span><span class="step-lbl">Removing old version</span></div>
+    <div class="step" id="step-install"   data-state="pending"><span class="step-dot"></span><span class="step-lbl">Installing new version</span></div>
+    <div class="step" id="step-relaunch"  data-state="pending"><span class="step-dot"></span><span class="step-lbl">Relaunching</span></div>
+  </div>
+
+  <div class="status" id="status"></div>
   <div class="detail" id="detail"></div>
   <div class="actions" id="errorActions">
-    <button id="retryBtn" type="button">Retry</button>
+    <button id="retryBtn" type="button">Retry install</button>
     <button id="openFolderBtn" type="button">Open download folder</button>
   </div>
   <script src="renderer.js"></script>
