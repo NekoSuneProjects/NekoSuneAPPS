@@ -1,21 +1,22 @@
 // updater/main.js
-// Standalone update helper, packaged separately (updater.exe on Windows,
-// its own binary on Mac/Linux) so it lives outside the main app's own files
-// - it has to, since it's the thing replacing them. Spawned by the main app
-// right before it quits (see modules/integrations/maintenance/updater.js),
-// waits for that process to fully exit, downloads the new release asset
-// with visible progress in its own window, installs it (NSIS /S on Windows,
-// an .app bundle swap on Mac, an in-place file replace for a Linux AppImage),
-// then relaunches the app.
+// Standalone update helper — spawned by the main app just before it quits,
+// runs entirely outside the main app's files so it can replace them.
+// Downloads the release asset, cleanly uninstalls the old version, installs
+// the new one, then relaunches. Each step is reported to the renderer window
+// in real time.
 //
-// Windows uses the NSIS Setup .exe with /S (silent). This installs to the
-// same directory the user originally chose (NSIS reads it from the registry)
-// so the relaunch path stays valid. msiexec was previously used but installs
-// to its own default location, leaving the NSIS copy untouched and causing
-// the relaunch to open the old binary.
+// Windows: uses the NSIS Setup .exe.
+//   - Install info (dir + uninstall path) is read from the registry BEFORE
+//     uninstalling, then the uninstaller runs /S, then the new installer runs
+//     /S /D=<originalDir> so it lands in exactly the same place.
+//   - Install/uninstall are driven via PowerShell Start-Process -Wait, which
+//     correctly blocks until the elevated child process finishes — Node's
+//     execFile returns as soon as the NSIS stub launches (before the elevated
+//     installer actually runs), which was the root cause of "claims it works
+//     but nothing changed".
 //
-// The Mac/Linux paths are implemented from documented standard platform
-// behaviour but have NOT been verified against a real machine of either OS.
+// Mac / Linux paths are implemented from documented platform behaviour but
+// have NOT been verified on a real machine of either OS.
 
 const { app, BrowserWindow, ipcMain, shell } = require('electron')
 const path = require('path')
@@ -24,11 +25,9 @@ const os = require('os')
 const https = require('https')
 const { spawn, execFile } = require('child_process')
 
-// Only one updater window at a time — a previous attempt that got stuck (or
-// crashed without cleaning up) must never be able to block a fresh one.
-if (!app.requestSingleInstanceLock()) {
-  app.quit()
-}
+// Only one updater window at a time — a previous attempt that got stuck must
+// not block a fresh one.
+if (!app.requestSingleInstanceLock()) app.quit()
 
 function parseArgs (argv) {
   const out = {}
@@ -39,7 +38,6 @@ function parseArgs (argv) {
   return out
 }
 
-// electron's own argv[0] is the exe path when packaged; --foo=bar args follow.
 const args = parseArgs(process.argv.slice(app.isPackaged ? 1 : 2))
 const { url, exe: exePath, name: fileName = 'NekoSuneAPPS-Update.exe', version = '', pid } = args
 
@@ -52,9 +50,6 @@ function send (channel, payload) {
 function waitForPidExit (targetPid, timeoutMs = 30000) {
   if (!targetPid) return Promise.resolve()
   const pidNum = parseInt(targetPid, 10)
-  // pid 0 has special meaning to process.kill (the current process group,
-  // which never "exits" while we're alive) - and isn't a real caller PID
-  // anyway, so treat it the same as "nothing to wait for".
   if (!Number.isFinite(pidNum) || pidNum <= 0) return Promise.resolve()
   const start = Date.now()
   return new Promise(resolve => {
@@ -68,23 +63,18 @@ function waitForPidExit (targetPid, timeoutMs = 30000) {
   })
 }
 
-// Even after the tracked PID is gone, Windows can hold the exe/asar open for
-// a brief moment longer (final handle teardown, an AV real-time scan of the
-// file we just closed, etc.) - that's the "already running" install failure
-// in practice. Renaming a file to itself fails with EBUSY/EPERM while
-// anything still has it open, so poll that as a real "is it free yet" check
-// instead of trusting a flat delay.
+// Polls the rename-to-self trick as a "is the file handle free yet" check.
+// Even after the tracked PID exits, Windows can hold the exe open briefly
+// (final handle teardown, AV scanning, etc.).
 function waitUntilFileUnlocked (targetPath, attempts = 12, intervalMs = 300) {
   return new Promise(resolve => {
     if (!targetPath || !fs.existsSync(targetPath)) return resolve()
     let tries = 0
     const check = () => {
-      try {
-        fs.renameSync(targetPath, targetPath)
-        resolve()
-      } catch (_) {
+      try { fs.renameSync(targetPath, targetPath); resolve() }
+      catch (_) {
         tries++
-        if (tries >= attempts) return resolve() // best-effort — proceed anyway
+        if (tries >= attempts) return resolve()
         setTimeout(check, intervalMs)
       }
     }
@@ -119,38 +109,99 @@ function download (fromUrl, toPath, onProgress) {
   })
 }
 
-function runFile (cmd, cmdArgs) {
+// execFile wrapper — used for non-NSIS operations (Mac ditto/mv/rm, Linux
+// AppImage copy, etc.) where elevation isn't involved.
+function runFile (cmd, cmdArgs, opts) {
   return new Promise((resolve, reject) => {
-    execFile(cmd, cmdArgs, (err, stdout, stderr) => {
-      if (err) {
-        // execFile's own message is just "Command failed: <cmd> <args>" with
-        // no indication of *why* - attach exit code + stderr so a real
-        // failure (vs. a transient lock) is actually diagnosable.
-        err.stderrText = String(stderr || '').trim()
-        reject(err)
-      } else resolve()
+    execFile(cmd, cmdArgs, opts || {}, (err, _stdout, stderr) => {
+      if (err) { err.stderrText = String(stderr || '').trim(); reject(err) }
+      else resolve()
     })
   })
 }
 
-// After a Windows NSIS install the exe should still be at the original path.
-// This is a safety fallback: if for any reason the path changed (e.g. the
-// first install was an MSI and the NSIS update moved it), ask the registry
-// where NekoSuneAPPS is now installed.
-async function findRelaunchExe (originalExePath) {
-  if (originalExePath && fs.existsSync(originalExePath)) return originalExePath
-  if (process.platform !== 'win32') return null
-  // PowerShell query across both HKLM and HKCU uninstall hives.
+// ── Windows-only helpers ──────────────────────────────────────────────────────
+
+// Runs an NSIS installer/uninstaller via PowerShell Start-Process -Wait.
+//
+// WHY NOT execFile directly:
+//   Node's execFile() calls CreateProcess() and waits for that specific PID.
+//   When NSIS needs elevation it launches a UAC-elevated child and the outer
+//   stub exits immediately — CreateProcess sees exit code 0 before the actual
+//   installer has done anything. Start-Process -Wait waits on the elevated
+//   process itself, so we don't return until the install is truly done.
+async function runNsisInstaller (installerPath, nsisArgs) {
+  // Build a PowerShell -ArgumentList from the args array.
+  // /D=<path> must be LAST and must not be quoted — NSIS parses it specially.
+  const escapedExe = installerPath.replace(/'/g, "''")
+  const argStr = nsisArgs.map(a => {
+    const s = String(a)
+    // /D= args: pass unquoted so NSIS sees the raw path
+    if (/^\/D=/i.test(s)) return s
+    return `'${s.replace(/'/g, "''")}'`
+  }).join(',')
+  const cmd = argStr
+    ? `Start-Process -FilePath '${escapedExe}' -ArgumentList ${argStr} -Wait`
+    : `Start-Process -FilePath '${escapedExe}' -Wait`
+
+  return new Promise((resolve, reject) =>
+    execFile('powershell.exe',
+      ['-NoProfile', '-NonInteractive', '-Command', cmd],
+      { timeout: 120000 },
+      (err, _out, stderr) => {
+        if (err) { err.stderrText = String(stderr || '').trim(); reject(err) }
+        else resolve()
+      }
+    )
+  )
+}
+
+// Reads the current installation's directory and uninstall-string from the
+// Windows registry in a single PowerShell call. Must be called BEFORE
+// uninstalling (those keys are removed by the uninstaller).
+async function findNsisInstallInfo () {
+  if (process.platform !== 'win32') return {}
   try {
     const { stdout } = await new Promise((resolve, reject) =>
       execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
         "@('HKLM','HKCU') | ForEach-Object {" +
-        "  Get-ItemProperty \"$_:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*\"," +
+        "  Get-ItemProperty" +
+        "  \"$_:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*\"," +
+        "  \"$_:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*\"" +
+        "  -ErrorAction SilentlyContinue" +
+        "} | Where-Object { $_.DisplayName -like '*NekoSuneAPPS*' }" +
+        " | Select-Object -First 1 -Property InstallLocation,UninstallString" +
+        " | ConvertTo-Json -Compress"
+      ], { timeout: 15000 }, (e, out) => e ? reject(e) : resolve({ stdout: out }))
+    )
+    const json = stdout.trim()
+    if (!json) return {}
+    const obj = JSON.parse(json)
+    const installDir = (obj.InstallLocation || '').trim() || null
+    // UninstallString can be quoted: "C:\path\Uninstall.exe" — strip outer quotes
+    const rawUninstall = (obj.UninstallString || '').trim().replace(/^"(.*)"$/, '$1').trim()
+    const uninstallExe = (rawUninstall && fs.existsSync(rawUninstall)) ? rawUninstall : null
+    return { installDir, uninstallExe }
+  } catch (_) {}
+  return {}
+}
+
+// Safety fallback for relaunch: if exePath no longer exists (e.g. the
+// uninstaller moved it), ask the registry where it is now.
+async function findRelaunchExe (originalExePath) {
+  if (originalExePath && fs.existsSync(originalExePath)) return originalExePath
+  if (process.platform !== 'win32') return null
+  try {
+    const { stdout } = await new Promise((resolve, reject) =>
+      execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
+        "@('HKLM','HKCU') | ForEach-Object {" +
+        "  Get-ItemProperty" +
+        "  \"$_:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*\"," +
         "  \"$_:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*\"" +
         "  -ErrorAction SilentlyContinue" +
         "} | Where-Object { $_.DisplayName -like '*NekoSuneAPPS*' }" +
         " | Select-Object -ExpandProperty InstallLocation -First 1"
-      ], (e, out) => e ? reject(e) : resolve({ stdout: out }))
+      ], { timeout: 15000 }, (e, out) => e ? reject(e) : resolve({ stdout: out }))
     )
     const dir = stdout.trim()
     if (dir) {
@@ -161,8 +212,8 @@ async function findRelaunchExe (originalExePath) {
   return null
 }
 
-// Walks up from a Mac executable path (.../NekoSuneAPPS.app/Contents/MacOS/
-// NekoSuneAPPS) to find the enclosing .app bundle directory.
+// ── Mac helper ────────────────────────────────────────────────────────────────
+
 function findAppBundle (fromPath) {
   let dir = path.dirname(fromPath)
   while (dir && dir !== path.dirname(dir)) {
@@ -172,43 +223,51 @@ function findAppBundle (fromPath) {
   return null
 }
 
-// Installs the downloaded release asset in place, per platform, and
-// reports back whether it's safe to auto-relaunch the app afterward.
+// ── Install orchestration ─────────────────────────────────────────────────────
+
 async function applyInstaller (downloadedPath, targetExePath) {
   if (process.platform === 'win32') {
-    // Run the NSIS installer silently. /S = silent mode; NSIS reads the
-    // previously registered install directory from the Windows registry and
-    // installs there, replacing files in-place. UAC will prompt if the
-    // install directory requires elevation (e.g. Program Files).
-    //
-    // A transient file lock (real-time AV scanning the fresh download, or
-    // the last handle from the app we just replaced not quite released yet
-    // despite waitUntilFileUnlocked) is a known transient failure mode here
-    // - retry a few times with backoff instead of surfacing a one-shot,
-    // unrecoverable "Command failed".
+    // Read registry info BEFORE uninstalling — the uninstaller removes those keys.
+    send('status', { phase: 'step', step: 'uninstall', label: 'Preparing…' })
+    const { installDir, uninstallExe } = await findNsisInstallInfo()
+
+    // Step 1: clean uninstall of old files
+    if (uninstallExe) {
+      send('status', { phase: 'step', step: 'uninstall', label: 'Removing old version…' })
+      try {
+        await runNsisInstaller(uninstallExe, ['/S'])
+      } catch (_) {
+        // Non-fatal: the new installer will overwrite whatever it can.
+      }
+    }
+
+    // Step 2: install new version to the same directory the user originally chose
+    send('status', { phase: 'step', step: 'install', label: 'Installing new version…' })
+    const installArgs = (installDir && installDir.trim())
+      ? ['/S', `/D=${installDir.trim()}`]
+      : ['/S']
+
     const attempts = 3
     let lastErr = null
     for (let i = 1; i <= attempts; i++) {
       try {
-        await runFile(downloadedPath, ['/S'])
+        await runNsisInstaller(downloadedPath, installArgs)
         return { relaunch: true }
       } catch (err) {
         lastErr = err
-        if (i < attempts) await new Promise(resolve => setTimeout(resolve, 1500))
+        if (i < attempts) await new Promise(r => setTimeout(r, 1500))
       }
     }
-    const detail = lastErr.stderrText ? `: ${lastErr.stderrText}` : (lastErr.code !== undefined ? ` (exit code ${lastErr.code})` : '')
+    const detail = lastErr.stderrText
+      ? `: ${lastErr.stderrText}`
+      : (lastErr.code !== undefined ? ` (exit code ${lastErr.code})` : '')
     throw new Error(`Installer failed after ${attempts} attempts${detail}`)
   }
 
   if (process.platform === 'darwin') {
-    // Release ships a .zip of the built NekoSuneAPPS.app - extract with
-    // `ditto` (macOS built-in, preserves resource forks/permissions
-    // correctly unlike a generic unzip) and swap it in for the existing
-    // bundle.
     const appBundle = findAppBundle(targetExePath)
     if (!appBundle) throw new Error('Could not locate the installed .app bundle to replace')
-    const extractDir = path.join(os.tmpdir(), `nekosune-update-${Date.now()}`)
+    const extractDir = path.join(os.tmpdir(), 'nekosune-update-extract')
     fs.mkdirSync(extractDir, { recursive: true })
     await runFile('ditto', ['-x', '-k', downloadedPath, extractDir])
     const extracted = fs.readdirSync(extractDir).find(f => f.toLowerCase().endsWith('.app'))
@@ -219,16 +278,11 @@ async function applyInstaller (downloadedPath, targetExePath) {
   }
 
   if (process.platform === 'linux') {
-    // AppImage self-updates by just replacing the file in place - no
-    // installer, no root needed.
     if (/\.appimage$/i.test(downloadedPath)) {
       fs.copyFileSync(downloadedPath, targetExePath)
       fs.chmodSync(targetExePath, 0o755)
       return { relaunch: true }
     }
-    // .deb needs root, which this helper can't safely do unattended - hand
-    // it to the desktop's own package-install UI instead of failing, and
-    // don't try to auto-relaunch since installation isn't complete yet.
     await runFile('xdg-open', [downloadedPath])
     return { relaunch: false, message: 'Finish the install in the window that just opened, then start NekoSuneAPPS again.' }
   }
@@ -236,8 +290,7 @@ async function applyInstaller (downloadedPath, targetExePath) {
   throw new Error(`Unsupported platform: ${process.platform}`)
 }
 
-// Tracked so a Retry click (after an install failure) can re-run just the
-// install step against the file already on disk, instead of re-downloading.
+// Tracked so the Retry button can re-run just the install step.
 let lastDownloadPath = null
 
 async function performInstall (downloadPath) {
@@ -248,7 +301,7 @@ async function performInstall (downloadPath) {
   lastDownloadPath = null
 
   send('status', { phase: 'done', version, message: result.message })
-  await new Promise(resolve => setTimeout(resolve, result.relaunch ? 1200 : 4000))
+  await new Promise(r => setTimeout(r, result.relaunch ? 1500 : 4000))
 
   if (result.relaunch) {
     const launchExe = await findRelaunchExe(exePath)
@@ -264,17 +317,10 @@ async function run () {
     return
   }
 
+  // Wait for the main app to fully release its file handles
   await waitForPidExit(pid)
-  // Verify the install target is actually free (not just "the pid is gone")
-  // before touching it — see waitUntilFileUnlocked's comment above.
   await waitUntilFileUnlocked(exePath)
 
-  // The download's own destination just needs to be SOME writable folder -
-  // it doesn't need to be inside the install location (unlike the actual
-  // install step below). Always use temp: a per-machine install's own
-  // folder (e.g. Program Files) needs elevation to write to, and
-  // fs.accessSync(dir, W_OK) is not a reliable predictor of that on Windows
-  // - confirmed by a real EPERM failure despite that check passing.
   const destDir = app.getPath('temp')
   const downloadPath = path.join(destDir, fileName)
   lastDownloadPath = downloadPath
@@ -283,9 +329,6 @@ async function run () {
     send('status', { phase: 'downloading', version })
     await download(url, downloadPath, progress => send('progress', progress))
   } catch (err) {
-    // A failed/partial download can't be retried as-is — clear it and force
-    // a full re-download next time (a fresh "check for updates" from the
-    // main app, since this window has no way to re-fetch the release info).
     try { fs.unlinkSync(downloadPath) } catch (_) {}
     lastDownloadPath = null
     send('status', { phase: 'error', message: err.message, canRetry: false })
@@ -299,9 +342,6 @@ async function run () {
   }
 }
 
-// Re-runs just the install step against the already-downloaded file — used
-// by the "Retry" button so a transient lock/AV failure doesn't force a full
-// re-download.
 ipcMain.handle('updater:retryInstall', async () => {
   if (!lastDownloadPath || !fs.existsSync(lastDownloadPath)) {
     send('status', { phase: 'error', message: 'Nothing to retry — the downloaded installer is gone. Close this window and check for updates again.' })
@@ -323,7 +363,7 @@ ipcMain.handle('updater:openDownloadFolder', (e, targetPath) => {
 app.whenReady().then(() => {
   mainWindow = new BrowserWindow({
     width: 420,
-    height: 280,
+    height: 370,
     backgroundColor: '#0b0b14',
     resizable: false,
     minimizable: false,
