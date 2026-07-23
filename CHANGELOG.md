@@ -5,6 +5,8 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ## Unreleased
 
+## [1.0.63] - 2026-07-23
+
 ### Fixed
 - **Auto-updater now actually installs the new version instead of silently claiming success.**
   Root cause: Node's `execFile` calls `CreateProcess` and waits for the NSIS stub process, which
