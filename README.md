@@ -1,2 +1,251 @@
-# NekoSuneAPPS
-Lis tof my APPS can find for Game tools, Projects and more
+# 🌙 NekoSuneAPPS
+
+Welcome to **NekoSuneAPPS** — the central index for public applications, tools, utilities, and software projects created and maintained by **NekoSuneProjects**.
+
+This repository acts as a simple hub where you can discover the different applications being developed across the NekoSuneProjects ecosystem.
+
+> 🦊 **Built by NekoSuneVR · Open-source projects · Tools for creators, communities, gaming, streaming & more**
+
+---
+
+## 📦 Applications & Projects
+
+| Application | Description | Category |
+| --- | --- | --- |
+| 🦊 **KitsuNexus** | A standalone VRChat OSC companion with Chatbox, status tools, AudioLink, Now Playing, heart-rate integrations, Discord features, radar, weather, avatar tools, and much more. | 🎮 VRChat / Companion |
+| 🎬 **Nekos AI Clipper** | Automatically detects kills, deaths, wins, reactions, and hype moments, then creates clips and montages with music. Supports GPU and CPU encoding. | 🎥 AI / Video / Gaming |
+| 📡 **RestreamNode** | A self-hosted streaming relay that accepts broadcast sources and fans them out to RTMP/SRT destinations through a web dashboard. | 📺 Streaming / Infrastructure |
+| 🤖 **NekoSuneAI** | A voice-powered desktop AI companion with local/cloud LLM support, STT, TTS, memory, profiles, web search, music, screen awareness, and VRChat OSC integration. | 🧠 AI / Companion |
+| 🌐 **UPnP Port Mapper** | A web-based Linux utility for managing UPnP port forwarding, persistent mappings, automatic renewal, and router port management. | 🌐 Networking / Utility |
+| 🧩 **Pluxora** | A modular Discord.js v14 bot platform with installable plugins, plugin discovery, hot reload, OAuth dashboard controls, slash/prefix commands, and update management. | 💬 Discord / Bot Platform |
+
+### 🦊 KitsuNexus
+
+A feature-rich **VRChat OSC companion application** designed to bring many useful VRChat, streaming, Discord, media, and system tools together in one desktop application.
+
+**Highlights:**
+
+- 💬 VRChat Chatbox and live typing
+- 🎵 Now Playing / media integration
+- 🔊 AudioLink
+- ❤️ Heart-rate integrations
+- 🦊 VRChat avatar and social tools
+- 📡 Instance radar
+- 🌦 Weather
+- 🎮 Multiple VRChat client OSC support
+- 💜 Discord Rich Presence and Voice Bot tools
+- 📱 TikTok / Twitch / Kick integrations
+- 🧠 IntelliChat
+- 🖥️ OBS overlay support
+- 🛠️ Many additional OSC utilities
+
+👉 **Project:** https://github.com/NekoSuneProjects/KitsuNexus
+
+---
+
+### 🎬 Nekos AI Clipper
+
+An AI-assisted desktop clipping application focused on automatically finding the best moments from gaming and live content.
+
+**Highlights:**
+
+- 🎙️ Reaction and hype detection
+- 🎮 Game HUD OCR detection
+- 💀 Kill / death / win / headshot detection
+- 🔥 Kill-streak clustering
+- 🔴 Live capture and automatic clipping
+- 📱 16:9 and 9:16 output
+- 🎵 Music libraries and montage generation
+- ⚡ NVIDIA NVENC, AMD AMF, Intel QuickSync, and CPU encoding
+- 📊 Live processing progress and ETA
+
+👉 **Project:** https://github.com/NekoSuneProjects/nekos-ai-clipper
+
+---
+
+### 📡 RestreamNode
+
+A self-hosted restreaming platform for taking an incoming stream and forwarding it to multiple destinations.
+
+**Highlights:**
+
+- 📺 RTMP and SRT destinations
+- 🖥️ OBS / PC streaming input
+- 🎮 Console streaming support
+- 🌐 Web dashboard
+- 👥 Multi-account support
+- 🔄 Automatic source failover
+- 📡 MediaMTX-based stream handling
+- 🎞️ HLS / RTSP / SRT / WHEP playback
+- 🎨 OBS browser-source overlays and scenes
+- 🎵 Shared music and Now Playing overlays
+
+👉 **Project:** https://github.com/NekoSuneProjects/RestreamNode
+
+---
+
+### 🤖 NekoSuneAI
+
+A local-first, voice-powered AI companion built with Python. NekoSuneAI can use local or cloud LLM providers, remember information across sessions, speak with custom voices, interact with VRChat, watch your screen, search the web, play music, and maintain customizable companion personalities.
+
+**Highlights:**
+
+- 🧠 Ollama, OpenAI, OpenRouter, LM Studio, and CLI providers
+- 🎙️ Local Whisper speech recognition
+- 🔊 XTTS voice synthesis and cloned voices
+- 🧬 Long-term RAG memory
+- 🎮 VRChat OSC integration
+- 👁️ Screen awareness and vision-model support
+- 🌐 Multi-language responses and voice
+- 🎤 Singing support
+- 🎵 Music playback
+- 👤 Custom companion profiles
+- ⚡ Hardware-aware performance tuning
+- 🗄️ SQLite storage
+
+👉 **Project:** https://github.com/NekoSuneProjects/NekoSuneAI
+
+---
+
+### 🌐 UPnP Port Mapper
+
+A lightweight web-based Linux application for managing router port forwarding through UPnP.
+
+**Highlights:**
+
+- 🔌 Automatic UPnP port forwarding
+- 🌐 Web-based management panel
+- 🔄 Persistent port mappings
+- ⏱️ Automatic mapping renewal
+- 🗄️ SQLite storage
+- 🔐 Login and administrator management
+- 📱 Dark, mobile-friendly interface
+
+> ⚠️ **Security:** If you deploy this application, change any default credentials immediately and avoid exposing the management panel directly to the public internet without appropriate security controls.
+
+👉 **Project:** https://github.com/NekoSuneProjects/UPNPPortMapper
+
+---
+
+### 🧩 Pluxora
+
+A production-oriented **Discord.js v14 modular bot platform** built around installable plugin packages.
+
+**Highlights:**
+
+- 🧩 Installable plugins
+- 📦 Plugin-local dependencies
+- 🔄 Load / enable / disable / reload / uninstall plugins
+- 💬 Prefix and slash commands
+- ⚙️ Configuration hot reload
+- 🌐 Discord OAuth dashboard
+- 🔎 GitHub plugin discovery
+- 🔄 Plugin update checking
+- 🛡️ Plugin permission manifests
+- 📊 Live logs and dashboard controls
+- 🎵 Example music plugin
+- 🛠️ Example utility and moderation plugins
+
+👉 **Project:** https://github.com/NekoSuneProjects/Pluxora
+
+---
+
+## 🛠️ Project Philosophy
+
+NekoSuneAPPS is built around creating useful, practical, and community-focused software.
+
+Projects may cover areas such as:
+
+- 🎮 Gaming and VRChat
+- 🤖 Artificial intelligence
+- 🎥 Video processing and clipping
+- 📺 Streaming and broadcasting
+- 💬 Discord and community tools
+- 🌐 Networking and self-hosting
+- 🧰 Desktop utilities
+- 🖥️ Server infrastructure
+- 🧪 Experimental tools and ideas
+
+The goal is to keep expanding the collection with useful software that can be shared, improved, and maintained over time.
+
+---
+
+## 🚧 More Projects Coming
+
+This list will continue to grow as new applications and tools are released.
+
+Check back regularly for new projects, updates, releases, and experiments from **NekoSuneProjects**.
+
+---
+
+## 🤝 Contributing
+
+Contributions, bug reports, feature requests, improvements, and feedback are welcome.
+
+For individual projects, please use the **Issues** and **Pull Requests** sections of the relevant project repository.
+
+When contributing, please try to:
+
+- 🐛 Report bugs with useful reproduction details
+- 💡 Explain proposed features clearly
+- 🧹 Keep code clean and maintainable
+- 📚 Update documentation when appropriate
+- 🔐 Avoid committing passwords, API keys, tokens, or other secrets
+
+---
+
+## 💖 Support NekoSuneProjects
+
+If you enjoy our projects, find them useful, or would like to help support the continued development of **NekoSuneProjects**, donations are greatly appreciated. ❤️
+
+Donations help support:
+
+- 🖥️ Server and hosting costs
+- 🌐 Domains and infrastructure
+- 🔧 Development and maintenance
+- 💾 Storage and backup costs
+- 🛡️ Security and infrastructure improvements
+- 🚀 New open-source projects and features
+- ☕ The time and effort that goes into maintaining our projects
+
+### 💰 Cryptocurrency Donations
+
+You can support **NekoSuneProjects** using any of the following cryptocurrencies:
+
+| Cryptocurrency | Donation Address |
+| --- | --- |
+| 🟣 **Ethereum (ETH)** | `0xAD41cD581FD06dB2589fd745BB179cA454a242ac` |
+| 🟠 **Bitcoin (BTC)** | `38qeqyTxgakcsb8swbo4g8EnovUSX4DDNp` |
+| 🐕 **Dogecoin (DOGE)** | `DGVT15yeHJnSFsAy6zWx3m6grXsK7FV9kk` |
+| 🟢 **Hive (HIVE)** | `chisdealhd` |
+| 🟡 **Hive Dollar (HBD)** | `chisdealhd` |
+| 🟢 **Steem (STEEM)** | `chisdealhd` |
+| 🟡 **Steem Dollar (SBD)** | `chisdealhd` |
+| 🔵 **Blurt (BLURT)** | `chisdealhd` |
+| 🟣 **Solana (SOL)** | `YOUR_SOL_ADDRESS` |
+| 💵 **USD Coin (USDC)** | `0xAD41cD581FD06dB2589fd745BB179cA454a242ac` |
+| 💵 **USDT Coin (USDT)** | `0xAD41cD581FD06dB2589fd745BB179cA454a242ac` |
+| 🟡 **BNB** | `0xAD41cD581FD06dB2589fd745BB179cA454a242ac` |
+| 🦇 **Basic Attention Token (BAT) ETH CHAIN** | `0x7196Ec85d9FB64f1a6EA94e0E7d7f25195416F17` |
+| ⚡ **ZBD / Bitcoin Lightning** | `nekosunevr` |
+| **GitHub Sponsor** | https://github.com/sponsors/NekoSuneProjects |
+
+> ⚠️ **Important:** Always verify the cryptocurrency and network before sending a donation. Sending funds to an incorrect address or unsupported network may result in permanent loss of funds.
+
+### 🙏 Thank You
+
+Whether you contribute financially, report bugs, submit improvements, or simply use and share our projects, **thank you for supporting NekoSuneProjects**.
+
+Every contribution helps us continue building and maintaining open-source software for the community. ❤️
+
+**Thank you for supporting NekoSuneProjects!** 🌙
+
+---
+
+<div align="center">
+
+### 🦊 NekoSuneProjects
+
+**Building software with creativity, curiosity, and a little bit of fox magic.** ✨
+
+</div>
