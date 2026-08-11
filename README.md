@@ -20,6 +20,8 @@ This repository acts as a simple hub where you can discover the different applic
 | 🧩 **Pluxora** | A modular Discord.js v14 bot platform with installable plugins, plugin discovery, hot reload, OAuth dashboard controls, slash/prefix commands, and update management. | 💬 Discord / Bot Platform |
 | 🦊 **Nekorina** | A self-hosted, multilingual AI VTuber that runs locally with persistent personality and memory, reads chat from Twitch, TikTok, YouTube, Discord, and Kick, speaks with local voices, and renders a VRM avatar directly in the browser using Three.js. | 🤖 AI VTuber / Streaming |
 | 📺 **NekoLive Self-Host** | A self-hosted, single-channel streaming platform similar to Owncast, backed by OvenMediaEngine, with anonymous viewing/chat, local administration, IP banning, WHEP/LLHLS playback, and real-time multistreaming to NekoLive, Twitch, YouTube, Kick, and custom RTMP/SRT destinations. | 📺 Streaming / Self-Hosting |
+| 💳 **NekoPay** | A self-hosted payment gateway for hosted checkout sessions, provider and on-chain payment flows, background payment tracking, merchant webhooks, and multiple cryptocurrency/payment providers. | 💰 Payments / Infrastructure |
+| 🎮 **NekoNexus** | A free, community-run UberStrike-compatible server stack with Photon-free networking, realtime game servers, web services, admin dashboard, player management, leaderboard, store, NekoPay payments, Docker, and multi-architecture support. | 🎮 Game Server / Community |
 
 ---
 
@@ -194,8 +196,6 @@ Nekorina is designed with a local-first approach: the language model, speech syn
 
 **NekoLive Self-Host** is a self-hosted, single-channel live-streaming application designed as a lightweight alternative to hosted streaming platforms. It uses **OvenMediaEngine (OME)** for media delivery and the same WHEP/LLHLS player technology used by NekoLive.
 
-The project is designed for people who want to host their own streaming channel and retain control over their infrastructure, viewers, chat, moderation, and multistream destinations.
-
 **Highlights:**
 
 - 📺 Self-hosted single-channel streaming
@@ -203,46 +203,114 @@ The project is designed for people who want to host their own streaming channel 
 - ⚡ WHEP / LLHLS playback
 - 👤 One local administrator account
 - 🔐 No NekoLive or ZITADEL account required
-- 💬 Anonymous viewer chat with no viewer account required
-- 👥 Anonymous viewing without account registration
-- 🚫 IP-based banning directly from the admin dashboard
-- 🛡️ Banned IPs can be blocked from both chat and playback
-- 📡 Native OME Push Publishing for multistreaming
+- 💬 Anonymous viewer chat
+- 👥 Anonymous viewing
+- 🚫 IP-based banning from the admin dashboard
+- 🛡️ Banned IPs can be blocked from chat and playback
+- 📡 Native OME Push Publishing
 - 🔄 Enable or disable multistream destinations in real time
-- 📺 Stream to NekoLive channels
+- 📺 NekoLive channel support
 - 🟣 Twitch support
 - 🔴 YouTube support
 - 🟢 Kick support
 - 🔗 Custom RTMP destinations
 - 📡 Custom SRT destinations
 - 🗄️ SQLite database through Sequelize
-- 💬 WebSocket-based anonymous single-room chat
+- 💬 WebSocket-based chat
 - 🌐 Express web application
 - 🐳 Docker / Docker Compose support
 - ⚙️ Persistent `config/` and `data/` bind mounts
-- 🔧 Separate OME configuration for flexible deployment
-
-**Deployment:**
-
-The application can be started directly with Node.js or through Docker Compose. OvenMediaEngine runs separately and can be deployed on another container, another host on the network, or a public OME instance.
-
-```bash
-npm install
-cp config/config.example.json config/config.json
-node app.js
-```
-
-Or with Docker:
-
-```bash
-cp config/config.example.json config/config.json
-mkdir -p data
-docker compose up -d --build
-```
-
-> ℹ️ **Note:** OvenMediaEngine must be configured separately. See the project's OME setup documentation for `Server.xml`, the admission webhook, and Push Publishing configuration.
 
 👉 **Project:** https://github.com/NekoLiveStreamingPlatform/NekoLive-Selfhost
+
+---
+
+### 💳 NekoPay
+
+**NekoPay** is a self-hosted payment gateway for websites, stores, and community services. It provides hosted checkout sessions, payment-provider integrations, direct on-chain payment checking, background payment processing, and merchant webhooks when checkout states change.
+
+NekoPay is currently in **active development / beta**. Provider coverage and gateway behavior can change, so deployments should be tested end-to-end before being relied upon for live sales.
+
+**Highlights:**
+
+- 🏪 Merchant dashboard for store and gateway configuration
+- 🛒 Hosted checkout sessions through an API
+- 🔄 Background payment checking
+- 📡 Provider webhook handling
+- 🔔 Outbound merchant webhooks
+- 🗄️ SQLite by default
+- 🐬 MySQL / MariaDB support through Sequelize
+- 💳 Stripe integration
+- 🅿️ PayPal integration
+- 🪙 NOWPayments integration
+- ⚡ ZBD integration
+- 🟢 Hive and HBD
+- 🟢 Steem and SBD
+- 🔵 Blurt
+- 🌐 Telos and EOS
+- 🔗 FIO and WAX
+- 🟣 PIVX and FLS
+- 🔐 Store secret API keys for merchant authentication
+- 📦 External IDs and custom metadata
+- 🔔 Checkout events such as created, pending, completed, failed, and cancelled
+- ⏱️ Configurable crypto confirmation and timeout handling
+
+**Typical checkout flow:**
+
+1. A merchant creates a hosted checkout session through the API.
+2. NekoPay returns a checkout URL.
+3. The customer completes payment through a provider or direct on-chain instructions.
+4. Background workers and provider webhooks update payment status.
+5. NekoPay sends a checkout event to the merchant's notification URL.
+
+> ⚠️ **Production note:** NekoPay is still under active development. Some payment integrations require additional real-world testing, and outbound merchant webhooks currently do not provide an HMAC/signature header.
+
+👉 **Project:** https://github.com/NekoSuneProjects/NekoPay
+
+---
+
+### 🎮 NekoNexus
+
+**NekoNexus** is a NekoSune Community project providing a free, community-run **UberStrike-compatible game server stack** without the proprietary Photon Server SDK. It replaces the proprietary transport components with free managed shims backed by LiteNetLib and includes realtime servers, web services, an admin dashboard, player management, leaderboard, store, and payment integration.
+
+The project runs on **Windows, Linux x64, Linux ARM64, and Docker**, with configurable player slots rather than the proprietary Photon CCU/slot cap.
+
+**Highlights:**
+
+- 🎮 UberStrike-compatible community game servers
+- 🆓 Photon-free realtime networking
+- 🔧 LiteNetLib-backed Photon socket and client shims
+- 🌐 Web services and master server
+- 🎯 Separate realtime Comm and Game servers
+- 🖥️ Modern dark/green admin dashboard
+- 👥 Player search and management
+- 🚫 Player ban / unban tools with reason and duration
+- ⭐ XP, levels, points, credits, and access-level management
+- 🏆 Top-50 leaderboards
+- 📋 Moderation reports and logs
+- 🛒 In-game store and credit packages
+- 💳 NekoPay payment integration for real-money credits
+- 🐳 Multi-architecture Docker support
+- 🪟 Windows support
+- 🐧 Linux x64 and ARM64 support
+- 🔧 Self-hosted server manager GUI
+- 🌐 Reverse-proxy support for web services
+- 🧩 Client patching toolkit for your own UberStrike installation
+- 📦 Server and client bundling scripts
+- 🔄 Git submodule-based shared game SDK components
+
+**Server components include:**
+
+- `NekoNexus.WebServices` — web services, file server, and master socket
+- `NekoNexus.Admin` — administration dashboard
+- `NekoNexus.Realtime` — realtime game server
+- `NekoNexus.Realtime.Host` — self-host launcher replacing the Photon server executable
+- `NekoNexus.Client` — client modification and patching toolkit
+- `shims/` — free managed replacements for proprietary Photon and Unity dependencies
+
+> ⚠️ **Important:** NekoNexus is an unofficial, community-run project and is not affiliated with or endorsed by Cmune/UberStrike. It does not redistribute game assets; the client toolkit patches your own UberStrike installation.
+
+👉 **Project:** https://github.com/NekoSuneVR/NekoNexus
 
 ---
 
@@ -256,10 +324,12 @@ Projects may cover areas such as:
 - 🤖 Artificial intelligence
 - 🎥 Video processing and clipping
 - 📺 Streaming and broadcasting
+- 💳 Payments and commerce
 - 💬 Discord and community tools
 - 🌐 Networking and self-hosting
 - 🧰 Desktop utilities
 - 🖥️ Server infrastructure
+- 🎯 Community game servers
 - 🧪 Experimental tools and ideas
 
 The goal is to keep expanding the collection with useful software that can be shared, improved, and maintained over time.
@@ -270,7 +340,7 @@ The goal is to keep expanding the collection with useful software that can be sh
 
 This list will continue to grow as new applications and tools are released.
 
-Check back regularly for new projects, updates, releases, and experiments from **NekoSuneProjects** and the wider NekoLive ecosystem.
+Check back regularly for new projects, updates, releases, and experiments from **NekoSuneProjects** and the wider NekoSune community ecosystem.
 
 ---
 
