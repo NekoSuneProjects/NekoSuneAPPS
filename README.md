@@ -1,8 +1,8 @@
 # 🌙 NekoSuneAPPS
 
-Welcome to **NekoSuneAPPS** — the central index for public applications, tools, utilities, and software projects created and maintained by **NekoSuneProjects**.
+Welcome to **NekoSuneAPPS** — the central index for public applications, tools, utilities, and software projects created and maintained by **NekoSuneProjects** and its wider project ecosystem.
 
-This repository acts as a simple hub where you can discover the different applications being developed across the NekoSuneProjects ecosystem.
+This repository acts as a simple hub where you can discover the different applications being developed across the NekoSuneProjects ecosystem and related projects.
 
 > 🦊 **Built by NekoSuneVR · Open-source projects · Tools for creators, communities, gaming, streaming & more**
 
@@ -19,6 +19,7 @@ This repository acts as a simple hub where you can discover the different applic
 | 🌐 **UPnP Port Mapper** | A web-based Linux utility for managing UPnP port forwarding, persistent mappings, automatic renewal, and router port management. | 🌐 Networking / Utility |
 | 🧩 **Pluxora** | A modular Discord.js v14 bot platform with installable plugins, plugin discovery, hot reload, OAuth dashboard controls, slash/prefix commands, and update management. | 💬 Discord / Bot Platform |
 | 🦊 **Nekorina** | A self-hosted, multilingual AI VTuber that runs locally with persistent personality and memory, reads chat from Twitch, TikTok, YouTube, Discord, and Kick, speaks with local voices, and renders a VRM avatar directly in the browser using Three.js. | 🤖 AI VTuber / Streaming |
+| 📺 **NekoLive Self-Host** | A self-hosted, single-channel streaming platform similar to Owncast, backed by OvenMediaEngine, with anonymous viewing/chat, local administration, IP banning, WHEP/LLHLS playback, and real-time multistreaming to NekoLive, Twitch, YouTube, Kick, and custom RTMP/SRT destinations. | 📺 Streaming / Self-Hosting |
 
 ---
 
@@ -189,6 +190,62 @@ Nekorina is designed with a local-first approach: the language model, speech syn
 
 ---
 
+### 📺 NekoLive Self-Host
+
+**NekoLive Self-Host** is a self-hosted, single-channel live-streaming application designed as a lightweight alternative to hosted streaming platforms. It uses **OvenMediaEngine (OME)** for media delivery and the same WHEP/LLHLS player technology used by NekoLive.
+
+The project is designed for people who want to host their own streaming channel and retain control over their infrastructure, viewers, chat, moderation, and multistream destinations.
+
+**Highlights:**
+
+- 📺 Self-hosted single-channel streaming
+- 🎞️ OvenMediaEngine-powered media delivery
+- ⚡ WHEP / LLHLS playback
+- 👤 One local administrator account
+- 🔐 No NekoLive or ZITADEL account required
+- 💬 Anonymous viewer chat with no viewer account required
+- 👥 Anonymous viewing without account registration
+- 🚫 IP-based banning directly from the admin dashboard
+- 🛡️ Banned IPs can be blocked from both chat and playback
+- 📡 Native OME Push Publishing for multistreaming
+- 🔄 Enable or disable multistream destinations in real time
+- 📺 Stream to NekoLive channels
+- 🟣 Twitch support
+- 🔴 YouTube support
+- 🟢 Kick support
+- 🔗 Custom RTMP destinations
+- 📡 Custom SRT destinations
+- 🗄️ SQLite database through Sequelize
+- 💬 WebSocket-based anonymous single-room chat
+- 🌐 Express web application
+- 🐳 Docker / Docker Compose support
+- ⚙️ Persistent `config/` and `data/` bind mounts
+- 🔧 Separate OME configuration for flexible deployment
+
+**Deployment:**
+
+The application can be started directly with Node.js or through Docker Compose. OvenMediaEngine runs separately and can be deployed on another container, another host on the network, or a public OME instance.
+
+```bash
+npm install
+cp config/config.example.json config/config.json
+node app.js
+```
+
+Or with Docker:
+
+```bash
+cp config/config.example.json config/config.json
+mkdir -p data
+docker compose up -d --build
+```
+
+> ℹ️ **Note:** OvenMediaEngine must be configured separately. See the project's OME setup documentation for `Server.xml`, the admission webhook, and Push Publishing configuration.
+
+👉 **Project:** https://github.com/NekoLiveStreamingPlatform/NekoLive-Selfhost
+
+---
+
 ## 🛠️ Project Philosophy
 
 NekoSuneAPPS is built around creating useful, practical, and community-focused software.
@@ -213,7 +270,7 @@ The goal is to keep expanding the collection with useful software that can be sh
 
 This list will continue to grow as new applications and tools are released.
 
-Check back regularly for new projects, updates, releases, and experiments from **NekoSuneProjects**.
+Check back regularly for new projects, updates, releases, and experiments from **NekoSuneProjects** and the wider NekoLive ecosystem.
 
 ---
 
