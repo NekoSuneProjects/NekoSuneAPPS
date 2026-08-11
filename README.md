@@ -18,6 +18,9 @@ This repository acts as a simple hub where you can discover the different applic
 | 🤖 **NekoSuneAI** | A voice-powered desktop AI companion with local/cloud LLM support, STT, TTS, memory, profiles, web search, music, screen awareness, and VRChat OSC integration. | 🧠 AI / Companion |
 | 🌐 **UPnP Port Mapper** | A web-based Linux utility for managing UPnP port forwarding, persistent mappings, automatic renewal, and router port management. | 🌐 Networking / Utility |
 | 🧩 **Pluxora** | A modular Discord.js v14 bot platform with installable plugins, plugin discovery, hot reload, OAuth dashboard controls, slash/prefix commands, and update management. | 💬 Discord / Bot Platform |
+| 🦊 **Nekorina** | A self-hosted, multilingual AI VTuber that runs locally with persistent personality and memory, reads chat from Twitch, TikTok, YouTube, Discord, and Kick, speaks with local voices, and renders a VRM avatar directly in the browser using Three.js. | 🤖 AI VTuber / Streaming |
+
+---
 
 ### 🦊 KitsuNexus
 
@@ -147,6 +150,42 @@ A production-oriented **Discord.js v14 modular bot platform** built around insta
 - 🛠️ Example utility and moderation plugins
 
 👉 **Project:** https://github.com/NekoSuneProjects/Pluxora
+
+---
+
+### 🦊 Nekorina
+
+A **self-hosted, multilingual AI VTuber** designed to run on your own machine. Nekorina combines a persistent AI personality, long-term memory, local speech, multi-platform chat integration, and a browser-based VRM avatar powered by Three.js.
+
+Nekorina is designed with a local-first approach: the language model, speech synthesis, memory database, and avatar renderer can all run locally. Network access is only required for the chat platforms and external services you explicitly enable.
+
+**Highlights:**
+
+- 🤖 Persistent AI VTuber personality
+- 🧠 Long-term conversation and per-viewer memory
+- 🌍 14+ language support with local language detection
+- 💬 Twitch, TikTok, YouTube, Discord, and Kick chat
+- 🎙️ Streaming speech generation with local TTS support
+- 🗣️ Whisper-based speech recognition support
+- 🦊 VRM avatar rendering in the browser
+- 🎨 Three.js and `@pixiv/three-vrm` avatar system
+- 👀 Idle breathing, blinking, gaze, gestures, expressions, and lip-sync
+- 🎭 Automatic mood and avatar expression control
+- 🎥 OBS browser-source avatar support
+- 🧠 Local LLM support through Ollama and llama.cpp
+- ⚡ Quality modes for performance, balanced, and high-quality systems
+- 🛡️ Graceful fallbacks when LLM, TTS, GPU, or chat services are unavailable
+- 🐳 Docker support
+- 🖥️ Windows and Linux support
+- 🔒 Local-first design with API authentication options
+
+**Designed to run on modest hardware:**
+
+- NVIDIA GTX 980 Ti 6 GB
+- Intel i7-6700K 4c/8t
+- 32 GB RAM
+
+👉 **Project:** https://github.com/NekoSuneProjects/Nekorina
 
 ---
 
