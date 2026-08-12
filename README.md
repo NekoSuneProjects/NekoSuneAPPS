@@ -22,6 +22,7 @@ This repository acts as a simple hub where you can discover the different applic
 | 📺 **NekoLive Self-Host** | A self-hosted, single-channel streaming platform similar to Owncast, backed by OvenMediaEngine, with anonymous viewing/chat, local administration, IP banning, WHEP/LLHLS playback, and real-time multistreaming to NekoLive, Twitch, YouTube, Kick, and custom RTMP/SRT destinations. | 📺 Streaming / Self-Hosting |
 | 💳 **NekoPay** | A self-hosted payment gateway for hosted checkout sessions, provider and on-chain payment flows, background payment tracking, merchant webhooks, and multiple cryptocurrency/payment providers. | 💰 Payments / Infrastructure |
 | 🎮 **NekoNexus** | A free, community-run UberStrike-compatible server stack with Photon-free networking, realtime game servers, web services, admin dashboard, player management, leaderboard, store, NekoPay payments, Docker, and multi-architecture support. | 🎮 Game Server / Community |
+| 🚀 **NekoVerse Companion** | A modern Star Citizen desktop companion with live status/news, multilingual Jarvis voice commands, Verse Guide, game UI shortcuts, install detection, FleetYards/marketplace tools, and conservative hardware-aware optimisation. | 🚀 Star Citizen / Companion |
 
 ---
 
@@ -314,6 +315,40 @@ The project runs on **Windows, Linux x64, Linux ARM64, and Docker**, with config
 
 ---
 
+### 🚀 NekoVerse Companion
+
+**NekoVerse Companion** is a modern desktop companion for **Star Citizen** created by **NekoSuneVR**. It brings together Star Citizen information, voice-operated game shortcuts, new-player guidance, install detection, marketplace/fleet tools, and conservative hardware-aware optimisation in a single application.
+
+**Highlights:**
+
+- 🎙️ Multilingual **Jarvis** voice assistant with a customizable wake word
+- 🛬 Voice commands such as request landing, gear down, headlights, ramp controls, rescue calls, and UI actions
+- 🔊 Wake confirmation sound, follow-up listening window, speech interrupt, and one-request-at-a-time command handling
+- 🗺️ **Verse Guide** for locations, items, commodities, ores, ships, and missions using Star Citizen Wiki API data
+- 🌍 English, Spanish, German, Polish, Russian, French, Italian, and Portuguese UI/voice support
+- 🧠 Native Ollama support with model discovery and chat responses
+- 🔎 Automatic Star Citizen installation detection using running processes, RSI Launcher hints, registry entries, and common library locations
+- 🎮 Star Citizen UI shortcuts for mobiGlas, Starmap, Comms, Contacts, Inventory, Chat, Contracts, Journal, and Vehicle Manager actions
+- 💾 SQLite-backed persistent settings
+- 🔄 Automatic GitHub Release update checks
+- 🪟 Windows x64 builds including NSIS installer and portable EXE
+- 🐧 Linux AMD64 builds including AppImage and DEB packages
+- ⚙️ Conservative graphics optimisation with automatic `GraphicsSettings.json` backup
+- 🛡️ Fair-play focused design with explicit user-triggered hotkeys only
+- 🛰️ FleetYards and marketplace-oriented companion tooling
+
+**Built-in philosophy:**
+
+NekoVerse Companion is designed as a **companion/accessibility tool**, not an autonomous game bot. Voice actions map to explicit user-triggered hotkeys, and the project intentionally avoids aim assistance, combat automation, unattended navigation, memory injection, packet manipulation, and anti-cheat bypassing.
+
+> ⚠️ **Third-party marketplace note:** Grey-market Star Citizen pledge stores are not supported or endorsed by CIG/RSI. NekoVerse only surfaces public listings and opens external result pages; users should independently verify sellers, items, insurance, escrow/refund terms, and transfers.
+
+> ℹ️ **Unofficial project:** NekoVerse Companion is not affiliated with, endorsed by, or sponsored by Cloud Imperium Games or Roberts Space Industries.
+
+👉 **Project:** https://github.com/NekoSuneProjects/NekoVerse-Companion
+
+---
+
 ## 🛠️ Project Philosophy
 
 NekoSuneAPPS is built around creating useful, practical, and community-focused software.
@@ -321,6 +356,7 @@ NekoSuneAPPS is built around creating useful, practical, and community-focused s
 Projects may cover areas such as:
 
 - 🎮 Gaming and VRChat
+- 🚀 Star Citizen and game companions
 - 🤖 Artificial intelligence
 - 🎥 Video processing and clipping
 - 📺 Streaming and broadcasting
